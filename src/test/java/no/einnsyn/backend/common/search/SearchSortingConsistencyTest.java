@@ -199,40 +199,6 @@ class SearchSortingConsistencyTest {
     }
   }
 
-  /** A cursor must contain exactly two values, a malformed cursor is a bad request. */
-  @Test
-  void testMalformedStartingAfterCursorIsRejected() throws Exception {
-    var searchParams = new SearchParameters();
-    searchParams.setSortBy("id");
-    searchParams.setStartingAfter(List.of("missing-the-id"));
-    when(searchQueryService.getQueryBuilder(searchParams))
-        .thenReturn(new BoolQuery.Builder().must(Query.of(q -> q.matchAll(m -> m))));
-
-    assertThrows(BadRequestException.class, () -> searchService.getSearchRequest(searchParams));
-  }
-
-  @Test
-  void testMalformedEndingBeforeCursorIsRejected() throws Exception {
-    var searchParams = new SearchParameters();
-    searchParams.setSortBy("id");
-    searchParams.setEndingBefore(List.of("missing-the-id"));
-    when(searchQueryService.getQueryBuilder(searchParams))
-        .thenReturn(new BoolQuery.Builder().must(Query.of(q -> q.matchAll(m -> m))));
-
-    assertThrows(BadRequestException.class, () -> searchService.getSearchRequest(searchParams));
-  }
-
-  @Test
-  void testTooLongCursorIsRejected() throws Exception {
-    var searchParams = new SearchParameters();
-    searchParams.setSortBy("id");
-    searchParams.setStartingAfter(List.of("value", "id", "surplus"));
-    when(searchQueryService.getQueryBuilder(searchParams))
-        .thenReturn(new BoolQuery.Builder().must(Query.of(q -> q.matchAll(m -> m))));
-
-    assertThrows(BadRequestException.class, () -> searchService.getSearchRequest(searchParams));
-  }
-
   /** An unmappable cursor value is a bad request, both for startingAfter and endingBefore. */
   @Test
   void testUnmappableCursorValueIsRejected() throws Exception {

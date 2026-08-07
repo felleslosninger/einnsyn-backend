@@ -61,9 +61,6 @@ public class SearchService {
 
   private static final String SORT_BY_SCORE = "score";
 
-  /** A pagination cursor consists of the sortBy value and the unique id. */
-  private static final int CURSOR_SIZE = 2;
-
   private static final String RECENT_DOCUMENT_BOOST_STRING =
       """
       {
@@ -270,8 +267,6 @@ public class SearchService {
     // Add searchAfter for pagination
     var startingAfter = searchParams.getStartingAfter();
     var endingBefore = searchParams.getEndingBefore();
-    validateCursorSize("startingAfter", startingAfter);
-    validateCursorSize("endingBefore", endingBefore);
     if (startingAfter != null) {
       var fieldValueList = toCursorFieldValues("startingAfter", sortBy, startingAfter);
       searchRequestBuilder.searchAfter(fieldValueList);
@@ -303,30 +298,9 @@ public class SearchService {
   }
 
   /**
-   * Verify that a pagination cursor has the expected size. A cursor is a list of exactly two
-   * values: the value of the sortBy property, and the unique id. Anything else is a malformed
-   * request, and should not be allowed to fail later with an IndexOutOfBoundsException.
-   *
-   * @param name the name of the query parameter, used in the error message
-   * @param cursor the cursor to validate, may be null
-   * @throws BadRequestException if the cursor is given, but doesn't contain exactly two values
-   */
-  private void validateCursorSize(String name, List<String> cursor) throws BadRequestException {
-    if (cursor != null && cursor.size() != CURSOR_SIZE) {
-      throw new BadRequestException(
-          "Invalid "
-              + name
-              + " cursor: expected exactly "
-              + CURSOR_SIZE
-              + " values (the sortBy value and the id), got "
-              + cursor.size()
-              + ".");
-    }
-  }
-
-  /**
-   * Convert a pagination cursor to a list of Elasticsearch field values. The cursor is expected to
-   * be validated by {@link #validateCursorSize(String, List)}.
+   * Convert a pagination cursor to a list of Elasticsearch field values. A cursor is a list of
+   * exactly two values, the value of the sortBy property and the unique id. The size is enforced by
+   * bean validation on {@link SearchParameters}.
    *
    * @param name the name of the query parameter, used in the error message
    * @param sortBy the property the result set is sorted by
