@@ -822,4 +822,21 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     response = delete("/saksmappe/" + saksmappe2DTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
+  // Nested objects created through a parent PATCH are validated with the Insert group (converted
+  // from Update in ExpandableField, since expanded objects are always new objects), so incomplete
+  // nested objects must be rejected.
+  @Test
+  void rejectIncompleteNestedJournalpostOnPatch() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    // Empty nested journalpost
+    var patchJSON = new JSONObject().put("journalpost", new JSONArray().put(new JSONObject()));
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), patchJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+  }
+
 }

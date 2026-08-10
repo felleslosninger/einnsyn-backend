@@ -673,4 +673,26 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappe3DTO.getId()).getStatusCode());
     assertEquals(HttpStatus.OK, delete("/arkiv/" + arkiv2DTO.getId()).getStatusCode());
   }
+  // Nested objects created through a parent PATCH are validated with the Insert group (converted
+  // from Update in ExpandableField, since expanded objects are always new objects), so incomplete
+  // nested objects must be rejected.
+  @Test
+  void rejectIncompleteNestedObjectsOnPatch() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    // Empty nested moetesak
+    var patchJSON = new JSONObject().put("moetesak", new JSONArray().put(new JSONObject()));
+    response = patch("/moetemappe/" + moetemappeDTO.getId(), patchJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    // Empty nested moetedokument
+    patchJSON = new JSONObject().put("moetedokument", new JSONArray().put(new JSONObject()));
+    response = patch("/moetemappe/" + moetemappeDTO.getId(), patchJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappeDTO.getId()).getStatusCode());
+  }
+
 }

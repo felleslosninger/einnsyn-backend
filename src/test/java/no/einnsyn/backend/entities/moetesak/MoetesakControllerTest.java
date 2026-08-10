@@ -867,4 +867,37 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
         List.of(MoetesakDTO.MoetesakstypeEnum.ANNET, "unknown_type"),
         List.of(MoetesakDTO.MoetesakstypeEnum.ANNET, "ukjent"));
   }
+  // Nested objects created through a parent PATCH are validated with the Insert group (converted
+  // from Update in ExpandableField, since expanded objects are always new objects), so incomplete
+  // nested objects must be rejected
+  // instead of replacing existing sub-objects with empty ones.
+  @Test
+  void rejectIncompleteNestedObjectsOnPatch() throws Exception {
+    var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    var utredningId = moetesakDTO.getUtredning().getId();
+
+    // Empty nested utredning
+    var patchJSON = new JSONObject().put("utredning", new JSONObject());
+    response = patch("/moetesak/" + moetesakDTO.getId(), patchJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    // Empty nested vedtak
+    patchJSON = new JSONObject().put("vedtak", new JSONObject());
+    response = patch("/moetesak/" + moetesakDTO.getId(), patchJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    // Empty nested innstilling
+    patchJSON = new JSONObject().put("innstilling", new JSONObject());
+    response = patch("/moetesak/" + moetesakDTO.getId(), patchJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    // The existing utredning must not have been replaced by the rejected PATCHes
+    response = get("/moetesak/" + moetesakDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var refreshedDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    assertEquals(utredningId, refreshedDTO.getUtredning().getId());
+  }
+
 }
