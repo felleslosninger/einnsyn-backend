@@ -494,6 +494,17 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
+  protected JSONObject getMatrikkelnummerJSON(
+      String kommunenummer, int gaardsnummer, int bruksnummer) {
+    var json = new JSONObject();
+    json.put("kommunenummer", kommunenummer);
+    json.put("gaardsnummer", gaardsnummer);
+    json.put("bruksnummer", bruksnummer);
+    json.put("festenummer", 0);
+    json.put("seksjonsnummer", 0);
+    return json;
+  }
+
   protected JSONObject getLagretSoekJSON() throws Exception {
     var json = new JSONObject();
     json.put("label", "testLabel");

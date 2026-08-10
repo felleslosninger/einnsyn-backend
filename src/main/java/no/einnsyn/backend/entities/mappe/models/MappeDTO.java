@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
@@ -16,6 +17,8 @@ import no.einnsyn.backend.entities.arkivdel.ArkivdelService;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.klasse.KlasseService;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
+import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerService;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
@@ -104,4 +107,11 @@ public class MappeDTO extends ArkivBaseDTO {
   @Valid
   @Null(groups = {Insert.class, Update.class})
   protected ExpandableField<ArkivdelDTO> arkivdel;
+
+  /** Property identifiers (matrikkelnummer) associated with this Mappe. */
+  @ExpandableObject(
+      service = MatrikkelnummerService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  protected List<ExpandableField<MatrikkelnummerDTO>> matrikkelnummer;
 }

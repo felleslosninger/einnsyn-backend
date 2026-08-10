@@ -4,6 +4,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerES;
 import no.einnsyn.backend.entities.registrering.models.RegistreringES;
 
 @Getter
@@ -19,4 +20,6 @@ public class MappeES extends ArkivBaseES {
   private List<RegistreringES> child;
 
   private String sorteringstype = "";
+
+  private List<MatrikkelnummerES> matrikkelnummer;
 }
