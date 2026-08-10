@@ -322,8 +322,8 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
   }
 
-  // Nested objects on PATCH are validated with the Update group, so the Insert-group
-  // constraints on required fields must be enforced by validateForCreate.
+  // Nested objects created through a parent PATCH are validated with the Insert group (converted
+  // from Update in ExpandableField), so incomplete nested objects must be rejected.
   @Test
   void rejectIncompleteNestedMatrikkelnummerOnPatch() throws Exception {
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());

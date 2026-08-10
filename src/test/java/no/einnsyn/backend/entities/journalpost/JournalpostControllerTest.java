@@ -1864,6 +1864,6 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     response = patch("/journalpost/" + journalpostDTO.getId(), patchJSON);
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
 
-    delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
   }
 }
