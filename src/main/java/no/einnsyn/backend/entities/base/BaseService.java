@@ -52,6 +52,7 @@ import no.einnsyn.backend.entities.klassifikasjonssystem.KlassifikasjonssystemSe
 import no.einnsyn.backend.entities.korrespondansepart.KorrespondansepartService;
 import no.einnsyn.backend.entities.lagretsak.LagretSakService;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
+import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerService;
 import no.einnsyn.backend.entities.moetedeltaker.MoetedeltakerService;
 import no.einnsyn.backend.entities.moetedokument.MoetedokumentService;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
@@ -114,6 +115,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Lazy @Autowired protected KorrespondansepartService korrespondansepartService;
   @Lazy @Autowired protected LagretSakService lagretSakService;
   @Lazy @Autowired protected LagretSoekService lagretSoekService;
+  @Lazy @Autowired protected MatrikkelnummerService matrikkelnummerService;
   @Lazy @Autowired protected MoetedeltakerService moetedeltakerService;
   @Lazy @Autowired protected MoetedokumentService moetedokumentService;
   @Lazy @Autowired protected MoetemappeService moetemappeService;
