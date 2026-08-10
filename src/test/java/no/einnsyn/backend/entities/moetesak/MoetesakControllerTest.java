@@ -867,6 +867,7 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
         List.of(MoetesakDTO.MoetesakstypeEnum.ANNET, "unknown_type"),
         List.of(MoetesakDTO.MoetesakstypeEnum.ANNET, "ukjent"));
   }
+
   // Nested objects created through a parent PATCH are validated with the Insert group (converted
   // from Update in ExpandableField, since expanded objects are always new objects), so incomplete
   // nested objects must be rejected
@@ -899,5 +900,4 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     var refreshedDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
     assertEquals(utredningId, refreshedDTO.getUtredning().getId());
   }
-
 }

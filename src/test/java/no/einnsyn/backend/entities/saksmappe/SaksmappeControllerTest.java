@@ -822,6 +822,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     response = delete("/saksmappe/" + saksmappe2DTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
+
   // Nested objects created through a parent PATCH are validated with the Insert group (converted
   // from Update in ExpandableField, since expanded objects are always new objects), so incomplete
   // nested objects must be rejected.
@@ -838,5 +839,4 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
   }
-
 }

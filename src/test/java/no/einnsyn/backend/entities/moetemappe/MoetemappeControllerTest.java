@@ -673,6 +673,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappe3DTO.getId()).getStatusCode());
     assertEquals(HttpStatus.OK, delete("/arkiv/" + arkiv2DTO.getId()).getStatusCode());
   }
+
   // Nested objects created through a parent PATCH are validated with the Insert group (converted
   // from Update in ExpandableField, since expanded objects are always new objects), so incomplete
   // nested objects must be rejected.
@@ -694,5 +695,4 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappeDTO.getId()).getStatusCode());
   }
-
 }

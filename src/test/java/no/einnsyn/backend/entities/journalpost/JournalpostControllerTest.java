@@ -1828,6 +1828,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     // Clean up
     delete("/saksmappe/" + saksmappe.getId());
   }
+
   // Nested objects created through a parent PATCH are validated with the Insert group (converted
   // from Update in ExpandableField, since expanded objects are always new objects), so incomplete
   // nested objects must be rejected.
@@ -1865,5 +1866,4 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     delete("/saksmappe/" + saksmappeDTO.getId());
   }
-
 }
