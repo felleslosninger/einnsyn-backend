@@ -67,7 +67,8 @@ class SearchQueryParserTest {
     var exactFields = buildFieldsWithSuffix(baseFields, "exact");
     assertIsMultiMatch(exactClause, expectedQuery, exactFields);
 
-    // Second should clause: loose match (SimpleQueryString on .loose fields)
+    // Second should clause: loose match (always SimpleQueryString with restricted flags
+    // so '-' and '/' are treated as plain characters, not NOT/regex operators)
     var looseClause = boolQuery.should().get(1);
     var looseFields = buildFieldsWithSuffix(baseFields, "loose");
     assertIsSimpleQueryString(looseClause, expectedQuery, looseFields);

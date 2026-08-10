@@ -6,6 +6,7 @@ package no.einnsyn.backend.common.search.models;
 import com.google.gson.annotations.SerializedName;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -35,12 +36,14 @@ public class SearchParameters extends FilterParameters {
    * A cursor for use in pagination. This is a list of size two, the value of the sortBy property
    * and the unique id.
    */
+  @Size(min = 2, max = 2)
   protected List<String> startingAfter;
 
   /**
    * A cursor for use in pagination. This is a list of size two, the value of the sortBy property
    * and the unique id.
    */
+  @Size(min = 2, max = 2)
   protected List<String> endingBefore;
 
   /** The field to sort results by. The default is "score". */
