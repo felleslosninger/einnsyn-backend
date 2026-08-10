@@ -25,7 +25,6 @@ public class IdPrefix {
           Map.entry("Korrespondansepart", "kp"),
           Map.entry("LagretSak", "lsak"),
           Map.entry("LagretSoek", "lsoek"),
-          Map.entry("Matrikkelnummer", "mat"),
           Map.entry("Moetedeltaker", "md"),
           Map.entry("Moetedokument", "mdok"),
           Map.entry("Moetemappe", "mm"),

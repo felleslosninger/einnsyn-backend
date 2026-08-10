@@ -18,8 +18,6 @@ import no.einnsyn.backend.entities.enhet.EnhetService;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.korrespondansepart.KorrespondansepartService;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
-import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerService;
-import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.isodatetime.IsoDateTime;
 import no.einnsyn.backend.validation.nossn.NoSSN;
@@ -78,13 +76,6 @@ public class RegistreringDTO extends ArkivBaseDTO {
       groups = {Insert.class, Update.class})
   @Valid
   protected List<ExpandableField<DokumentbeskrivelseDTO>> dokumentbeskrivelse;
-
-  /** Property identifiers (matrikkelnummer) associated with this Registrering. */
-  @ExpandableObject(
-      service = MatrikkelnummerService.class,
-      groups = {Insert.class, Update.class})
-  @Valid
-  protected List<ExpandableField<MatrikkelnummerDTO>> matrikkelnummer;
 
   /** The administrative unit that has been handed the responsibility for this resource. */
   @ExpandableObject(
