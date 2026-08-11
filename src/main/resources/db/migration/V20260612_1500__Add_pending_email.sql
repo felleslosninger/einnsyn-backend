@@ -1,0 +1,2 @@
+ALTER TABLE bruker
+    ADD COLUMN IF NOT EXISTS pending_email TEXT COLLATE "C";

@@ -24,11 +24,12 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     // Check that a normal user cannot update Bruker
     var updateJSON = getBrukerJSON();
     updateJSON.remove("password");
-    updateJSON.put("email", "updated@example.com");
+    updateJSON.remove("email");
     response = patch("/bruker/" + responseDTO.getId(), updateJSON);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Check that admin can update Bruker
+    updateJSON.put("email", "updated@example.com");
     response = patchAdmin("/bruker/" + responseDTO.getId(), updateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
@@ -85,7 +86,7 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     // Check that anonymous cannot update Bruker
     var updateJSON = getBrukerJSON();
     updateJSON.remove("password");
-    updateJSON.put("email", "updated@example.com");
+    updateJSON.remove("email");
     response = patchAnon("/bruker/" + bruker1DTO.getId(), updateJSON);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
