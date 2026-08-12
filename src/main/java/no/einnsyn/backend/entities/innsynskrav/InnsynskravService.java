@@ -98,14 +98,13 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       // .journalenhet is lazy loaded, get an un-proxied object:
       if (journalpost != null) {
         // If "avhendetTil" is set, use that as the Enhet
-        var avhendetTilEnhet = (Enhet) Hibernate.unproxy(journalpost.getAvhendetTil());
-        if (avhendetTilEnhet != null) {
-          innsynskrav.setEnhet(avhendetTilEnhet);
-        } else {
-          var enhet = (Enhet) Hibernate.unproxy(journalpost.getAdministrativEnhetObjekt());
-          innsynskrav.setEnhet(enhet);
+        var enhet = (Enhet) Hibernate.unproxy(journalpost.getAvhendetTil());
+        if (enhet == null) {
+          enhet = (Enhet) Hibernate.unproxy(journalpost.getAdministrativEnhetObjekt());
         }
-        log.trace("innsynskrav.setEnhet({})", innsynskrav.getEnhet().getId());
+        innsynskrav.setEnhet(enhet);
+        // Neither lookup is guaranteed to return an Enhet, don't dereference it when logging
+        log.trace("innsynskrav.setEnhet({})", enhet == null ? null : enhet.getId());
       }
     }
 

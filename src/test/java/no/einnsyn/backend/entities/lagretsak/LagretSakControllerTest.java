@@ -89,9 +89,10 @@ class LagretSakControllerTest extends EinnsynControllerTestBase {
     var lagretSakJSON = getLagretSakJSON();
     lagretSakJSON.put("saksmappe", saksmappeDTO.getId());
 
-    // Unauthorized add, not logged in
+    // Unauthorized add, not logged in. A caller who may not see the Bruker is answered as if it
+    // did not exist, so that {id} cannot be used to look up e-mail addresses.
     var response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretSakJSON);
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
     // Logged in
     response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretSakJSON, accessToken);
