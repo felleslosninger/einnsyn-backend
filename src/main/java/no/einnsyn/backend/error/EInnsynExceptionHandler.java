@@ -349,7 +349,12 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
       var notFoundException =
           new NotFoundException("Not found: " + request.getDescription(false), ex);
       logAndCountWarning(notFoundException, httpStatus);
-      var clientResponse = notFoundException.toClientResponse();
+
+      // Don't send the requested path back: services that may not disclose whether an object
+      // exists answer a bare "Not found", and a caller must not be able to tell the two apart.
+      // The full message is logged above.
+      var censoredNotFoundException = new NotFoundException("Not found", ex);
+      var clientResponse = censoredNotFoundException.toClientResponse();
       return handleExceptionInternal(
           notFoundException, clientResponse, headers, httpStatus, request);
     }

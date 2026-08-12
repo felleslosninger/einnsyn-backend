@@ -29,6 +29,7 @@ import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.ListByInnsynskravBestillingParameters;
+import no.einnsyn.backend.utils.SecretUtils;
 import no.einnsyn.backend.utils.TimeConverter;
 import no.einnsyn.backend.utils.id.IdGenerator;
 import no.einnsyn.backend.utils.mail.MailSenderService;
@@ -189,12 +190,10 @@ public class InnsynskravBestillingService
       // Check if the user has too many unverified orders
       checkVerificationQuarantine(dto.getEmail());
 
-      var secret = IdGenerator.generateId("issec");
+      // The verification link is the only credential for an anonymous order, so the secret must be
+      // unguessable
+      var secret = IdGenerator.generateSecret("issec");
       innsynskravBestilling.setVerificationSecret(secret);
-      log.trace(
-          "innsynskravBestilling.setVerificationSecret("
-              + innsynskravBestilling.getVerificationSecret()
-              + ")");
     }
 
     if (dto.getEmail() != null) {
@@ -423,12 +422,17 @@ public class InnsynskravBestillingService
       throws EInnsynException {
     var innsynskravBestilling = innsynskravBestillingService.findOrThrow(innsynskravBestillingId);
 
-    if (!innsynskravBestilling.isVerified()) {
-      // Secret didn't match
-      if (!innsynskravBestilling.getVerificationSecret().equals(verificationSecret)) {
-        throw new AuthorizationException("Verification secret did not match");
-      }
+    // This endpoint is unauthenticated, and the returned DTO contains the orderer's e-mail address
+    // and the list of requested documents, so a valid secret is the only thing authorizing the
+    // caller to read it. The secret is kept after verification, which keeps the verification link
+    // idempotent.
+    if (!SecretUtils.secretEquals(
+        innsynskravBestilling.getVerificationSecret(), verificationSecret)) {
+      throw new AuthorizationException("Verification secret did not match");
+    }
 
+    // Verifying an already verified order is a no-op: the side effects below must happen only once
+    if (!innsynskravBestilling.isVerified()) {
       innsynskravBestilling.setVerified(true);
       repository.saveAndFlush(innsynskravBestilling);
 

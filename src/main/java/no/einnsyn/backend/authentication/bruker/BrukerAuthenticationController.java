@@ -65,6 +65,13 @@ public class BrukerAuthenticationController {
       }
     }
 
+    // Deactivated accounts must never be issued tokens, no matter which path authenticated them.
+    // Refresh tokens are long-lived and every refresh mints a new one, so without this check a
+    // deactivated account could keep renewing its access indefinitely.
+    if (!bruker.isActive()) {
+      throw new AuthenticationException("User account is not activated");
+    }
+
     var tokenResponse =
         new TokenResponse(
             tokenService.generateToken(bruker),
