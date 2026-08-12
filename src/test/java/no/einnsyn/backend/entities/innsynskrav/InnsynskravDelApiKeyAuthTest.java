@@ -114,13 +114,13 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
     var innsynskravBestillingDTO =
         gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
 
-    // Unauthorized cannot list by bruker
+    // Unauthorized cannot list by bruker, and is answered as if the Bruker did not exist
     response = get("/bruker/" + bruker1.getId() + "/innsynskrav");
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
     // Another user cannot list by bruker
     response = get("/bruker/" + bruker1.getId() + "/innsynskrav", bruker2Token);
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
     // Authorized can list by bruker
     response = get("/bruker/" + bruker1.getId() + "/innsynskrav", bruker1Token);
