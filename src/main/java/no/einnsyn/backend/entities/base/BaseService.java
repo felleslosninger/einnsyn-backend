@@ -52,6 +52,7 @@ import no.einnsyn.backend.entities.klassifikasjonssystem.KlassifikasjonssystemSe
 import no.einnsyn.backend.entities.korrespondansepart.KorrespondansepartService;
 import no.einnsyn.backend.entities.lagretsak.LagretSakService;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
+import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerService;
 import no.einnsyn.backend.entities.moetedeltaker.MoetedeltakerService;
 import no.einnsyn.backend.entities.moetedokument.MoetedokumentService;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
@@ -114,6 +115,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Lazy @Autowired protected KorrespondansepartService korrespondansepartService;
   @Lazy @Autowired protected LagretSakService lagretSakService;
   @Lazy @Autowired protected LagretSoekService lagretSoekService;
+  @Lazy @Autowired protected MatrikkelnummerService matrikkelnummerService;
   @Lazy @Autowired protected MoetedeltakerService moetedeltakerService;
   @Lazy @Autowired protected MoetedokumentService moetedokumentService;
   @Lazy @Autowired protected MoetemappeService moetemappeService;
@@ -308,12 +310,29 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @Transactional(readOnly = true)
   public <E extends Exception> O findOrThrow(String identifier, Class<E> exceptionClass) throws E {
+    return getProxy()
+        .findOrThrow(
+            identifier, exceptionClass, "No " + objectClassName + " found with id " + identifier);
+  }
+
+  /**
+   * Wrapper for find() that throws the given exception type, with the given message, if the object
+   * is not found. Use this where the default message says too much: it names the object type and
+   * echoes the identifier back to the caller.
+   *
+   * @param identifier The identifier of the object to find
+   * @param exceptionClass The class of the exception to throw
+   * @param message The message of the thrown exception
+   * @return The object with the given identifier
+   * @throws E if the object is not found
+   */
+  @Transactional(readOnly = true)
+  public <E extends Exception> O findOrThrow(
+      String identifier, Class<E> exceptionClass, String message) throws E {
     var obj = getProxy().find(identifier);
     if (obj == null) {
       try {
-        throw exceptionClass
-            .getDeclaredConstructor(String.class)
-            .newInstance("No " + objectClassName + " found with id " + identifier);
+        throw exceptionClass.getDeclaredConstructor(String.class).newInstance(message);
       } catch (ReflectiveOperationException e) {
         throw new RuntimeException(
             "Failed to instantiate exception of type " + exceptionClass.getName(), e);

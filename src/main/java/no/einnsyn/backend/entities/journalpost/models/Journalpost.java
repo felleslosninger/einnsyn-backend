@@ -16,12 +16,14 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.indexable.Indexable;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.korrespondansepart.models.Korrespondansepart;
+import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import no.einnsyn.backend.entities.registrering.models.Registrering;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.entities.skjerming.models.Skjerming;
@@ -98,6 +100,27 @@ public class Journalpost extends Registrering implements Indexable {
   // lastIndexed should not be updated through JPA
   @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
+
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "journalpost")
+  @OrderBy("id ASC")
+  @Getter(AccessLevel.NONE)
+  private List<Matrikkelnummer> matrikkelnummer;
+
+  @Override
+  public List<Matrikkelnummer> getMatrikkelnummer() {
+    return matrikkelnummer;
+  }
+
+  @Override
+  public void addMatrikkelnummer(Matrikkelnummer matrikkelnummer) {
+    if (this.matrikkelnummer == null) {
+      this.matrikkelnummer = new ArrayList<>();
+    }
+    if (!this.matrikkelnummer.contains(matrikkelnummer)) {
+      matrikkelnummer.setJournalpost(this);
+      this.matrikkelnummer.add(matrikkelnummer);
+    }
+  }
 
   // TODO: The concept følgsakenReferanse should be revised
   @ElementCollection(fetch = FetchType.EAGER)
