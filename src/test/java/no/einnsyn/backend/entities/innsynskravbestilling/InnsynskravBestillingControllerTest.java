@@ -1308,6 +1308,10 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     var innsynskravBestillingId = innsynskravBestillingDTO.getId();
 
+    // Wait for the verification email to the orderer
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+
     // Verify with the correct secret
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravBestillingId);
     response =
@@ -1317,6 +1321,21 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getVerified());
+
+    // Wait for the order confirmation email to the orderer and the eFormidling shipment to the
+    // Enhet
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+              verify(ipSender, times(1))
+                  .sendInnsynskrav(
+                      any(String.class),
+                      any(String.class),
+                      any(String.class),
+                      any(String.class),
+                      any(String.class));
+            });
 
     // A wrong secret must be rejected, even though the order is already verified
     response =
@@ -1334,6 +1353,18 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getVerified());
+
+    // Neither the rejected attempt nor the repeated verification may re-send the order or the
+    // confirmation email
+    awaitSideEffects();
+    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+    verify(ipSender, times(1))
+        .sendInnsynskrav(
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class));
 
     // Delete the InnsynskravBestilling
     response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId);
