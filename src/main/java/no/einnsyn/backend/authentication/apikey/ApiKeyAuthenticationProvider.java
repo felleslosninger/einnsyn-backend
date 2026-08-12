@@ -60,7 +60,9 @@ public class ApiKeyAuthenticationProvider implements AuthenticationProvider {
 
       var enhet = apiKey.getEnhet();
       var bruker = apiKey.getBruker();
-      var isAdmin = enhet != null && enhet.getParent() == null;
+
+      // The key's own admin status, before any ACTING-AS reassignment below.
+      var keyIsAdmin = enhet != null && enhet.getParent() == null;
 
       // If we have Acting-As, check if we're allowed to act on behalf of the Enhet
       if (actingAsId != null) {
@@ -81,6 +83,12 @@ public class ApiKeyAuthenticationProvider implements AuthenticationProvider {
 
       // If the API key is associated with an Enhet, use that Enhet's ID
       if (enhet != null) {
+        // ACTING-AS may only reduce privileges, never grant them, so both the key's own Enhet and
+        // the effective Enhet must be root Enhets. Looking at the effective Enhet alone would let
+        // a non-admin key become admin by acting as a parentless Enhet it handles (handteresAv),
+        // while looking at the key's own Enhet alone would let a root Enhet key keep its admin
+        // privileges while acting as a subunit.
+        var isAdmin = keyIsAdmin && enhet.getParent() == null;
         principal =
             new EInnsynPrincipalEnhet(
                 "ApiKey", apiKey.getId(), enhet.getId(), enhet.getOrgnummer(), isAdmin);

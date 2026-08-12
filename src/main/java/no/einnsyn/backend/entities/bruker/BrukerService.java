@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
+import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -27,6 +28,7 @@ import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
+import no.einnsyn.backend.utils.SecretUtils;
 import no.einnsyn.backend.utils.id.IdGenerator;
 import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,6 +68,14 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   @Value("${application.userSecretExpirationTime}")
   private int userSecretExpirationTime;
+
+  /**
+   * The answer whenever the caller may not learn whether a bruker exists. Generic on purpose: an
+   * unknown id, a wrong secret, a wrong password and someone else's account must all be answered
+   * identically, body included. {@link #find(String)} resolves an e-mail address as well as an id,
+   * so anything else would tell a caller whether an address has an account.
+   */
+  private static final String NOT_FOUND_MESSAGE = "Not found";
 
   public BrukerService(
       BrukerRepository brukerRepository,
@@ -198,23 +208,29 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @param id the id of the bruker
    * @param secret the activation secret
    * @return the updated bruker
-   * @throws AuthorizationException if the secret is invalid
+   * @throws NotFoundException if no bruker matches the given id and secret
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable
-  public BrukerDTO activate(String id, String secret) throws AuthorizationException {
-    var bruker = proxy.findOrThrow(id, AuthorizationException.class);
+  public BrukerDTO activate(String id, String secret) throws NotFoundException {
+    var bruker = proxy.findOrThrow(id, NotFoundException.class, NOT_FOUND_MESSAGE);
 
+    // This endpoint is unauthenticated and resolves {id} by e-mail address as well as by id, so a
+    // valid secret is the only thing authorizing the caller to read the returned DTO.
+    if (!SecretUtils.secretEquals(bruker.getSecret(), secret)) {
+      throw new NotFoundException(NOT_FOUND_MESSAGE);
+    }
+
+    var secretExpiry = bruker.getSecretExpiry();
+    if (secretExpiry == null || secretExpiry.isBefore(ZonedDateTime.now())) {
+      throw new NotFoundException(NOT_FOUND_MESSAGE);
+    }
+
+    // Activating an already active bruker is a no-op. Clearing the secret makes the activation link
+    // single use, which matters because updatePassword/{secret} validates against this same field.
+    // (An InnsynskravBestilling verification secret is kept, since an anonymous orderer has no
+    // login to fall back on.)
     if (!bruker.isActive()) {
-      // Secret didn't match
-      if (!bruker.getSecret().equals(secret)) {
-        throw new AuthorizationException("Invalid activation secret");
-      }
-
-      if (bruker.getSecretExpiry().isBefore(ZonedDateTime.now())) {
-        throw new AuthorizationException("Activation secret has expired");
-      }
-
       bruker.setActive(true);
       bruker.setSecret(null);
       bruker.setSecretExpiry(null);
@@ -253,21 +269,25 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     return proxy.toDTO(bruker);
   }
 
-  /** Set password for bruker, validate secret */
+  /**
+   * Set password for bruker, validate secret
+   *
+   * @throws NotFoundException if no bruker matches the given id and secret
+   */
   @Transactional(rollbackFor = Exception.class)
   @Retryable
   public BrukerDTO updatePasswordWithSecret(
       String brukerId, String secret, BrukerController.UpdatePasswordWithSecret requestBody)
-      throws AuthorizationException {
-    var bruker = proxy.findOrThrow(brukerId, AuthorizationException.class);
+      throws NotFoundException {
+    var bruker = proxy.findOrThrow(brukerId, NotFoundException.class, NOT_FOUND_MESSAGE);
 
-    // Secret didn't match
-    if (bruker.getSecret() == null || !bruker.getSecret().equals(secret)) {
-      throw new AuthorizationException("Invalid password reset token");
+    if (!SecretUtils.secretEquals(bruker.getSecret(), secret)) {
+      throw new NotFoundException(NOT_FOUND_MESSAGE);
     }
 
-    if (bruker.getSecretExpiry().isBefore(ZonedDateTime.now())) {
-      throw new AuthorizationException("Password reset token has expired");
+    var secretExpiry = bruker.getSecretExpiry();
+    if (secretExpiry == null || secretExpiry.isBefore(ZonedDateTime.now())) {
+      throw new NotFoundException(NOT_FOUND_MESSAGE);
     }
 
     bruker.setActive(true);
@@ -292,22 +312,25 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   /**
    * Set password for bruker, validate old password
    *
+   * <p>The old password is the only credential here, so an unknown bruker and a wrong password are
+   * answered alike: the given combination was not found.
+   *
    * @param brukerId the id of the bruker
    * @param requestBody the request body containing the old and new password
-   * @throws AuthorizationException if the old password is invalid
+   * @throws NotFoundException if no bruker matches the given id and old password
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable
   public BrukerDTO updatePassword(String brukerId, BrukerController.UpdatePassword requestBody)
-      throws AuthorizationException {
+      throws NotFoundException {
 
-    var bruker = proxy.findOrThrow(brukerId, AuthorizationException.class);
+    var bruker = proxy.findOrThrow(brukerId, NotFoundException.class, NOT_FOUND_MESSAGE);
     var currentPassword = bruker.getPassword();
     var oldPasswordRequest = requestBody.getOldPassword();
     var newPasswordRequest = requestBody.getNewPassword();
 
     if (!passwordEncoder.matches(oldPasswordRequest, currentPassword)) {
-      throw new AuthorizationException("Old password did not match");
+      throw new NotFoundException(NOT_FOUND_MESSAGE);
     }
 
     this.setPassword(bruker, newPasswordRequest);
@@ -391,6 +414,10 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   public PaginatedList<InnsynskravBestillingDTO> listInnsynskravBestilling(
       String brukerId, ListByBrukerParameters query) throws EInnsynException {
+    // These routes take a Bruker id, which find() also resolves from an e-mail address. Check
+    // access to the Bruker first, so an unauthorized caller is answered 404 like an unknown one,
+    // rather than the 403 the child service would raise.
+    proxy.authorizeGet(brukerId);
     query.setBrukerId(brukerId);
     return innsynskravBestillingService.list(query);
   }
@@ -406,11 +433,13 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   public PaginatedList<LagretSakDTO> listLagretSak(String brukerId, ListByBrukerParameters query)
       throws EInnsynException {
+    proxy.authorizeGet(brukerId);
     query.setBrukerId(brukerId);
     return lagretSakService.list(query);
   }
 
   public LagretSakDTO addLagretSak(String brukerId, LagretSakDTO body) throws EInnsynException {
+    proxy.authorizeGet(brukerId);
     body.setBruker(new ExpandableField<>(brukerId));
     return lagretSakService.add(body);
   }
@@ -420,17 +449,20 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   public PaginatedList<LagretSoekDTO> listLagretSoek(String brukerId, ListByBrukerParameters query)
       throws EInnsynException {
+    proxy.authorizeGet(brukerId);
     query.setBrukerId(brukerId);
     return lagretSoekService.list(query);
   }
 
   public LagretSoekDTO addLagretSoek(String brukerId, LagretSoekDTO body) throws EInnsynException {
+    proxy.authorizeGet(brukerId);
     body.setBruker(new ExpandableField<>(brukerId));
     return lagretSoekService.add(body);
   }
 
   protected PaginatedList<InnsynskravDTO> listInnsynskrav(
       String brukerId, ListByBrukerParameters query) throws EInnsynException {
+    proxy.authorizeGet(brukerId);
     query.setBrukerId(brukerId);
     return innsynskravService.list(query);
   }
@@ -451,15 +483,16 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * Only admin and self can get Bruker
    *
    * @param id the id of the bruker
-   * @throws AuthorizationException if not authorized
+   * @throws NotFoundException if not admin or self
    */
   @Override
   public void authorizeGet(String id) throws EInnsynException {
-    var bruker = brukerService.findOrThrow(id); // Lookup in case ID is email
+    // Lookup in case ID is email
+    var bruker = brukerService.findOrThrow(id, NotFoundException.class, NOT_FOUND_MESSAGE);
     if (authenticationService.isAdmin() || authenticationService.isSelf(bruker.getId())) {
       return;
     }
-    throw new AuthorizationException("Not authorized to get " + id);
+    throw new NotFoundException(NOT_FOUND_MESSAGE);
   }
 
   /**
@@ -478,29 +511,31 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    *
    * @param id the id of the bruker
    * @param dto the updated bruker
-   * @throws AuthorizationException if not authorized
+   * @throws NotFoundException if not admin or self
    */
   @Override
   public void authorizeUpdate(String id, BrukerDTO dto) throws EInnsynException {
-    var bruker = brukerService.findOrThrow(id); // Lookup in case ID is email
+    // Lookup in case ID is email
+    var bruker = brukerService.findOrThrow(id, NotFoundException.class, NOT_FOUND_MESSAGE);
     if (authenticationService.isAdmin() || authenticationService.isSelf(bruker.getId())) {
       return;
     }
-    throw new AuthorizationException("Not authorized to update " + id);
+    throw new NotFoundException(NOT_FOUND_MESSAGE);
   }
 
   /**
    * Only admin and self can delete Bruker
    *
    * @param id the id of the bruker
-   * @throws AuthorizationException if not authorized
+   * @throws NotFoundException if not admin or self
    */
   @Override
   public void authorizeDelete(String id) throws EInnsynException {
-    var bruker = brukerService.findOrThrow(id); // Lookup in case ID is email
+    // Lookup in case ID is email
+    var bruker = brukerService.findOrThrow(id, NotFoundException.class, NOT_FOUND_MESSAGE);
     if (authenticationService.isAdmin() || authenticationService.isSelf(bruker.getId())) {
       return;
     }
-    throw new AuthorizationException("Not authorized to delete " + id);
+    throw new NotFoundException(NOT_FOUND_MESSAGE);
   }
 }
