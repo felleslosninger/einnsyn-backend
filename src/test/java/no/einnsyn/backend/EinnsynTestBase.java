@@ -58,6 +58,7 @@ import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.lagretsak.LagretSakService;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
+import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerService;
 import no.einnsyn.backend.entities.moetedeltaker.MoetedeltakerRepository;
 import no.einnsyn.backend.entities.moetedeltaker.MoetedeltakerService;
 import no.einnsyn.backend.entities.moetedokument.MoetedokumentRepository;
@@ -159,6 +160,7 @@ public abstract class EinnsynTestBase {
   @Autowired protected MoetedokumentService moetedokumentService;
   @Autowired protected MoetemappeService moetemappeService;
   @Autowired protected MoetesakService moetesakService;
+  @Autowired protected MatrikkelnummerService matrikkelnummerService;
   @Autowired protected MoetesaksbeskrivelseService moetesaksbeskrivelseService;
   @Autowired protected SaksmappeService saksmappeService;
   @Autowired protected SearchService searchService;
