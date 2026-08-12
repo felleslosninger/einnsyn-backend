@@ -70,21 +70,18 @@ public class RegistreringDTO extends ArkivBaseDTO {
   @ExpandableObject(
       service = KorrespondansepartService.class,
       groups = {Insert.class, Update.class})
-  @Valid
-  protected List<ExpandableField<KorrespondansepartDTO>> korrespondansepart;
+  protected List<@Valid ExpandableField<KorrespondansepartDTO>> korrespondansepart;
 
   @ExpandableObject(
       service = DokumentbeskrivelseService.class,
       groups = {Insert.class, Update.class})
-  @Valid
-  protected List<ExpandableField<DokumentbeskrivelseDTO>> dokumentbeskrivelse;
+  protected List<@Valid ExpandableField<DokumentbeskrivelseDTO>> dokumentbeskrivelse;
 
   /** Property identifiers (matrikkelnummer) associated with this Registrering. */
   @ExpandableObject(
       service = MatrikkelnummerService.class,
       groups = {Insert.class, Update.class})
-  @Valid
-  protected List<ExpandableField<MatrikkelnummerDTO>> matrikkelnummer;
+  protected List<@Valid ExpandableField<MatrikkelnummerDTO>> matrikkelnummer;
 
   /** The administrative unit that has been handed the responsibility for this resource. */
   @ExpandableObject(

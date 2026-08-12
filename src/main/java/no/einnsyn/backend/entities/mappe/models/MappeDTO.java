@@ -112,6 +112,5 @@ public class MappeDTO extends ArkivBaseDTO {
   @ExpandableObject(
       service = MatrikkelnummerService.class,
       groups = {Insert.class, Update.class})
-  @Valid
-  protected List<ExpandableField<MatrikkelnummerDTO>> matrikkelnummer;
+  protected List<@Valid ExpandableField<MatrikkelnummerDTO>> matrikkelnummer;
 }
