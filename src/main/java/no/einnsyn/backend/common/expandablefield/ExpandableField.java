@@ -1,8 +1,11 @@
 package no.einnsyn.backend.common.expandablefield;
 
 import jakarta.validation.Valid;
+import jakarta.validation.groups.ConvertGroup;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.hasid.HasId;
+import no.einnsyn.backend.validation.validationgroups.Insert;
+import no.einnsyn.backend.validation.validationgroups.Update;
 
 /**
  * A class representing "expandable fields" in the API. These are fields that are either an ID or an
@@ -15,7 +18,13 @@ public class ExpandableField<T extends HasId> {
 
   private String id = null;
 
-  @Valid private T expandedObject = null;
+  // Expanded objects in a request body are always new objects: existing objects can only be
+  // referenced by ID (BaseDTO.id is @Null for both Insert and Update). Nested objects would
+  // otherwise be cascade-validated with the Update group during a parent update, skipping
+  // required-field (Insert) constraints.
+  @Valid
+  @ConvertGroup(from = Update.class, to = Insert.class)
+  private T expandedObject = null;
 
   public ExpandableField(String id) {
     this.id = id;

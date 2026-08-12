@@ -322,6 +322,36 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
   }
 
+  // Nested objects created through a parent PATCH are validated with the Insert group (converted
+  // from Update in ExpandableField), so incomplete nested objects must be rejected.
+  @Test
+  void rejectIncompleteNestedMatrikkelnummerOnPatch() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    var incompleteJSON = new JSONObject();
+    incompleteJSON.put("gaardsnummer", 30);
+    incompleteJSON.put("bruksnummer", 60);
+    // no kommunenummer
+
+    // Mappe hierarchy (Saksmappe)
+    var patchJSON = new JSONObject();
+    patchJSON.put("matrikkelnummer", new JSONArray().put(incompleteJSON));
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), patchJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    // Registrering hierarchy (Journalpost)
+    response = patch("/journalpost/" + journalpostDTO.getId(), patchJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+  }
+
   @Test
   void addAndListMatrikkelnummerViaSaksmappe() throws Exception {
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());

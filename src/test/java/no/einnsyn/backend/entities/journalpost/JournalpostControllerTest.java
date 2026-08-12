@@ -1828,4 +1828,42 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     // Clean up
     delete("/saksmappe/" + saksmappe.getId());
   }
+
+  // Nested objects created through a parent PATCH are validated with the Insert group (converted
+  // from Update in ExpandableField, since expanded objects are always new objects), so incomplete
+  // nested objects must be rejected.
+  @Test
+  void rejectIncompleteNestedObjectsOnPatch() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Empty nested skjerming
+    var patchJSON = new JSONObject().put("skjerming", new JSONObject());
+    response = patch("/journalpost/" + journalpostDTO.getId(), patchJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    // Empty nested korrespondansepart
+    patchJSON = new JSONObject().put("korrespondansepart", new JSONArray().put(new JSONObject()));
+    response = patch("/journalpost/" + journalpostDTO.getId(), patchJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    // Empty nested dokumentbeskrivelse
+    patchJSON = new JSONObject().put("dokumentbeskrivelse", new JSONArray().put(new JSONObject()));
+    response = patch("/journalpost/" + journalpostDTO.getId(), patchJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    // Valid dokumentbeskrivelse with an empty nested dokumentobjekt
+    var dokumentbeskrivelseJSON = getDokumentbeskrivelseJSON();
+    dokumentbeskrivelseJSON.put("dokumentobjekt", new JSONArray().put(new JSONObject()));
+    patchJSON =
+        new JSONObject().put("dokumentbeskrivelse", new JSONArray().put(dokumentbeskrivelseJSON));
+    response = patch("/journalpost/" + journalpostDTO.getId(), patchJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+  }
 }
