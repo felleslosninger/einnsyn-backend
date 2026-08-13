@@ -44,11 +44,24 @@ The following services are required to run the application:
 - PostgreSQL
 - E-mail server
 
+`ROOT_API_KEY` and `JWT_SECRET` have no defaults, and the application refuses to start without
+them. Both are administrator-equivalent: the root API key authenticates as an administrator, and
+the JWT secret is a symmetric HMAC key, so it both verifies and mints tokens. Generate them with
+`openssl rand -base64 32`, and put them in a git-ignored `.env` file in the project root, which is
+imported at startup.
+
+`ROOT_API_KEY` is only read by the baseline migration, which seeds it as the secret of the root API
+key when initializing an empty database. Setting or changing it against an already migrated database
+has no effect: rotate that credential by creating a replacement through `POST /enhet/{id}/apiKey`,
+then removing the old one through `DELETE /apiKey/{id}`. The value must not contain a single quote,
+as the migration interpolates it into a quoted SQL literal.
+
 ### Environment variables (and their default values)
 
 ```
 # Application settings
 BASE_URL=http://localhost:8080
+# ROOT_API_KEY is required, no default. Generate with `openssl rand -base64 32`.
 ROOT_API_KEY=
 
 # PostgreSQL settings
@@ -71,6 +84,7 @@ EMAIL_FROM=eInnsyn.no <test@example.com>
 EMAIL_FROM_HOST=example.com
 
 # Authentication settings
+# JWT_SECRET is required, no default. Generate with `openssl rand -base64 32`.
 JWT_SECRET=
 JWT_REFRESH_EXPIRATION=
 
