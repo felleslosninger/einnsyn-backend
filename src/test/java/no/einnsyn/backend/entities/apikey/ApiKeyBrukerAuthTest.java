@@ -217,9 +217,10 @@ class ApiKeyBrukerAuthTest extends EinnsynControllerTestBase {
     var secret = newSecret();
     var apiKeyId = createBrukerApiKey(secret).getId();
 
-    // The key can not reach the other Bruker to begin with
+    // The key can not reach the other Bruker to begin with. A caller who may not see a Bruker is
+    // answered as if it did not exist, so that {id} cannot be used to look up e-mail addresses.
     var response = get("/bruker/" + otherBrukerDTO.getId(), secret);
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
     // The owning Bruker can not re-point their key at another Bruker
     var rebindJSON = new JSONObject();
@@ -238,7 +239,7 @@ class ApiKeyBrukerAuthTest extends EinnsynControllerTestBase {
     assertEquals(brukerDTO.getId(), apiKeyDTO.getBruker().getId());
 
     response = get("/bruker/" + otherBrukerDTO.getId(), secret);
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
     // Re-binding to itself is a no-op that is allowed
     var selfJSON = new JSONObject();
