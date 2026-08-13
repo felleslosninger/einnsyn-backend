@@ -44,6 +44,5 @@ public class UtredningDTO extends ArkivBaseDTO {
   @ExpandableObject(
       service = DokumentbeskrivelseService.class,
       groups = {Insert.class, Update.class})
-  @Valid
-  protected List<ExpandableField<DokumentbeskrivelseDTO>> utredningsdokument;
+  protected List<@Valid ExpandableField<DokumentbeskrivelseDTO>> utredningsdokument;
 }
