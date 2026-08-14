@@ -161,22 +161,69 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   }
 
   /**
-   * Authorize the get operation. Admins and users with access to the given enhet can get ApiKeys.
+   * Check if the authenticated caller owns the given ApiKey. An ApiKey is either bound to an Enhet,
+   * in which case it is owned by that Enhet and its ancestors, or to a Bruker, in which case it is
+   * owned by that Bruker. This mirrors the precedence in ApiKeyAuthenticationProvider, where an
+   * Enhet binding takes precedence over a Bruker binding.
+   *
+   * @param apiKey The ApiKey to check
+   * @return true if the authenticated caller owns the ApiKey
+   */
+  private boolean isOwnerOf(ApiKey apiKey) {
+    var apiKeyEnhet = apiKey.getEnhet();
+    if (apiKeyEnhet != null) {
+      return enhetService.isAncestorOf(authenticationService.getEnhetId(), apiKeyEnhet.getId());
+    }
+
+    var apiKeyBruker = apiKey.getBruker();
+    if (apiKeyBruker != null) {
+      return authenticationService.isSelf(apiKeyBruker.getId());
+    }
+
+    return false;
+  }
+
+  /**
+   * Make sure we're not binding an ApiKey to a Bruker we're not authorized to. A Bruker-bound
+   * ApiKey authenticates as that Bruker, so binding one to somebody else would hand the caller that
+   * Bruker's access.
+   *
+   * @param dto The DTO to add or update
+   * @throws AuthorizationException If the user is not authorized
+   */
+  private void authorizeBrukerBinding(ApiKeyDTO dto) throws EInnsynException {
+    var dtoBrukerField = dto == null ? null : dto.getBruker();
+    if (dtoBrukerField == null || authenticationService.isAdmin()) {
+      return;
+    }
+
+    if (!authenticationService.isSelf(dtoBrukerField.getId())) {
+      throw new AuthorizationException("Not authorized to set Bruker to " + dtoBrukerField.getId());
+    }
+  }
+
+  /**
+   * Authorize the get operation. Admins, users with access to the given enhet, and the Bruker a
+   * Bruker-bound ApiKey belongs to can get ApiKeys.
    *
    * @param id The id of the object to get
    * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
-    var loggedInAs = authenticationService.getEnhetId();
+    if (authenticationService.isAdmin()) {
+      return;
+    }
+
     var apiKey = apiKeyService.findOrThrow(id);
-    if (!enhetService.isAncestorOf(loggedInAs, apiKey.getEnhet().getId())) {
+    if (!isOwnerOf(apiKey)) {
       throw new AuthorizationException("Not authorized to get " + id);
     }
   }
 
   /**
-   * Authorize the add operation. Only users with a journalenhet can add ApiKeys.
+   * Authorize the add operation. Only users with a journalenhet can add ApiKeys, and only bound to
+   * an Enhet they have access to.
    *
    * @param dto The DTO to add
    * @throws AuthorizationException If the user is not authorized
@@ -188,7 +235,8 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
       throw new AuthorizationException("Not authenticated to add ApiKey.");
     }
 
-    var apiKeyEnhetId = dto.getEnhet().getId();
+    var dtoEnhetField = dto == null ? null : dto.getEnhet();
+    var apiKeyEnhetId = dtoEnhetField == null ? null : dtoEnhetField.getId();
     if (apiKeyEnhetId == null) {
       throw new AuthorizationException("EnhetId is required");
     }
@@ -196,11 +244,13 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
     if (!enhetService.isAncestorOf(loggedInAs, apiKeyEnhetId)) {
       throw new AuthorizationException("Not authorized to add ApiKey");
     }
+
+    authorizeBrukerBinding(dto);
   }
 
   /**
-   * Authorize the update operation. Only users representing a journalenhet that owns the object can
-   * update.
+   * Authorize the update operation. Only admins, users representing a journalenhet that owns the
+   * object, and the Bruker a Bruker-bound ApiKey belongs to can update.
    *
    * @param id The id of the object to update
    * @param dto The DTO to update
@@ -208,33 +258,42 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
    */
   @Override
   protected void authorizeUpdate(String id, ApiKeyDTO dto) throws EInnsynException {
+    if (authenticationService.isAdmin()) {
+      return;
+    }
+
     var loggedInAs = authenticationService.getEnhetId();
 
     // Make sure we're not changing the Enhet to one we're not authorized to
     if (dto != null
         && dto.getEnhet() != null
         && !enhetService.isAncestorOf(loggedInAs, dto.getEnhet().getId())) {
-      throw new AuthorizationException("Not authorized set Enhet to " + dto.getEnhet().getId());
+      throw new AuthorizationException("Not authorized to set Enhet to " + dto.getEnhet().getId());
     }
 
+    authorizeBrukerBinding(dto);
+
     var wantsToUpdate = apiKeyService.findOrThrow(id);
-    if (!enhetService.isAncestorOf(loggedInAs, wantsToUpdate.getEnhet().getId())) {
+    if (!isOwnerOf(wantsToUpdate)) {
       throw new AuthorizationException("Not authorized to update " + id);
     }
   }
 
   /**
-   * Authorize the delete operation. Only users representing a journalenhet that owns the object can
-   * delete.
+   * Authorize the delete operation. Only admins, users representing a journalenhet that owns the
+   * object, and the Bruker a Bruker-bound ApiKey belongs to can delete.
    *
    * @param id The id of the object to delete
    * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeDelete(String id) throws EInnsynException {
-    var loggedInAs = authenticationService.getEnhetId();
+    if (authenticationService.isAdmin()) {
+      return;
+    }
+
     var wantsToDelete = apiKeyService.findOrThrow(id);
-    if (!enhetService.isAncestorOf(loggedInAs, wantsToDelete.getEnhet().getId())) {
+    if (!isOwnerOf(wantsToDelete)) {
       throw new AuthorizationException("Not authorized to delete " + id);
     }
   }
