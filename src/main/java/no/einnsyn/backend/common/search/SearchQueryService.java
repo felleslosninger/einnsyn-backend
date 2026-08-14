@@ -448,6 +448,9 @@ public class SearchQueryService {
     // Get specific IDs
     addFilter(rootBoolQueryBuilder, "id", filterParameters.getIds());
 
+    // Get specific external IDs
+    addFilter(rootBoolQueryBuilder, "externalId", filterParameters.getExternalIds());
+
     return rootBoolQueryBuilder;
   }
 
