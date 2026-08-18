@@ -576,8 +576,8 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(0, resultList.getItems().size());
 
-    delete("/saksmappe/" + saksmappe1DTO.getId());
-    delete("/saksmappe/" + saksmappe2DTO.getId());
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappe1DTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappe2DTO.getId()).getStatusCode());
   }
 
   // Test recursive deletion from Arkiv
