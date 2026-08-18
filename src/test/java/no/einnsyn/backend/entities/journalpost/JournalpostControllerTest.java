@@ -1376,7 +1376,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(1, resultList.getItems().size());
     assertEquals(journalpostDTO.getId(), resultList.getItems().getFirst().getId());
 
-    delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
   }
 
   @Test
