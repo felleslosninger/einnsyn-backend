@@ -738,10 +738,10 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     // Both sub-resources are listable through the canonical ID
     response = get("/saksmappe/" + saksmappeDTO.getId() + "/journalpost");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var journalpostList =
+    PaginatedList<JournalpostDTO> journalpostList =
         gson.fromJson(
             response.getBody(), new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType());
-    assertEquals(1, ((PaginatedList<JournalpostDTO>) journalpostList).getItems().size());
+    assertEquals(1, journalpostList.getItems().size());
 
     response = get("/saksmappe/" + saksmappeDTO.getId() + "/matrikkelnummer");
     assertEquals(HttpStatus.OK, response.getStatusCode());
