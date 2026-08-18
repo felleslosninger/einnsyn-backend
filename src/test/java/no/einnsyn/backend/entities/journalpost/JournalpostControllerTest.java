@@ -1341,6 +1341,44 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
   }
 
+  /**
+   * Test that resolving an alternative identifier in the "ids" list parameter is subject to the
+   * same accessibleAfter filtering as a lookup by eInnsyn ID. Resolution runs through the
+   * repository inside the request transaction, so the Hibernate filters enabled by
+   * AccessibleFilterAspect apply, and an inaccessible Journalpost cannot be reached through its
+   * systemId.
+   */
+  @Test
+  void listByAlternativeIdsRespectsAccessibleAfter() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var systemId = "8a3f5c71-2e94-4b60-9d18-6c7a3e5b1f42";
+    var journalpostJSON = getJournalpostAccessibleInFutureJSON();
+    journalpostJSON.put("systemId", systemId);
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+
+    // Anonymous users can't reach the inaccessible Journalpost through its systemId
+    response = getAnon("/journalpost?ids=" + systemId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(0, resultList.getItems().size());
+
+    // Admins can
+    response = getAdmin("/journalpost?ids=" + systemId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(journalpostDTO.getId(), resultList.getItems().getFirst().getId());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
   @Test
   void testAddWithAdministrativEnhet() throws Exception {
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());

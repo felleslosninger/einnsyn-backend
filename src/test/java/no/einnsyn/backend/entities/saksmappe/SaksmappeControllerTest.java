@@ -522,6 +522,64 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + sm5.getId()).getStatusCode());
   }
 
+  /**
+   * Test that the "ids" list parameter accepts the same alternative identifiers as the get
+   * endpoint, mixed freely with eInnsyn IDs, and that the result keeps the order of the query
+   * parameters.
+   */
+  @Test
+  void listByAlternativeIds() throws Exception {
+    var systemId = "5f7b2d64-9c18-4e30-b7a2-1d4c6e8f3b95";
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("systemId", systemId);
+    saksmappeJSON.put("externalId", "listByAlternativeIds-externalId");
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe1DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe1DTO.getSlug());
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe2DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var resultListType = new TypeToken<PaginatedList<SaksmappeDTO>>() {}.getType();
+
+    // A systemId, a slug and an externalId all resolve to the canonical ID
+    for (var identifier :
+        new String[] {systemId, saksmappe1DTO.getSlug(), "listByAlternativeIds-externalId"}) {
+      response = get("/saksmappe?ids=" + identifier);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      PaginatedList<SaksmappeDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+      assertEquals(1, resultList.getItems().size(), "Should resolve " + identifier);
+      assertEquals(saksmappe1DTO.getId(), resultList.getItems().getFirst().getId());
+    }
+
+    // Alternative identifiers can be mixed with eInnsyn IDs, and the input order is kept
+    response = get("/saksmappe?ids=" + saksmappe2DTO.getId() + "&ids=" + systemId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<SaksmappeDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(2, resultList.getItems().size());
+    assertEquals(saksmappe2DTO.getId(), resultList.getItems().get(0).getId());
+    assertEquals(saksmappe1DTO.getId(), resultList.getItems().get(1).getId());
+
+    // Identifiers with no match are skipped, they don't fail the request
+    response =
+        get("/saksmappe?ids=00000000-0000-0000-0000-000000000000&ids=" + saksmappe1DTO.getSlug());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(saksmappe1DTO.getId(), resultList.getItems().getFirst().getId());
+
+    // An ID belonging to another entity type is not resolved
+    response = get("/saksmappe?ids=" + arkivdelDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(0, resultList.getItems().size());
+
+    delete("/saksmappe/" + saksmappe1DTO.getId());
+    delete("/saksmappe/" + saksmappe2DTO.getId());
+  }
+
   // Test recursive deletion from Arkiv
   @Test
   void testDeletionFromArkiv() throws Exception {
