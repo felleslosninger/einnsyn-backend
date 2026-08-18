@@ -22,7 +22,7 @@
     <nocommons.version>0.17.0</nocommons.version>
     <shedlock.version>7.7.0</shedlock.version>
     <java-uuid-generator.version>5.2.0</java-uuid-generator.version>
-    <json.version>20260522</json.version>
+    <json.version>20260719</json.version>
     <mustache.version>0.9.14</mustache.version>
     <spotless-maven-plugin.version>3.9.0</spotless-maven-plugin.version>
     <google-java-format.version>1.28.0</google-java-format.version>
