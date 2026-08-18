@@ -150,7 +150,9 @@ class MatrikkelnummerESTest extends EinnsynLegacyElasticTestBase {
     assertNotNull(
         documentMap.get(moetesakDTO.getId()),
         "Moetesak should be reindexed under its canonical ID");
-
+    assertNotNull(
+        documentMap.get(moetemappeDTO.getId()),
+        "Moetemappe should be reindexed under its canonical ID");
     delete("/moetemappe/" + moetemappeDTO.getId());
   }
 
