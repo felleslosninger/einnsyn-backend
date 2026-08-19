@@ -198,28 +198,16 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void shouldRejectTokensWithoutWriteAccessToEInnsyn() throws Exception {
+  void shouldRejectTokensForOtherClientsOrResources() throws Exception {
     assertRejected(
         generateMockAltinn3Jwt(
-            journalenhetOrgnummer,
-            ansattportenIssuerUri,
-            "another-client",
-            TEST_RESOURCE,
-            List.of("write")));
-    assertRejected(
-        generateMockAltinn3Jwt(
-            journalenhetOrgnummer,
-            ansattportenIssuerUri,
-            TEST_CLIENT_ID,
-            "urn:altinn:resource:unrelated",
-            List.of("write")));
+            journalenhetOrgnummer, ansattportenIssuerUri, "another-client", TEST_RESOURCE));
     assertRejected(
         generateMockAltinn3Jwt(
             journalenhetOrgnummer,
             ansattportenIssuerUri,
             TEST_CLIENT_ID,
-            TEST_RESOURCE,
-            List.of("read")));
+            "urn:altinn:resource:unrelated"));
   }
 
   private void assertRejected(String jwt) throws Exception {
@@ -244,13 +232,11 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
   }
 
   static String generateMockAltinn3Jwt(String orgnummer, String issuerUri) throws Exception {
-    return generateMockAltinn3Jwt(
-        orgnummer, issuerUri, TEST_CLIENT_ID, TEST_RESOURCE, List.of("write"));
+    return generateMockAltinn3Jwt(orgnummer, issuerUri, TEST_CLIENT_ID, TEST_RESOURCE);
   }
 
   private static String generateMockAltinn3Jwt(
-      String orgnummer, String issuerUri, String clientId, String resource, List<String> actions)
-      throws Exception {
+      String orgnummer, String issuerUri, String clientId, String resource) throws Exception {
     var now = Instant.now();
     var expiryTimeSeconds = 3600L;
 
@@ -259,22 +245,22 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
             // Ansattporten returns a random subject
             .subject(IdGenerator.generateId("subject"))
             .issuer(issuerUri)
-            .audience(clientId)
+            // Ansattporten sets no "aud" on access tokens, the client is in "client_id"
+            .claim("client_id", clientId)
             .jwtID(UUID.randomUUID().toString())
             .issueTime(Date.from(now))
             .expirationTime(Date.from(now.plusSeconds(expiryTimeSeconds)));
 
-    // Add authorization_details
+    // Add authorization_details, shaped like a real Ansattporten Altinn 3 access token. The
+    // authorized parties carry no "actions", access is expressed by being listed for the resource.
     claimsSetBuilder.claim(
         "authorization_details",
         List.of(
             Map.of(
-                "resource",
-                resource,
                 "type",
                 "ansattporten:altinn:resource",
-                "resource_name",
-                "eInnsyn API resource",
+                "resource",
+                resource,
                 "authorized_parties",
                 List.of(
                     Map.of(
@@ -282,8 +268,8 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
                         Map.of("authority", "iso6523-actorid-upis", "ID", "0192:" + orgnummer),
                         "resource",
                         "einnsyn-api",
-                        "actions",
-                        actions,
+                        "name",
+                        "ANSTENDIG UNØYAKTIG TIGER AS",
                         "unit_type",
                         "AS")))));
 

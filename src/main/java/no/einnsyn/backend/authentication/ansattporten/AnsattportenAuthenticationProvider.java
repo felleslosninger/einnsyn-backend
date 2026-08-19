@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.authentication.AuthenticationService;
 import no.einnsyn.backend.authentication.EInnsynAuthentication;
 import no.einnsyn.backend.authentication.EInnsynPrincipalEnhet;
@@ -18,6 +19,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class AnsattportenAuthenticationProvider implements AuthenticationProvider {
 
@@ -51,17 +53,26 @@ public class AnsattportenAuthenticationProvider implements AuthenticationProvide
     try {
       jwt = jwtDecoder.decode((String) authentication.getCredentials());
     } catch (Exception e) {
+      log.debug("Not an Ansattporten token, could not decode: {}", e.getMessage());
       return null;
     }
 
-    if (jwt.getIssuer() == null
-        || !ansattportenIssuerUri.equals(jwt.getIssuer().toString())
-        || !jwt.getAudience().contains(clientId)) {
+    if (jwt.getIssuer() == null || !ansattportenIssuerUri.equals(jwt.getIssuer().toString())) {
+      log.debug(
+          "Rejecting token, expected issuer {}, got {}", ansattportenIssuerUri, jwt.getIssuer());
       return null;
     }
 
-    var orgnummers = getWritableOrgnummers(jwt);
+    // Ansattporten access tokens carry the requesting client in "client_id", not in "aud".
+    var tokenClientId = jwt.getClaimAsString("client_id");
+    if (!clientId.equals(tokenClientId)) {
+      log.debug("Rejecting token, client_id {} does not match {}", tokenClientId, clientId);
+      return null;
+    }
+
+    var orgnummers = getAuthorizedOrgnummers(jwt);
     if (orgnummers.isEmpty()) {
+      log.debug("Rejecting token, no orgnummer is authorized for {}", resource);
       return null;
     }
 
@@ -94,31 +105,51 @@ public class AnsattportenAuthenticationProvider implements AuthenticationProvide
     return EInnsynAuthentication.class.isAssignableFrom(authentication);
   }
 
-  private List<String> getWritableOrgnummers(Jwt jwt) {
+  /**
+   * Collects the organization numbers the token is authorized for. Altinn 3 expresses access by
+   * listing a party under the requested resource, the parties carry no per-action claims.
+   */
+  private List<String> getAuthorizedOrgnummers(Jwt jwt) {
     var orgnummers = new LinkedHashSet<String>();
     var claim = jwt.getClaim("authorization_details");
     if (!(claim instanceof List<?> details)) {
+      log.debug("authorization_details is missing or not a list: {}", claim);
       return List.of();
     }
 
     for (var value : details) {
-      if (!(value instanceof Map<?, ?> detail)
-          || !ALTINN_RESOURCE.equals(detail.get("type"))
-          || !resource.equals(detail.get("resource"))
-          || !(detail.get("authorized_parties") instanceof List<?> parties)) {
+      if (!(value instanceof Map<?, ?> detail)) {
+        log.debug("Skipping authorization_details entry, not an object: {}", value);
+        continue;
+      }
+      if (!ALTINN_RESOURCE.equals(detail.get("type")) || !resource.equals(detail.get("resource"))) {
+        log.debug(
+            "Skipping authorization_details entry, expected type {} and resource {}, got {}",
+            ALTINN_RESOURCE,
+            resource,
+            detail);
+        continue;
+      }
+      if (!(detail.get("authorized_parties") instanceof List<?> parties)) {
+        log.debug(
+            "Skipping authorization_details entry, authorized_parties is missing or not a list:"
+                + " {}",
+            detail.get("authorized_parties"));
         continue;
       }
 
       for (var partyValue : parties) {
-        if (!(partyValue instanceof Map<?, ?> party)
-            || !(party.get("actions") instanceof List<?> actions)
-            || !actions.contains("write")) {
+        if (!(partyValue instanceof Map<?, ?> party)) {
+          log.debug("Skipping authorized party, not an object: {}", partyValue);
           continue;
         }
         var orgnummer = getOrgNoFromClaim(party.get("orgno"));
-        if (orgnummer != null) {
-          orgnummers.add(orgnummer);
+        if (orgnummer == null) {
+          log.debug(
+              "Skipping authorized party, could not read orgnummer from {}", party.get("orgno"));
+          continue;
         }
+        orgnummers.add(orgnummer);
       }
     }
 
