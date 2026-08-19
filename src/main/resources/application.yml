@@ -79,10 +79,10 @@ application:
   ansattporten:
     issuerUri: ${ANSATTPORTEN_ISSUER_URI:https://ansattporten.dev}
     allowSelfRegistration: ${ANSATTPORTEN_ALLOW_SELF_REGISTRATION:true}
-    # Required, no defaults. These bind tokens to our client and Altinn 3 resources. Tokens without
-    # the "write" action are rejected.
-    clientId: ${ANSATTPORTEN_CLIENT_ID}
-    resource: ${ANSATTPORTEN_RESOURCE}
+    # Required. If unset/empty, all Ansattporten tokens will be rejected.
+    # These bind tokens to our client and Altinn 3 resources.
+    clientId: ${ANSATTPORTEN_CLIENT_ID:}
+    resource: ${ANSATTPORTEN_RESOURCE:}
 
 spring:
   application:
