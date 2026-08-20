@@ -19,6 +19,7 @@ import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -763,6 +764,57 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(
         HttpStatus.NOT_FOUND,
         get("/saksmappe/4b1a6279-d4a9-49f1-8c95-a0e8810bf1b5").getStatusCode());
+  }
+
+  /**
+   * Test that a systemId can be used as path parameter when adding sub-resources.
+   *
+   * @see no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerESTest for the accompanying
+   *     check that the parent is reindexed under its canonical ID
+   */
+  @Test
+  void addSubResourcesBySystemId() throws Exception {
+    var systemId = "9d1c5f83-3b58-4a2e-8c0f-2f6d1b7a4e11";
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("systemId", systemId);
+
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    // Add a Journalpost, using the Saksmappe's systemId as path parameter
+    response = post("/saksmappe/" + systemId + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(saksmappeDTO.getId(), journalpostDTO.getSaksmappe().getId());
+
+    // Add a Matrikkelnummer, using the Saksmappe's systemId as path parameter
+    response =
+        post("/saksmappe/" + systemId + "/matrikkelnummer", getMatrikkelnummerJSON("0301", 7, 21));
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    // Both sub-resources are listable through the canonical ID
+    response = get("/saksmappe/" + saksmappeDTO.getId() + "/journalpost");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<JournalpostDTO> journalpostList =
+        gson.fromJson(
+            response.getBody(), new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType());
+    assertEquals(1, journalpostList.getItems().size());
+
+    response = get("/saksmappe/" + saksmappeDTO.getId() + "/matrikkelnummer");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<MatrikkelnummerDTO> matrikkelnummerList =
+        gson.fromJson(
+            response.getBody(), new TypeToken<PaginatedList<MatrikkelnummerDTO>>() {}.getType());
+    assertEquals(1, matrikkelnummerList.getItems().size());
+
+    // An unresolvable systemId is passed through unchanged, so validation still reports it missing
+    assertEquals(
+        HttpStatus.NOT_FOUND,
+        post("/saksmappe/00000000-0000-0000-0000-000000000000/journalpost", getJournalpostJSON())
+            .getStatusCode());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
   }
 
   /**
