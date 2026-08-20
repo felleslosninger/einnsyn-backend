@@ -9,6 +9,8 @@ import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
+import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES;
 import org.json.JSONArray;
@@ -82,6 +84,76 @@ class MatrikkelnummerESTest extends EinnsynLegacyElasticTestBase {
         "Saksmappe should be reindexed after matrikkelnummer deletion");
 
     delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  /**
+   * Test that a systemId used as path parameter is resolved to the canonical eInnsyn ID before the
+   * parent is scheduled for indexing. ElasticsearchHandlerInterceptor dispatches queued entries by
+   * ID prefix, so an unresolved systemId is silently dropped and the parent is never reindexed.
+   */
+  @Test
+  void reindexParentWhenMatrikkelnummerAddedBySystemId() throws Exception {
+    var systemId = "0f2b6c19-7e4a-4d51-9a3c-8b5e1d6f2a70";
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("systemId", systemId);
+
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    // Saksmappe creation triggers one index call
+    captureIndexedDocuments(1);
+    resetEs();
+
+    // Add a matrikkelnummer, using the Saksmappe's systemId as path parameter
+    response =
+        post("/saksmappe/" + systemId + "/matrikkelnummer", getMatrikkelnummerJSON("0301", 11, 98));
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    // The parent must be reindexed, under its canonical ID
+    var documentMap = captureIndexedDocuments(1);
+    assertNotNull(
+        documentMap.get(saksmappeDTO.getId()),
+        "Saksmappe should be reindexed under its canonical ID");
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  /**
+   * Same as above for Moetesak, whose DTO class was missing from IdResolver's entity/service map.
+   * Resolution is silent when an entry is missing, so this covers the map rather than the
+   * converter.
+   */
+  @Test
+  void reindexParentWhenMoetesakMatrikkelnummerAddedBySystemId() throws Exception {
+    var systemId = "3c8e1a45-6b27-4f93-a1d0-7e5c2b9f4a68";
+    var moetemappeJSON = getMoetemappeJSON();
+    moetemappeJSON.remove("moetesak");
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    var moetesakJSON = getMoetesakJSON();
+    moetesakJSON.put("systemId", systemId);
+    response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    resetEs();
+
+    // Add a matrikkelnummer, using the Moetesak's systemId as path parameter
+    response =
+        post("/moetesak/" + systemId + "/matrikkelnummer", getMatrikkelnummerJSON("0301", 12, 97));
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    // Moetesak and its parent Moetemappe are both reindexed, under their canonical IDs
+    var documentMap = captureIndexedDocuments(2);
+    assertNotNull(
+        documentMap.get(moetesakDTO.getId()),
+        "Moetesak should be reindexed under its canonical ID");
+    assertNotNull(
+        documentMap.get(moetemappeDTO.getId()),
+        "Moetemappe should be reindexed under its canonical ID");
+    delete("/moetemappe/" + moetemappeDTO.getId());
   }
 
   @Test
