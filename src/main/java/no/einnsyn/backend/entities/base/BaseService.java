@@ -225,6 +225,29 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
+   * Resolve a list of unique identifiers (systemId, slug, orgnummer, email, externalId, ...) to
+   * entity IDs, preserving the order of the input list.
+   *
+   * <p>Identifiers that already are IDs of this entity type are passed through without a lookup, so
+   * a list of plain IDs costs no queries. Identifiers that cannot be resolved are also passed
+   * through unchanged, and will simply not match anything. Resolution never fails: callers such as
+   * {@link #listEntity(ListParameters, int)} are expected to silently skip identifiers with no
+   * match, the same way they skip IDs of objects the caller cannot access.
+   *
+   * @param identifiers the unique identifiers to resolve
+   * @return the resolved entity IDs, in the order of the input list
+   */
+  @Transactional(readOnly = true)
+  public List<String> resolveIds(List<String> identifiers) {
+    var resolvedIds = new ArrayList<String>(identifiers.size());
+    for (var identifier : identifiers) {
+      var resolvedId = getProxy().resolveId(identifier);
+      resolvedIds.add(resolvedId != null ? resolvedId : identifier);
+    }
+    return resolvedIds;
+  }
+
+  /**
    * Finds an entity by its unique identifier. If the ID does not start with the current entity's ID
    * prefix, it is treated as an external ID or a system ID. Subclasses may extend this method to
    * provide additional lookup logic, for instance lookup by email address.
@@ -1263,6 +1286,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * <p>The method fetches enough rows for {@link #list(ListParameters)} to determine whether there
    * are more pages available.
    *
+   * <p>The {@code ids} parameter accepts any unique identifier accepted by {@link #find(String)},
+   * not only entity IDs, see {@link #resolveIds(List)}.
+   *
    * @param params The query parameters for pagination
    * @param limit The maximum number of entities to fetch
    * @return a list of matching entities
@@ -1281,8 +1307,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     var ids = params.getIds();
     if (ids != null) {
-      var entityList = getRepository().findByIdIn(ids);
-      Collections.sort(entityList, Comparator.comparingInt(entity -> ids.indexOf(entity.getId())));
+      var resolvedIds = getProxy().resolveIds(ids);
+      var entityList = getRepository().findByIdIn(resolvedIds);
+      Collections.sort(
+          entityList, Comparator.comparingInt(entity -> resolvedIds.indexOf(entity.getId())));
       return entityList;
     }
 
