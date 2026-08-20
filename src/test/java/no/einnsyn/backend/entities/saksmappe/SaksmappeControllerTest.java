@@ -745,10 +745,10 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
     response = get("/saksmappe/" + saksmappeDTO.getId() + "/matrikkelnummer");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var matrikkelnummerList =
+    PaginatedList<MatrikkelnummerDTO> matrikkelnummerList =
         gson.fromJson(
             response.getBody(), new TypeToken<PaginatedList<MatrikkelnummerDTO>>() {}.getType());
-    assertEquals(1, ((PaginatedList<MatrikkelnummerDTO>) matrikkelnummerList).getItems().size());
+    assertEquals(1, matrikkelnummerList.getItems().size());
 
     // An unresolvable systemId is passed through unchanged, so validation still reports it missing
     assertEquals(
