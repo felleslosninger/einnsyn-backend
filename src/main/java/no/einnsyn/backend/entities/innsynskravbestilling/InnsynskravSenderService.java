@@ -371,11 +371,10 @@ public class InnsynskravSenderService {
         .toList();
   }
 
-  // Anonymous orders are not sent until the user verifies the order, so the order date shown to the
-  // receiving enhet should be the verification date rather than the original creation date.
+  // Orders that require verification are not sent until verification is completed, so the order
+  // date shown to the receiving enhet should be the verification date when it exists.
   private Date getOrderDateForEnhetSending(InnsynskravBestilling innsynskravBestilling) {
-    if (innsynskravBestilling.getBruker() == null
-        && innsynskravBestilling.getVerifisertDato() != null) {
+    if (innsynskravBestilling.getVerifisertDato() != null) {
       return innsynskravBestilling.getVerifisertDato();
     }
     return innsynskravBestilling.getOpprettetDato();

@@ -438,12 +438,18 @@ public class InnsynskravBestillingService
       innsynskravBestilling.setVerified(true);
       repository.saveAndFlush(innsynskravBestilling);
 
-      // Ensure Elasticsearch documents (including child innsynskrav docs) are reindexed with the
-      // updated verified state.
-      scheduleIndex(innsynskravBestilling.getId());
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+              // Ensure Elasticsearch documents (including child innsynskrav docs) are reindexed
+              // with the updated verified state.
+              scheduleIndex(innsynskravBestilling.getId());
 
-      innsynskravSenderService.sendInnsynskravBestillingAsync(innsynskravBestilling.getId());
-      proxy.sendOrderConfirmationToBruker(innsynskravBestilling.getId());
+              innsynskravSenderService.sendInnsynskravBestillingAsync(innsynskravBestilling.getId());
+              proxy.sendOrderConfirmationToBruker(innsynskravBestilling.getId());
+            }
+          });
     }
 
     return proxy.toDTO(innsynskravBestilling);
