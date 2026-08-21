@@ -18,6 +18,8 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -202,6 +204,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     // Check that the Innsynskrav is in the DB, with a verification secret
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravBestillingId);
     assertNotNull(verificationSecret);
+    innsynskravTestService.setOpprettetDato(
+        innsynskravBestillingId, Instant.now().minus(3, ChronoUnit.DAYS));
 
     response = get("/enhet/" + enhetId + "?expand=handteresAv");
     var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
@@ -249,8 +253,12 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var actualXml = orderCaptor.getValue();
     var orderXmlV1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
     orderXmlV1DateFormat.setTimeZone(TimeZone.getTimeZone("Europe/Oslo"));
+    assertNotNull(innsynskravBestilling.getVerifisertDato());
     var orderXmlV1DateString =
-        orderXmlV1DateFormat.format(Date.from(innsynskravBestilling.getCreated()));
+        orderXmlV1DateFormat.format(innsynskravBestilling.getVerifisertDato());
+    var createdOrderDateString =
+        orderXmlV1DateFormat.format(innsynskravBestilling.getOpprettetDato());
+    assertNotEquals(createdOrderDateString, orderXmlV1DateString);
 
     expectedXml =
         expectedXml

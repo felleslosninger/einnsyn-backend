@@ -40,6 +40,8 @@ public class InnsynskravBestilling extends Base {
 
   private boolean verified;
 
+  private Date verifisertDato;
+
   private boolean locked = false;
 
   private String language = "nb";
