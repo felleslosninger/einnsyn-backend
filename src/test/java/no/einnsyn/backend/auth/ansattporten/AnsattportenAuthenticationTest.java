@@ -42,10 +42,12 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
 
   public static final KeyPair TEST_KEY_PAIR = generateTestRsaKeyPair();
   public static final String TEST_KEY_ID = "test-ansattporten-rsa-key-1";
+  private static final String TEST_CLIENT_ID = "einnsyn-test-client";
+  private static final String TEST_RESOURCE = "urn:altinn:resource:einnsyn-api";
 
   @Test
   void testAuthInfo() throws Exception {
-    var jwt = generateMockAltinn2Jwt(journalenhetOrgnummer);
+    var jwt = generateMockAltinn3Jwt(journalenhetOrgnummer);
     var response = get("/me", jwt);
     var authInfo = gson.fromJson(response.getBody(), AuthInfo.class);
     assertEquals("Ansattporten", authInfo.getAuthType());
@@ -53,7 +55,7 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(journalenhetId, authInfo.getId());
     assertEquals(journalenhetOrgnummer, authInfo.getOrgnummer());
 
-    jwt = generateMockAltinn2Jwt(journalenhet2Orgnummer);
+    jwt = generateMockAltinn3Jwt(journalenhet2Orgnummer);
     response = get("/me", jwt);
     authInfo = gson.fromJson(response.getBody(), AuthInfo.class);
     assertEquals("Ansattporten", authInfo.getAuthType());
@@ -61,7 +63,7 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(journalenhet2Id, authInfo.getId());
     assertEquals(journalenhet2Orgnummer, authInfo.getOrgnummer());
 
-    jwt = generateMockAltinn2Jwt("123456789");
+    jwt = generateMockAltinn3Jwt("123456789");
     response = get("/me", jwt);
     authInfo = gson.fromJson(response.getBody(), AuthInfo.class);
     assertEquals("Ansattporten", authInfo.getAuthType());
@@ -96,79 +98,30 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
     response = patch("/saksmappe/" + saksmappeDTO.getId(), getSaksmappeJSON(), journalenhetKey);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
-    // Should be able to update as Journalenhet2 using Ansattporten Altinn2 JWT
-    var journalenhet2Altinn2Jwt = generateMockAltinn2Jwt(journalenhet2Orgnummer);
-    response = patch("/arkiv/" + arkivDTO.getId(), getArkivJSON(), journalenhet2Altinn2Jwt);
+    // Should be able to update as Journalenhet2 using Ansattporten Altinn 3 JWT
+    var journalenhet2Jwt = generateMockAltinn3Jwt(journalenhet2Orgnummer);
+    response = patch("/arkiv/" + arkivDTO.getId(), getArkivJSON(), journalenhet2Jwt);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
     assertEquals(journalenhet2Id, arkivDTO.getJournalenhet().getId());
-    response =
-        patch("/arkivdel/" + arkivdelDTO.getId(), getArkivdelJSON(), journalenhet2Altinn2Jwt);
+    response = patch("/arkivdel/" + arkivdelDTO.getId(), getArkivdelJSON(), journalenhet2Jwt);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-
-    // Should be able to update as Journalenhet2 using Ansattporten Altinn3 JWT
-    var journalenhet2Altinn3Jwt = generateMockAltinn3Jwt(journalenhet2Orgnummer);
-    response = patch("/arkiv/" + arkivDTO.getId(), getArkivJSON(), journalenhet2Altinn3Jwt);
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
-    assertEquals(journalenhet2Id, arkivDTO.getJournalenhet().getId());
-    response =
-        patch("/arkivdel/" + arkivdelDTO.getId(), getArkivdelJSON(), journalenhet2Altinn3Jwt);
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-
-    // Should be able to update as Journalenhet2 using Ansattporten Entra ID JWT
-    var journalenhet2EntraIdJwt = generateMockEntraIdJwt(journalenhet2Orgnummer);
-    response = patch("/arkiv/" + arkivDTO.getId(), getArkivJSON(), journalenhet2EntraIdJwt);
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
-    assertEquals(journalenhet2Id, arkivDTO.getJournalenhet().getId());
-    response =
-        patch("/arkivdel/" + arkivdelDTO.getId(), getArkivdelJSON(), journalenhet2EntraIdJwt);
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-
-    // Should not be able to update as Journalenhet1 using Ansattporten Altinn 2 JWT
-    var journalenhet1Altinn2Jwt = generateMockAltinn2Jwt(journalenhetOrgnummer);
-    response = patch("/arkiv/" + arkivDTO.getId(), getArkivJSON(), journalenhet1Altinn2Jwt);
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-    response =
-        patch("/arkivdel/" + arkivdelDTO.getId(), getArkivdelJSON(), journalenhet1Altinn2Jwt);
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-    response =
-        patch("/saksmappe/" + saksmappeDTO.getId(), getSaksmappeJSON(), journalenhet1Altinn2Jwt);
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Should not be able to update as Journalenhet1 using Ansattporten Altinn 3 JWT
-    var journalenhet1Altinn3Jwt = generateMockAltinn3Jwt(journalenhetOrgnummer);
-    response = patch("/arkiv/" + arkivDTO.getId(), getArkivJSON(), journalenhet1Altinn3Jwt);
+    var journalenhet1Jwt = generateMockAltinn3Jwt(journalenhetOrgnummer);
+    response = patch("/arkiv/" + arkivDTO.getId(), getArkivJSON(), journalenhet1Jwt);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-    response =
-        patch("/arkivdel/" + arkivdelDTO.getId(), getArkivdelJSON(), journalenhet1Altinn3Jwt);
+    response = patch("/arkivdel/" + arkivdelDTO.getId(), getArkivdelJSON(), journalenhet1Jwt);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-    response =
-        patch("/saksmappe/" + saksmappeDTO.getId(), getSaksmappeJSON(), journalenhet1Altinn3Jwt);
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), getSaksmappeJSON(), journalenhet1Jwt);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
-    // Should not be able to update as Journalenhet1 using Ansattporten Entra ID JWT
-    var journalenhet1EntraIdJwt = generateMockEntraIdJwt(journalenhetOrgnummer);
-    response = patch("/arkiv/" + arkivDTO.getId(), getArkivJSON(), journalenhet1EntraIdJwt);
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-    response =
-        patch("/arkivdel/" + arkivdelDTO.getId(), getArkivdelJSON(), journalenhet1EntraIdJwt);
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-    response =
-        patch("/saksmappe/" + saksmappeDTO.getId(), getSaksmappeJSON(), journalenhet1EntraIdJwt);
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-
-    // Should be able to delete as Journalenhet2 using Ansattporten Altinn2 JWT
-    response = delete("/saksmappe/" + saksmappeDTO.getId(), journalenhet2Altinn2Jwt);
+    // Should be able to delete as Journalenhet2 using Ansattporten Altinn 3 JWT
+    response = delete("/saksmappe/" + saksmappeDTO.getId(), journalenhet2Jwt);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-
-    // Should be able to delete as Journalenhet2 using Ansattporten Altinn3 JWT
-    response = delete("/arkivdel/" + arkivdelDTO.getId(), journalenhet2Altinn3Jwt);
+    response = delete("/arkivdel/" + arkivdelDTO.getId(), journalenhet2Jwt);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-
-    // Should be able to delete as Journalenhet2 using Ansattporten Entra ID JWT
-    response = delete("/arkiv/" + arkivDTO.getId(), journalenhet2EntraIdJwt);
+    response = delete("/arkiv/" + arkivDTO.getId(), journalenhet2Jwt);
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
@@ -244,6 +197,23 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
     assertNull(enhetRepository.findByOrgnummer(orgnummer));
   }
 
+  @Test
+  void shouldRejectTokensForOtherClientsOrResources() throws Exception {
+    assertRejected(
+        generateMockAltinn3Jwt(
+            journalenhetOrgnummer, ansattportenIssuerUri, "another-client", TEST_RESOURCE));
+    assertRejected(
+        generateMockAltinn3Jwt(
+            journalenhetOrgnummer,
+            ansattportenIssuerUri,
+            TEST_CLIENT_ID,
+            "urn:altinn:resource:unrelated"));
+  }
+
+  private void assertRejected(String jwt) throws Exception {
+    assertEquals(HttpStatus.UNAUTHORIZED, get("/me", jwt).getStatusCode());
+  }
+
   private static KeyPair generateTestRsaKeyPair() {
     try {
       var keyPairGenerator = KeyPairGenerator.getInstance("RSA");
@@ -254,58 +224,6 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
     }
   }
 
-  private String generateMockAltinn2Jwt(String orgnummer) throws Exception {
-    var now = Instant.now();
-    var expiryTimeSeconds = 3600L;
-
-    if (orgnummer == null) {
-      orgnummer = journalenhetOrgnummer;
-    }
-
-    var claimsSetBuilder =
-        new JWTClaimsSet.Builder()
-            // Ansattporten returns a random subject
-            .subject(IdGenerator.generateId("subject"))
-            .issuer(ansattportenIssuerUri)
-            .jwtID(UUID.randomUUID().toString())
-            .issueTime(Date.from(now))
-            .expirationTime(Date.from(now.plusSeconds(expiryTimeSeconds)));
-
-    // Add demo-authorization_details
-    claimsSetBuilder.claim(
-        "authorization_details",
-        List.of(
-            Map.of(
-                "resource",
-                "urn:altinn:resource:2480:40",
-                "type",
-                "ansattporten:altinn:service",
-                "resource_name",
-                "Demo Ansattporten Service",
-                "reportees",
-                List.of(
-                    Map.of(
-                        "Rights",
-                        List.of("Read", "ArchiveDelete", "ArchiveRead"),
-                        "Authority",
-                        "iso6523-actorid-upis",
-                        "ID",
-                        "0192:" + orgnummer,
-                        "Name",
-                        "DEMO ORG")))));
-
-    var signedJWT =
-        new SignedJWT(
-            new JWSHeader.Builder(JWSAlgorithm.RS256)
-                .type(JOSEObjectType.JWT)
-                .keyID(TEST_KEY_ID)
-                .build(),
-            claimsSetBuilder.build());
-
-    signedJWT.sign(new RSASSASigner(TEST_KEY_PAIR.getPrivate()));
-    return signedJWT.serialize();
-  }
-
   private String generateMockAltinn3Jwt(String orgnummer) throws Exception {
     if (orgnummer == null) {
       orgnummer = journalenhetOrgnummer;
@@ -314,6 +232,11 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
   }
 
   static String generateMockAltinn3Jwt(String orgnummer, String issuerUri) throws Exception {
+    return generateMockAltinn3Jwt(orgnummer, issuerUri, TEST_CLIENT_ID, TEST_RESOURCE);
+  }
+
+  private static String generateMockAltinn3Jwt(
+      String orgnummer, String issuerUri, String clientId, String resource) throws Exception {
     var now = Instant.now();
     var expiryTimeSeconds = 3600L;
 
@@ -322,21 +245,22 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
             // Ansattporten returns a random subject
             .subject(IdGenerator.generateId("subject"))
             .issuer(issuerUri)
+            // Ansattporten sets no "aud" on access tokens, the client is in "client_id"
+            .claim("client_id", clientId)
             .jwtID(UUID.randomUUID().toString())
             .issueTime(Date.from(now))
             .expirationTime(Date.from(now.plusSeconds(expiryTimeSeconds)));
 
-    // Add authorization_details
+    // Add authorization_details, shaped like a real Ansattporten Altinn 3 access token. The
+    // authorized parties carry no "actions", access is expressed by being listed for the resource.
     claimsSetBuilder.claim(
         "authorization_details",
         List.of(
             Map.of(
-                "resource",
-                "urn:altinn:resource:einnsyn-api",
                 "type",
                 "ansattporten:altinn:resource",
-                "resource_name",
-                "eInnsyn API resource",
+                "resource",
+                resource,
                 "authorized_parties",
                 List.of(
                     Map.of(
@@ -344,47 +268,10 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
                         Map.of("authority", "iso6523-actorid-upis", "ID", "0192:" + orgnummer),
                         "resource",
                         "einnsyn-api",
+                        "name",
+                        "ANSTENDIG UNØYAKTIG TIGER AS",
                         "unit_type",
                         "AS")))));
-
-    var signedJWT =
-        new SignedJWT(
-            new JWSHeader.Builder(JWSAlgorithm.RS256)
-                .type(JOSEObjectType.JWT)
-                .keyID(TEST_KEY_ID)
-                .build(),
-            claimsSetBuilder.build());
-
-    signedJWT.sign(new RSASSASigner(TEST_KEY_PAIR.getPrivate()));
-    return signedJWT.serialize();
-  }
-
-  private String generateMockEntraIdJwt(String orgnummer) throws Exception {
-    var now = Instant.now();
-    var expiryTimeSeconds = 3600L;
-
-    if (orgnummer == null) {
-      orgnummer = journalenhetOrgnummer;
-    }
-
-    var claimsSetBuilder =
-        new JWTClaimsSet.Builder()
-            // Ansattporten returns a random subject
-            .subject(IdGenerator.generateId("subject"))
-            .issuer(ansattportenIssuerUri)
-            .jwtID(UUID.randomUUID().toString())
-            .issueTime(Date.from(now))
-            .expirationTime(Date.from(now.plusSeconds(expiryTimeSeconds)));
-
-    // Add authorization_details
-    claimsSetBuilder.claim(
-        "authorization_details",
-        List.of(
-            Map.of(
-                "type",
-                "ansattporten:orgno",
-                "orgno",
-                Map.of("authority", "iso6523-actorid-upis", "ID", "0192:" + orgnummer))));
 
     var signedJWT =
         new SignedJWT(

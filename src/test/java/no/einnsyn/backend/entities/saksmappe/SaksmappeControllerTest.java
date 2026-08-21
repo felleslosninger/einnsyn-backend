@@ -19,6 +19,7 @@ import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -522,6 +523,64 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + sm5.getId()).getStatusCode());
   }
 
+  /**
+   * Test that the "ids" list parameter accepts the same alternative identifiers as the get
+   * endpoint, mixed freely with eInnsyn IDs, and that the result keeps the order of the query
+   * parameters.
+   */
+  @Test
+  void listByAlternativeIds() throws Exception {
+    var systemId = "5f7b2d64-9c18-4e30-b7a2-1d4c6e8f3b95";
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("systemId", systemId);
+    saksmappeJSON.put("externalId", "listByAlternativeIds-externalId");
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe1DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe1DTO.getSlug());
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe2DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var resultListType = new TypeToken<PaginatedList<SaksmappeDTO>>() {}.getType();
+
+    // A systemId, a slug and an externalId all resolve to the canonical ID
+    for (var identifier :
+        new String[] {systemId, saksmappe1DTO.getSlug(), "listByAlternativeIds-externalId"}) {
+      response = get("/saksmappe?ids=" + identifier);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      PaginatedList<SaksmappeDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+      assertEquals(1, resultList.getItems().size(), "Should resolve " + identifier);
+      assertEquals(saksmappe1DTO.getId(), resultList.getItems().getFirst().getId());
+    }
+
+    // Alternative identifiers can be mixed with eInnsyn IDs, and the input order is kept
+    response = get("/saksmappe?ids=" + saksmappe2DTO.getId() + "&ids=" + systemId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<SaksmappeDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(2, resultList.getItems().size());
+    assertEquals(saksmappe2DTO.getId(), resultList.getItems().get(0).getId());
+    assertEquals(saksmappe1DTO.getId(), resultList.getItems().get(1).getId());
+
+    // Identifiers with no match are skipped, they don't fail the request
+    response =
+        get("/saksmappe?ids=00000000-0000-0000-0000-000000000000&ids=" + saksmappe1DTO.getSlug());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(saksmappe1DTO.getId(), resultList.getItems().getFirst().getId());
+
+    // An ID belonging to another entity type is not resolved
+    response = get("/saksmappe?ids=" + arkivdelDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(0, resultList.getItems().size());
+
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappe1DTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappe2DTO.getId()).getStatusCode());
+  }
+
   // Test recursive deletion from Arkiv
   @Test
   void testDeletionFromArkiv() throws Exception {
@@ -705,6 +764,57 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(
         HttpStatus.NOT_FOUND,
         get("/saksmappe/4b1a6279-d4a9-49f1-8c95-a0e8810bf1b5").getStatusCode());
+  }
+
+  /**
+   * Test that a systemId can be used as path parameter when adding sub-resources.
+   *
+   * @see no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerESTest for the accompanying
+   *     check that the parent is reindexed under its canonical ID
+   */
+  @Test
+  void addSubResourcesBySystemId() throws Exception {
+    var systemId = "9d1c5f83-3b58-4a2e-8c0f-2f6d1b7a4e11";
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("systemId", systemId);
+
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    // Add a Journalpost, using the Saksmappe's systemId as path parameter
+    response = post("/saksmappe/" + systemId + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(saksmappeDTO.getId(), journalpostDTO.getSaksmappe().getId());
+
+    // Add a Matrikkelnummer, using the Saksmappe's systemId as path parameter
+    response =
+        post("/saksmappe/" + systemId + "/matrikkelnummer", getMatrikkelnummerJSON("0301", 7, 21));
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    // Both sub-resources are listable through the canonical ID
+    response = get("/saksmappe/" + saksmappeDTO.getId() + "/journalpost");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<JournalpostDTO> journalpostList =
+        gson.fromJson(
+            response.getBody(), new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType());
+    assertEquals(1, journalpostList.getItems().size());
+
+    response = get("/saksmappe/" + saksmappeDTO.getId() + "/matrikkelnummer");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<MatrikkelnummerDTO> matrikkelnummerList =
+        gson.fromJson(
+            response.getBody(), new TypeToken<PaginatedList<MatrikkelnummerDTO>>() {}.getType());
+    assertEquals(1, matrikkelnummerList.getItems().size());
+
+    // An unresolvable systemId is passed through unchanged, so validation still reports it missing
+    assertEquals(
+        HttpStatus.NOT_FOUND,
+        post("/saksmappe/00000000-0000-0000-0000-000000000000/journalpost", getJournalpostJSON())
+            .getStatusCode());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
   }
 
   /**

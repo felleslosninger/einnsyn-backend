@@ -79,6 +79,10 @@ application:
   ansattporten:
     issuerUri: ${ANSATTPORTEN_ISSUER_URI:https://ansattporten.dev}
     allowSelfRegistration: ${ANSATTPORTEN_ALLOW_SELF_REGISTRATION:true}
+    # Required. If unset/empty, all Ansattporten tokens will be rejected.
+    # These bind tokens to our client and Altinn 3 resources.
+    clientId: ${ANSATTPORTEN_CLIENT_ID:}
+    resource: ${ANSATTPORTEN_RESOURCE:}
 
 spring:
   application:
@@ -185,7 +189,7 @@ spring:
           use_query_cache: false
   datasource:
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
-    url: jdbc:tc:postgresql:16.3:///arkiv
+    url: jdbc:tc:postgresql:16.15:///arkiv
     hikari:
       idle-timeout: 10000
 application:
@@ -205,6 +209,9 @@ application:
   innsynskrav:
     anonymousMaxAge: 1
     verificationQuarantineLimit: 10
+  ansattporten:
+    clientId: einnsyn-test-client
+    resource: urn:altinn:resource:einnsyn-api
 management:
   defaults:
     metrics:
