@@ -148,6 +148,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       assertEquals("GET", proxyRequest.method());
       assertEquals(SOURCE_URL, proxyRequest.target());
       assertEquals("example.com", proxyRequest.hostHeader());
+      assertEquals("eInnsyn", proxyRequest.userAgentHeader());
     }
   }
 
@@ -362,7 +363,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
               new ProxyRequest(
                   exchange.getRequestMethod(),
                   exchange.getRequestURI().toString(),
-                  exchange.getRequestHeaders().getFirst("Host")));
+                  exchange.getRequestHeaders().getFirst("Host"),
+                  exchange.getRequestHeaders().getFirst("User-Agent")));
 
           if (returnContentType != null) {
             exchange.getResponseHeaders().set("Content-Type", returnContentType);
@@ -401,5 +403,6 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     }
   }
 
-  private record ProxyRequest(String method, String target, String hostHeader) {}
+  private record ProxyRequest(
+      String method, String target, String hostHeader, String userAgentHeader) {}
 }
