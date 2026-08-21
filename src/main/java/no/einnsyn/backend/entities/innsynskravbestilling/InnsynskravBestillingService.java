@@ -446,7 +446,8 @@ public class InnsynskravBestillingService
               // with the updated verified state.
               scheduleIndex(innsynskravBestilling.getId());
 
-              innsynskravSenderService.sendInnsynskravBestillingAsync(innsynskravBestilling.getId());
+              innsynskravSenderService.sendInnsynskravBestillingAsync(
+                  innsynskravBestilling.getId());
               proxy.sendOrderConfirmationToBruker(innsynskravBestilling.getId());
             }
           });
