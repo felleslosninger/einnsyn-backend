@@ -348,7 +348,7 @@ public class InnsynskravBestillingService
     context.put("innsynskravGroups", groupInnsynskravForBrukerMail(sortedInnsynskrav));
     context.put(
         "norwegianShortDate",
-        TimeConverter.dateToNorwegianShortDate(innsynskravBestilling.getOpprettetDato()));
+        TimeConverter.dateToNorwegianShortDate(innsynskravBestilling.getBestillingsdato()));
 
     try {
       log.debug(

@@ -5,7 +5,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -232,7 +231,7 @@ public class InnsynskravSenderService {
       context.put("enhet", enhet);
       context.put("innsynskravBestilling", innsynskravBestilling);
       context.put("innsynskravList", innsynskravTemplateWrapperList);
-      var orderDate = getOrderDateForEnhetSending(innsynskravBestilling);
+      var orderDate = innsynskravBestilling.getBestillingsdato();
       context.put(
           "orderXmlV1Date",
           ORDER_XML_V1_DATE_FORMAT.format(TimeConverter.dateToLocalDate(orderDate)));
@@ -300,7 +299,7 @@ public class InnsynskravSenderService {
     context.put("enhet", enhet);
     context.put("innsynskravBestilling", innsynskravBestilling);
     context.put("innsynskravList", innsynskravTemplateWrapperList);
-    var orderDate = getOrderDateForEnhetSending(innsynskravBestilling);
+    var orderDate = innsynskravBestilling.getBestillingsdato();
     context.put(
         "orderXmlV1Date",
         ORDER_XML_V1_DATE_FORMAT.format(TimeConverter.dateToLocalDate(orderDate)));
@@ -369,15 +368,6 @@ public class InnsynskravSenderService {
     return getSortedInnsynskrav(innsynskravList).stream()
         .map(innsynskrav -> new InnsynskravTemplateWrapper(innsynskrav, journalpostService))
         .toList();
-  }
-
-  // Orders that require verification are not sent until verification is completed, so the order
-  // date shown to the receiving enhet should be the verification date when it exists.
-  private Date getOrderDateForEnhetSending(InnsynskravBestilling innsynskravBestilling) {
-    if (innsynskravBestilling.getVerifisertDato() != null) {
-      return innsynskravBestilling.getVerifisertDato();
-    }
-    return innsynskravBestilling.getOpprettetDato();
   }
 
   /** Wrapper class to simplify the use of templates */
