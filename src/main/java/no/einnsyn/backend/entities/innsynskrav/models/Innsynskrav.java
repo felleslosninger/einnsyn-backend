@@ -63,6 +63,16 @@ public class Innsynskrav extends Base implements Indexable {
   @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
 
+  @Override
+  public void setLastIndexed(Instant lastIndexed) {
+    this.lastIndexed = lastIndexed;
+  }
+
+  @Override
+  public Instant getLastIndexed() {
+    return lastIndexed;
+  }
+
   @ElementCollection
   @CollectionTable(
       name = "innsynskrav_del_status",
