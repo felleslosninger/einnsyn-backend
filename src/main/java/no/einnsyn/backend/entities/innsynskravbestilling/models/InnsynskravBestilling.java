@@ -40,6 +40,8 @@ public class InnsynskravBestilling extends Base {
 
   private boolean verified;
 
+  private Date verifisertDato;
+
   private boolean locked = false;
 
   private String language = "nb";
@@ -66,6 +68,13 @@ public class InnsynskravBestilling extends Base {
     }
   }
 
+  public Date getBestillingsdato() {
+    if (verifisertDato != null) {
+      return verifisertDato;
+    }
+    return opprettetDato;
+  }
+
   @PrePersist
   @Override
   protected void prePersist() {
@@ -77,6 +86,10 @@ public class InnsynskravBestilling extends Base {
 
     if (opprettetDato == null) {
       setOpprettetDato(new Date());
+    }
+
+    if (verified && verifisertDato == null) {
+      setVerifisertDato(opprettetDato);
     }
 
     if (legacyBrukerIri == null && bruker != null) {

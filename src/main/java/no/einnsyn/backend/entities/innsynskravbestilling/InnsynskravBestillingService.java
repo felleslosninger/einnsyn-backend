@@ -4,6 +4,7 @@ import jakarta.mail.MessagingException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -347,7 +348,7 @@ public class InnsynskravBestillingService
     context.put("innsynskravGroups", groupInnsynskravForBrukerMail(sortedInnsynskrav));
     context.put(
         "norwegianShortDate",
-        TimeConverter.dateToNorwegianShortDate(innsynskravBestilling.getOpprettetDato()));
+        TimeConverter.dateToNorwegianShortDate(innsynskravBestilling.getBestillingsdato()));
 
     try {
       log.debug(
@@ -433,6 +434,7 @@ public class InnsynskravBestillingService
 
     // Verifying an already verified order is a no-op: the side effects below must happen only once
     if (!innsynskravBestilling.isVerified()) {
+      innsynskravBestilling.setVerifisertDato(new Date());
       innsynskravBestilling.setVerified(true);
       repository.saveAndFlush(innsynskravBestilling);
 
@@ -440,8 +442,15 @@ public class InnsynskravBestillingService
       // updated verified state.
       scheduleIndex(innsynskravBestilling.getId());
 
-      innsynskravSenderService.sendInnsynskravBestillingAsync(innsynskravBestilling.getId());
-      proxy.sendOrderConfirmationToBruker(innsynskravBestilling.getId());
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+              innsynskravSenderService.sendInnsynskravBestillingAsync(
+                  innsynskravBestilling.getId());
+              proxy.sendOrderConfirmationToBruker(innsynskravBestilling.getId());
+            }
+          });
     }
 
     return proxy.toDTO(innsynskravBestilling);
