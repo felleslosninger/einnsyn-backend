@@ -58,6 +58,7 @@ import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.lagretsak.LagretSakService;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
+import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerService;
 import no.einnsyn.backend.entities.moetedeltaker.MoetedeltakerRepository;
 import no.einnsyn.backend.entities.moetedeltaker.MoetedeltakerService;
 import no.einnsyn.backend.entities.moetedokument.MoetedokumentRepository;
@@ -159,6 +160,7 @@ public abstract class EinnsynTestBase {
   @Autowired protected MoetedokumentService moetedokumentService;
   @Autowired protected MoetemappeService moetemappeService;
   @Autowired protected MoetesakService moetesakService;
+  @Autowired protected MatrikkelnummerService matrikkelnummerService;
   @Autowired protected MoetesaksbeskrivelseService moetesaksbeskrivelseService;
   @Autowired protected SaksmappeService saksmappeService;
   @Autowired protected SearchService searchService;
@@ -331,6 +333,7 @@ public abstract class EinnsynTestBase {
     journalenhet2.setEnhetstype(EnhetDTO.EnhetstypeEnum.UTVALG);
     journalenhet2.setOrgnummer(String.valueOf(100000000 + ++enhetCounter));
     journalenhet2.setInnsynskravEpost("journalenhet2@example.com");
+    journalenhet2.setKontaktpunktEpost("kontaktpost2@example.com");
     journalenhet2.setEFormidling(true);
     journalenhet2.setParent(rootEnhet);
     enhetRepository.saveAndFlush(journalenhet2);

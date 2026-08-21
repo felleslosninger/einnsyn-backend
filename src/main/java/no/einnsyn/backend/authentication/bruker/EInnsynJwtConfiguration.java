@@ -22,6 +22,7 @@ import org.springframework.security.oauth2.jwt.JwtIssuerValidator;
 import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.util.Assert;
 
 @Configuration
 @Slf4j
@@ -35,7 +36,16 @@ public class EInnsynJwtConfiguration {
   public EInnsynJwtConfiguration(
       @Value("${application.jwt.encryption-secret}") String base64Secret,
       @Value("${application.jwt.issuerUri}") String issuerUri) {
-    this.decodedSecretBytes = Base64.getDecoder().decode(base64Secret);
+    Assert.hasText(
+        base64Secret, "application.jwt.encryption-secret (JWT_SECRET) must not be empty");
+    var secretBytes = Base64.getDecoder().decode(base64Secret);
+    // HS256 needs a 256 bit key. Without this check, a shorter secret starts the application, and
+    // only fails later when Nimbus is asked to sign or verify a token.
+    Assert.isTrue(
+        secretBytes.length >= 32,
+        "application.jwt.encryption-secret (JWT_SECRET) must decode to at least 256 bits."
+            + " Generate one with `openssl rand -base64 32`");
+    this.decodedSecretBytes = secretBytes;
     this.issuerUri = issuerUri;
   }
 

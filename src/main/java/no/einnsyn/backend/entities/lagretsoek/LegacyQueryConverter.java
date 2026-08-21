@@ -1,7 +1,5 @@
 package no.einnsyn.backend.entities.lagretsoek;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -20,6 +18,8 @@ import no.einnsyn.backend.entities.enhet.EnhetService;
 import no.einnsyn.backend.entities.lagretsoek.models.LegacyQuery;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 @Slf4j
@@ -56,7 +56,7 @@ public class LegacyQueryConverter {
   private LegacyQuery parseLegacyQuery(String legacyQuery) throws EInnsynException {
     try {
       return objectMapper.readValue(legacyQuery, LegacyQuery.class);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new EInnsynException(
           "Could not parse legacy query: " + e.getMessage(), e, "legacyQueryConversionError");
     }

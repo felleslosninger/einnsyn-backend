@@ -1,9 +1,11 @@
-CVE-2026-42198 # pg jdbc driver
+# Remove once Spring Boot's BOM reaches pgjdbc 42.7.12 or later.
+# Not exploitable: we don't connect with channelBinding=require.
+CVE-2026-54291
 
-# Tomcat
-CVE-2026-41293
-CVE-2026-43512
-CVE-2026-41284
-CVE-2026-42498
-CVE-2026-43513
-CVE-2026-43515
+# Remove once Spring Boot's BOM reaches httpcore5 5.4.3 or later. Both entries
+# below are the same 5.4.2 -> 5.4.3 bump, and both are remote-peer DoS bugs in
+# code we only ever run as a client: httpcore5 and httpcore5-h2 reach us via
+# spring-boot-starter-elasticsearch and only ever talk to our own cluster.
+# Inbound HTTP, including HTTP/2, is handled by Tomcat.
+CVE-2026-54399
+CVE-2026-54428

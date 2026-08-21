@@ -33,6 +33,38 @@
     "bruker": {
       "type": "keyword"
     },
+    "child": {
+      "properties": {
+        "matrikkelnummer": {
+          "properties": {
+            "kommunenummer": {
+              "type": "keyword",
+              "copy_to": [
+                "search_id"
+              ]
+            },
+            "gaardsnummer": {
+              "type": "integer"
+            },
+            "bruksnummer": {
+              "type": "integer"
+            },
+            "festenummer": {
+              "type": "integer"
+            },
+            "seksjonsnummer": {
+              "type": "integer"
+            },
+            "matrikkelId": {
+              "type": "keyword",
+              "copy_to": [
+                "search_id"
+              ]
+            }
+          }
+        }
+      }
+    },
     "count": {
       "type": "integer"
     },
@@ -152,6 +184,34 @@
               "search_analyzer": "nor_analyzer_loose_search"
             }
           }
+        }
+      }
+    },
+    "matrikkelnummer": {
+      "properties": {
+        "kommunenummer": {
+          "type": "keyword",
+          "copy_to": [
+            "search_id"
+          ]
+        },
+        "gaardsnummer": {
+          "type": "integer"
+        },
+        "bruksnummer": {
+          "type": "integer"
+        },
+        "festenummer": {
+          "type": "integer"
+        },
+        "seksjonsnummer": {
+          "type": "integer"
+        },
+        "matrikkelId": {
+          "type": "keyword",
+          "copy_to": [
+            "search_id"
+          ]
         }
       }
     },

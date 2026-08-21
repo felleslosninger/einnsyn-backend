@@ -29,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,9 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   private static final String DEFAULT_DOWNLOAD_FILE_NAME = "einnsyn-download";
   private static final int DOWNLOAD_CONNECT_TIMEOUT_MS = 10_000;
   private static final int DOWNLOAD_READ_TIMEOUT_MS = 30_000;
+
+  // Some sources allowlist this value, it is inherited from the legacy eInnsyn API.
+  private static final String DOWNLOAD_USER_AGENT = "eInnsyn";
 
   @Getter(onMethod_ = @Override)
   private final DokumentobjektRepository repository;
@@ -360,6 +364,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     var proxyAddress = new InetSocketAddress(downloadProxyHost, downloadProxyPort);
     var httpProxy = new Proxy(Proxy.Type.HTTP, proxyAddress);
     var connection = (HttpURLConnection) sourceUri.toURL().openConnection(httpProxy);
+    connection.setRequestProperty(HttpHeaders.USER_AGENT, DOWNLOAD_USER_AGENT);
     connection.setConnectTimeout(DOWNLOAD_CONNECT_TIMEOUT_MS);
     connection.setReadTimeout(DOWNLOAD_READ_TIMEOUT_MS);
     connection.setInstanceFollowRedirects(true);

@@ -39,6 +39,9 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
 
   private static final ZoneId NORWEGIAN_ZONE = ZoneId.of("Europe/Oslo");
 
+  private static final String EXTERNAL_ID_1 = "ext-alpha-001";
+  private static final String EXTERNAL_ID_2 = "ext-beta-002";
+
   ArkivDTO arkivDTO;
   ArkivdelDTO arkivdelDTO;
 
@@ -94,6 +97,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     journalpostJSON.put("journalposttype", "inngaaende_dokument");
     journalpostJSON.put("dokumentetsDato", "2023-06-15");
     journalpostJSON.put("journaldato", "2023-06-20");
+    journalpostJSON.put("externalId", EXTERNAL_ID_1);
     response = post("/saksmappe/" + saksmappe2023DTO.getId() + "/journalpost", journalpostJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     journalpost1DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
@@ -115,6 +119,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     journalpostJSON.put("journalposttype", "utgaaende_dokument");
     journalpostJSON.put("dokumentetsDato", "2024-03-10");
     journalpostJSON.put("journaldato", "2024-03-15");
+    journalpostJSON.put("externalId", EXTERNAL_ID_2);
     response = post("/saksmappe/" + saksmappe2024DTO.getId() + "/journalpost", journalpostJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     journalpost2DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
@@ -497,6 +502,47 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), baseDTOListType);
     assertEquals(0, result.getItems().size());
+  }
+
+  @Test
+  void testFilterByExternalIds() throws Exception {
+    var response = get("/search?entity=Journalpost&externalIds=" + EXTERNAL_ID_1);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(1, result.getItems().size());
+    assertEquals(journalpost1DTO.getId(), result.getItems().get(0).getId());
+
+    response = get("/search?entity=Journalpost&externalIds=" + EXTERNAL_ID_2);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(1, result.getItems().size());
+    assertEquals(journalpost2DTO.getId(), result.getItems().get(0).getId());
+
+    // Test with multiple externalIds
+    response =
+        get(
+            "/search?entity=Journalpost&externalIds="
+                + EXTERNAL_ID_1
+                + "&externalIds="
+                + EXTERNAL_ID_2);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(2, result.getItems().size());
+    var ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertTrue(ids.contains(journalpost1DTO.getId()));
+    assertTrue(ids.contains(journalpost2DTO.getId()));
+
+    // Test with non-existent externalId
+    response = get("/search?entity=Journalpost&externalIds=ext-does-not-exist");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(0, result.getItems().size());
+
+    // Without the filter, we get all documents
+    response = get("/search?entity=Journalpost");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(5, result.getItems().size());
   }
 
   @Test

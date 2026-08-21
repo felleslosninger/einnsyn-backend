@@ -13,6 +13,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class SideEffectService {
 
+  /**
+   * Awaitility's default poll interval is 100ms, which rounds every wait up to a 100ms boundary.
+   * This wait is paid after every REST call in the suite, so that adds up.
+   */
+  private static final Duration POLL_INTERVAL = Duration.ofMillis(5);
+
   @Autowired
   @Qualifier("requestSideEffectExecutor")
   private Executor sideEffectExecutor;
@@ -34,6 +40,7 @@ public class SideEffectService {
     Awaitility.await()
         .atMost(Duration.ofSeconds(10))
         .pollDelay(Duration.ZERO)
+        .pollInterval(POLL_INTERVAL)
         .until(
             () -> {
               var queuedTaskCount = ParallelRunner.getGlobalQueuedTaskCount();

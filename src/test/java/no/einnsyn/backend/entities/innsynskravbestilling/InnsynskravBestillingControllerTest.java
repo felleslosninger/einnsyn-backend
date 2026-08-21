@@ -2,6 +2,7 @@ package no.einnsyn.backend.entities.innsynskravbestilling;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -723,12 +724,24 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertTrue(txtContent.contains("Journaltittel: JournalpostOffentligTittelSensitiv"));
     assertTrue(txtContent.contains(firstVirksomhet.getNavn()));
     assertTrue(txtContent.contains(secondVirksomhet.getNavn()));
-    assertTrue(txtContent.contains("innsynskravepost@example.com"));
+    assertTrue(txtContent.contains(firstVirksomhet.getKontaktpunktEpost()));
+    assertTrue(txtContent.contains(secondVirksomhet.getKontaktpunktEpost()));
+    // The contact email should be shown, not the innsynskrav email
+    assertFalse(txtContent.contains(firstVirksomhet.getInnsynskravEpost()));
+    assertFalse(txtContent.contains(secondVirksomhet.getInnsynskravEpost()));
+
+    // The HTML version should likewise show the contact email
+    var htmlContent =
+        findMailHtmlContaining(mimeMessageCaptor.getAllValues(), firstVirksomhet.getNavn());
+    assertTrue(htmlContent.contains(firstVirksomhet.getKontaktpunktEpost()));
+    assertTrue(htmlContent.contains(secondVirksomhet.getKontaktpunktEpost()));
+    assertFalse(htmlContent.contains(firstVirksomhet.getInnsynskravEpost()));
+    assertFalse(htmlContent.contains(secondVirksomhet.getInnsynskravEpost()));
     // Check the order in that mail
     assertDocumentsInOrder(
         txtContent,
         List.of(
-            firstVirksomhet.getNavn() + ", " + firstVirksomhet.getInnsynskravEpost(),
+            firstVirksomhet.getNavn() + ", " + firstVirksomhet.getKontaktpunktEpost(),
             "Doknr: 1\nSaksnr: 2020/10",
             "Doknr: 2\nSaksnr: 2020/10",
             "Doknr: 3\nSaksnr: 2020/10",
@@ -737,7 +750,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
             "Doknr: 1\nSaksnr: 2021/30",
             "Doknr: 2\nSaksnr: 2021/30",
             "Doknr: 3\nSaksnr: 2021/30",
-            secondVirksomhet.getNavn() + ", " + secondVirksomhet.getInnsynskravEpost(),
+            secondVirksomhet.getNavn() + ", " + secondVirksomhet.getKontaktpunktEpost(),
             "Doknr: 2\nSaksnr: 2020/20",
             "Doknr: 3\nSaksnr: 2020/20",
             "Doknr: 4\nSaksnr: 2020/20",
@@ -1277,6 +1290,129 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 
+  /**
+   * An already verified InnsynskravBestilling must not leak its DTO (e-mail address and requested
+   * documents) to an unauthenticated caller supplying the wrong secret.
+   */
+  @Test
+  void testInnsynskravVerifyWrongSecretWhenAlreadyVerified() throws Exception {
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostDTO.getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+
+    // Insert InnsynskravBestilling
+    var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var innsynskravBestillingId = innsynskravBestillingDTO.getId();
+
+    // Wait for the verification email to the orderer
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+
+    // Verify with the correct secret
+    var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravBestillingId);
+    response =
+        patch(
+            "/innsynskravBestilling/" + innsynskravBestillingId + "/verify/" + verificationSecret,
+            null);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    assertEquals(true, innsynskravBestillingDTO.getVerified());
+
+    // Wait for the order confirmation email to the orderer and the eFormidling shipment to the
+    // Enhet
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+              verify(ipSender, times(1))
+                  .sendInnsynskrav(
+                      any(String.class),
+                      any(String.class),
+                      any(String.class),
+                      any(String.class),
+                      any(String.class));
+            });
+
+    // A wrong secret must be rejected, even though the order is already verified
+    response =
+        patch("/innsynskravBestilling/" + innsynskravBestillingId + "/verify/wrongsecret", null);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertFalse(
+        Objects.requireNonNull(response.getBody())
+            .contains(innsynskravBestillingJSON.getString("email")));
+
+    // The correct secret is accepted after verification too, and verifying again is idempotent
+    response =
+        patch(
+            "/innsynskravBestilling/" + innsynskravBestillingId + "/verify/" + verificationSecret,
+            null);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    assertEquals(true, innsynskravBestillingDTO.getVerified());
+
+    // Neither the rejected attempt nor the repeated verification may re-send the order or the
+    // confirmation email
+    awaitSideEffects();
+    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+    verify(ipSender, times(1))
+        .sendInnsynskrav(
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class));
+
+    // Delete the InnsynskravBestilling
+    response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    assertEquals(true, innsynskravBestillingDTO.getDeleted());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+  }
+
+  /** The verification secret is the only credential for an anonymous order, and must be random. */
+  @Test
+  void testInnsynskravVerificationSecretIsRandom() throws Exception {
+    var bestillingIds = new ArrayList<String>();
+    var secrets = new ArrayList<String>();
+
+    for (var i = 0; i < 2; i++) {
+      var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+      var innsynskravJSON = getInnsynskravJSON();
+      innsynskravJSON.put("journalpost", journalpostDTO.getId());
+      innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+
+      var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var bestillingId = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class).getId();
+      bestillingIds.add(bestillingId);
+
+      // IdGenerator.generateSecret() concatenates two UUIDv4s, 26 characters each
+      var secret = innsynskravTestService.getVerificationSecret(bestillingId);
+      assertNotNull(secret);
+      assertTrue(secret.startsWith("issec_"), secret);
+      assertEquals("issec_".length() + 52, secret.length(), secret);
+      secrets.add(secret);
+    }
+
+    // Two secrets created within the same second would share this prefix if any part of the secret
+    // encoded a timestamp
+    var prefixLength = "issec_".length() + 8;
+    assertNotEquals(
+        secrets.get(0).substring(0, prefixLength), secrets.get(1).substring(0, prefixLength));
+
+    for (var bestillingId : bestillingIds) {
+      var response = deleteAdmin("/innsynskravBestilling/" + bestillingId);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      deleteInnsynskravFromBestilling(
+          gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class));
+    }
+  }
+
   @Test
   void testInnsynskravWhenLoggedIn() throws Exception {
     // Create and activate Bruker
@@ -1782,6 +1918,17 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
       var textContent = normalizeLineEndings(getTxtContent(message));
       if (textContent.contains(expectedText)) {
         return textContent;
+      }
+    }
+    throw new NoSuchElementException("Could not find mail containing: " + expectedText);
+  }
+
+  private String findMailHtmlContaining(List<MimeMessage> messages, String expectedText)
+      throws Exception {
+    for (var message : messages) {
+      var htmlContent = normalizeLineEndings(getHtmlContent(message));
+      if (htmlContent.contains(expectedText)) {
+        return htmlContent;
       }
     }
     throw new NoSuchElementException("Could not find mail containing: " + expectedText);

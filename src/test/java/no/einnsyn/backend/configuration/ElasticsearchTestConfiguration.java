@@ -38,7 +38,7 @@ public class ElasticsearchTestConfiguration {
 
     container =
         new ElasticsearchContainer(
-                DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch:9.3.2"))
+                DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch:9.5.2"))
             .withEnv("xpack.security.enabled", "false")
             .withEnv("discovery.type", "single-node")
             .withCopyFileToContainer(
@@ -46,15 +46,14 @@ public class ElasticsearchTestConfiguration {
                 "/usr/share/elasticsearch/config/elasticsearch-plugins.yml")
             .withCopyFileToContainer(
                 MountableFile.forClasspathResource("elasticsearch/synonym.txt"),
-                "/usr/share/elasticsearch/config/analysis/synonym.txt");
+                "/usr/share/elasticsearch/config/analysis/synonym.txt")
+            .waitingFor(
+                Wait.forHttp("/_cluster/health")
+                    .forPort(9200)
+                    .forStatusCode(200)
+                    .withReadTimeout(Duration.ofSeconds(30)));
 
     container.start();
-    container.waitingFor(
-        Wait.forHttp("/_cluster/health")
-            .forPort(container.getFirstMappedPort())
-            .forStatusCode(200)
-            .withReadTimeout(Duration.ofSeconds(30)));
-
     return container;
   }
 

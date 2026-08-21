@@ -52,6 +52,7 @@ import no.einnsyn.backend.entities.klassifikasjonssystem.KlassifikasjonssystemSe
 import no.einnsyn.backend.entities.korrespondansepart.KorrespondansepartService;
 import no.einnsyn.backend.entities.lagretsak.LagretSakService;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
+import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerService;
 import no.einnsyn.backend.entities.moetedeltaker.MoetedeltakerService;
 import no.einnsyn.backend.entities.moetedokument.MoetedokumentService;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
@@ -114,6 +115,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Lazy @Autowired protected KorrespondansepartService korrespondansepartService;
   @Lazy @Autowired protected LagretSakService lagretSakService;
   @Lazy @Autowired protected LagretSoekService lagretSoekService;
+  @Lazy @Autowired protected MatrikkelnummerService matrikkelnummerService;
   @Lazy @Autowired protected MoetedeltakerService moetedeltakerService;
   @Lazy @Autowired protected MoetedokumentService moetedokumentService;
   @Lazy @Autowired protected MoetemappeService moetemappeService;
@@ -223,6 +225,29 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
+   * Resolve a list of unique identifiers (systemId, slug, orgnummer, email, externalId, ...) to
+   * entity IDs, preserving the order of the input list.
+   *
+   * <p>Identifiers that already are IDs of this entity type are passed through without a lookup, so
+   * a list of plain IDs costs no queries. Identifiers that cannot be resolved are also passed
+   * through unchanged, and will simply not match anything. Resolution never fails: callers such as
+   * {@link #listEntity(ListParameters, int)} are expected to silently skip identifiers with no
+   * match, the same way they skip IDs of objects the caller cannot access.
+   *
+   * @param identifiers the unique identifiers to resolve
+   * @return the resolved entity IDs, in the order of the input list
+   */
+  @Transactional(readOnly = true)
+  public List<String> resolveIds(List<String> identifiers) {
+    var resolvedIds = new ArrayList<String>(identifiers.size());
+    for (var identifier : identifiers) {
+      var resolvedId = getProxy().resolveId(identifier);
+      resolvedIds.add(resolvedId != null ? resolvedId : identifier);
+    }
+    return resolvedIds;
+  }
+
+  /**
    * Finds an entity by its unique identifier. If the ID does not start with the current entity's ID
    * prefix, it is treated as an external ID or a system ID. Subclasses may extend this method to
    * provide additional lookup logic, for instance lookup by email address.
@@ -308,12 +333,29 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @Transactional(readOnly = true)
   public <E extends Exception> O findOrThrow(String identifier, Class<E> exceptionClass) throws E {
+    return getProxy()
+        .findOrThrow(
+            identifier, exceptionClass, "No " + objectClassName + " found with id " + identifier);
+  }
+
+  /**
+   * Wrapper for find() that throws the given exception type, with the given message, if the object
+   * is not found. Use this where the default message says too much: it names the object type and
+   * echoes the identifier back to the caller.
+   *
+   * @param identifier The identifier of the object to find
+   * @param exceptionClass The class of the exception to throw
+   * @param message The message of the thrown exception
+   * @return The object with the given identifier
+   * @throws E if the object is not found
+   */
+  @Transactional(readOnly = true)
+  public <E extends Exception> O findOrThrow(
+      String identifier, Class<E> exceptionClass, String message) throws E {
     var obj = getProxy().find(identifier);
     if (obj == null) {
       try {
-        throw exceptionClass
-            .getDeclaredConstructor(String.class)
-            .newInstance("No " + objectClassName + " found with id " + identifier);
+        throw exceptionClass.getDeclaredConstructor(String.class).newInstance(message);
       } catch (ReflectiveOperationException e) {
         throw new RuntimeException(
             "Failed to instantiate exception of type " + exceptionClass.getName(), e);
@@ -1244,6 +1286,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * <p>The method fetches enough rows for {@link #list(ListParameters)} to determine whether there
    * are more pages available.
    *
+   * <p>The {@code ids} parameter accepts any unique identifier accepted by {@link #find(String)},
+   * not only entity IDs, see {@link #resolveIds(List)}.
+   *
    * @param params The query parameters for pagination
    * @param limit The maximum number of entities to fetch
    * @return a list of matching entities
@@ -1262,8 +1307,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     var ids = params.getIds();
     if (ids != null) {
-      var entityList = getRepository().findByIdIn(ids);
-      Collections.sort(entityList, Comparator.comparingInt(entity -> ids.indexOf(entity.getId())));
+      var resolvedIds = getProxy().resolveIds(ids);
+      var entityList = getRepository().findByIdIn(resolvedIds);
+      Collections.sort(
+          entityList, Comparator.comparingInt(entity -> resolvedIds.indexOf(entity.getId())));
       return entityList;
     }
 

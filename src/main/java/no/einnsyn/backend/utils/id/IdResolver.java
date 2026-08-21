@@ -38,16 +38,30 @@ import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.backend.entities.mappe.MappeService;
 import no.einnsyn.backend.entities.mappe.models.MappeDTO;
+import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerService;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.moetedeltaker.MoetedeltakerService;
 import no.einnsyn.backend.entities.moetedeltaker.models.MoetedeltakerDTO;
 import no.einnsyn.backend.entities.moetedokument.MoetedokumentService;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.backend.entities.moetesak.MoetesakService;
+import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
+import no.einnsyn.backend.entities.moetesaksbeskrivelse.MoetesaksbeskrivelseService;
+import no.einnsyn.backend.entities.moetesaksbeskrivelse.models.MoetesaksbeskrivelseDTO;
 import no.einnsyn.backend.entities.registrering.RegistreringService;
 import no.einnsyn.backend.entities.registrering.models.RegistreringDTO;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.entities.skjerming.SkjermingService;
+import no.einnsyn.backend.entities.skjerming.models.SkjermingDTO;
+import no.einnsyn.backend.entities.utredning.UtredningService;
+import no.einnsyn.backend.entities.utredning.models.UtredningDTO;
+import no.einnsyn.backend.entities.vedtak.VedtakService;
+import no.einnsyn.backend.entities.vedtak.models.VedtakDTO;
+import no.einnsyn.backend.entities.votering.VoteringService;
+import no.einnsyn.backend.entities.votering.models.VoteringDTO;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -86,11 +100,18 @@ public class IdResolver {
           Map.entry(LagretSakDTO.class, LagretSakService.class),
           Map.entry(LagretSoekDTO.class, LagretSoekService.class),
           Map.entry(MappeDTO.class, MappeService.class),
+          Map.entry(MatrikkelnummerDTO.class, MatrikkelnummerService.class),
           Map.entry(MoetedeltakerDTO.class, MoetedeltakerService.class),
           Map.entry(MoetedokumentDTO.class, MoetedokumentService.class),
           Map.entry(MoetemappeDTO.class, MoetemappeService.class),
+          Map.entry(MoetesakDTO.class, MoetesakService.class),
+          Map.entry(MoetesaksbeskrivelseDTO.class, MoetesaksbeskrivelseService.class),
           Map.entry(RegistreringDTO.class, RegistreringService.class),
-          Map.entry(SaksmappeDTO.class, SaksmappeService.class));
+          Map.entry(SaksmappeDTO.class, SaksmappeService.class),
+          Map.entry(SkjermingDTO.class, SkjermingService.class),
+          Map.entry(UtredningDTO.class, UtredningService.class),
+          Map.entry(VedtakDTO.class, VedtakService.class),
+          Map.entry(VoteringDTO.class, VoteringService.class));
 
   public IdResolver(ApplicationContext applicationContext) {
     this.applicationContext = applicationContext;

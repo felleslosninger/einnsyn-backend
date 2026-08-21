@@ -672,7 +672,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Refresh index
-    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
 
     try {
       // Remove 21 documents from the database, fail to delete all of them from ES
@@ -695,7 +695,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
       doCallRealMethod().when(esClient).delete(any(Function.class));
 
       // Remove documents that doesn't exist in the database
-      esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+      esClient.indices().refresh(r -> r.index(percolatorIndex));
       taskTestService.removeStaleDocuments();
 
       // We should have deleted 21 documents in 2 batches

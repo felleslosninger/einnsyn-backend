@@ -12,22 +12,19 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>4.0.6</version>
+    <version>4.1.0</version>
     <relativePath />
   </parent>
 
   <properties>
     <java.version>25</java.version>
-    <bouncycastle.version>1.83</bouncycastle.version>
-    <mockito.version>5.14.2</mockito.version>
     <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
     <nocommons.version>0.17.0</nocommons.version>
-    <shedlock.version>7.7.0</shedlock.version>
+    <shedlock.version>7.8.0</shedlock.version>
     <java-uuid-generator.version>5.2.0</java-uuid-generator.version>
-    <json.version>20251224</json.version>
+    <json.version>20260719</json.version>
     <mustache.version>0.9.14</mustache.version>
-    <testcontainers.version>1.21.4</testcontainers.version>
-    <spotless-maven-plugin.version>3.6.0</spotless-maven-plugin.version>
+    <spotless-maven-plugin.version>3.9.0</spotless-maven-plugin.version>
     <google-java-format.version>1.28.0</google-java-format.version>
     <jacoco.version>0.8.15</jacoco.version>
   </properties>
@@ -172,8 +169,7 @@
     <!-- Tests -->
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>postgresql</artifactId>
-      <version>${testcontainers.version}</version>
+      <artifactId>testcontainers-postgresql</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -185,8 +181,7 @@
 
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>elasticsearch</artifactId>
-      <version>${testcontainers.version}</version>
+      <artifactId>testcontainers-elasticsearch</artifactId>
       <scope>test</scope>
     </dependency>
 
