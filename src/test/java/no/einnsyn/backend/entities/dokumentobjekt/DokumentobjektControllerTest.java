@@ -4,6 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
@@ -19,6 +23,7 @@ import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektDTO;
+import no.einnsyn.backend.entities.downloadcount.DownloadCountService;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONObject;
@@ -28,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.AopTestUtils;
@@ -181,6 +187,32 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var statisticsResponse = getTodayJournalpostStatistics();
     assertEquals(2, statisticsResponse.getSummary().getDownloadCount());
     assertEquals(2, sumDownloadCount(statisticsResponse));
+  }
+
+  @Test
+  void downloadShouldSucceedWhenRecordingStatisticsFails() throws Exception {
+    var target = AopTestUtils.getTargetObject(dokumentobjektService);
+    var originalDownloadCountService = ReflectionTestUtils.getField(target, "downloadCountService");
+    var failingDownloadCountService = mock(DownloadCountService.class);
+    doThrow(new DataIntegrityViolationException("simulated statistics failure"))
+        .when(failingDownloadCountService)
+        .recordDownload(anyString());
+    ReflectionTestUtils.setField(target, "downloadCountService", failingDownloadCountService);
+
+    try {
+      try (var _ = startPdfProxy()) {
+        var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+
+        // The file was fetched successfully, so the failure to record statistics must not surface
+        // to the client as a download error.
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("pdf-body", response.getBody());
+      }
+    } finally {
+      ReflectionTestUtils.setField(target, "downloadCountService", originalDownloadCountService);
+    }
+
+    verify(failingDownloadCountService).recordDownload(anyString());
   }
 
   @Test
