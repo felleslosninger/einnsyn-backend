@@ -29,6 +29,17 @@
     <jacoco.version>0.8.15</jacoco.version>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+      <!-- Track the formatter as a Maven dependency so Dependabot can update the version used by Spotless. -->
+      <dependency>
+        <groupId>com.google.googlejavaformat</groupId>
+        <artifactId>google-java-format</artifactId>
+        <version>${google-java-format.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
