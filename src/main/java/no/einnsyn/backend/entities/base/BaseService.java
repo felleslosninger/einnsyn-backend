@@ -10,6 +10,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -1370,17 +1371,17 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Wrapper around maybeExpand for lists. This method will expand all objects in the list, and
-   * return a list of ExpandableFields.
+   * Wrapper around maybeExpand for collections. This method will expand all objects in the
+   * collection, and return a list of ExpandableFields.
    *
-   * @param objList The list of entity objects to expand
+   * @param objList The collection of entity objects to expand
    * @param propertyName The property name to check for expansion
    * @param expandPaths A set of paths indicating properties to expand
    * @param currentPath The current path in the object tree, used for nested expansions
    * @return a list of ExpandableFields containing either full DTOs or just the IDs
    */
   public List<ExpandableField<D>> maybeExpand(
-      List<O> objList, String propertyName, Set<String> expandPaths, String currentPath) {
+      Collection<O> objList, String propertyName, Set<String> expandPaths, String currentPath) {
     if (objList == null) {
       return List.of();
     }

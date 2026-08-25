@@ -255,11 +255,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     var moetedokument = moetedokumentService.findForUpdateOrThrow(moetedokumentId);
     var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
-      var updatedDokumentbeskrivelseList =
-          dokumentbeskrivelseList.stream()
-              .filter(dokbesk -> !dokbesk.getId().equals(dokumentbeskrivelseId))
-              .toList();
-      moetedokument.setDokumentbeskrivelse(updatedDokumentbeskrivelseList);
+      dokumentbeskrivelseList.removeIf(dokbesk -> dokbesk.getId().equals(dokumentbeskrivelseId));
     }
     var dokumentbeskrivelse = dokumentbeskrivelseService.findOrThrow(dokumentbeskrivelseId);
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);

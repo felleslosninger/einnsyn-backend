@@ -13,7 +13,9 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -100,11 +102,11 @@ public class Moetedokument extends Registrering {
       })
   @ManyToMany
   @OrderBy("id ASC")
-  private List<Dokumentbeskrivelse> dokumentbeskrivelse;
+  private Set<Dokumentbeskrivelse> dokumentbeskrivelse;
 
   public void addDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse) {
     if (this.dokumentbeskrivelse == null) {
-      this.dokumentbeskrivelse = new ArrayList<>();
+      this.dokumentbeskrivelse = new LinkedHashSet<>();
     }
     if (!this.dokumentbeskrivelse.contains(dokumentbeskrivelse)) {
       this.dokumentbeskrivelse.add(dokumentbeskrivelse);
