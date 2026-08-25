@@ -16,6 +16,11 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.exceptions.models.NetworkException;
 import no.einnsyn.backend.common.statistics.models.StatisticsResponse;
@@ -24,12 +29,14 @@ import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.backend.entities.downloadcount.DownloadCountService;
+import no.einnsyn.backend.entities.downloadcount.DownloadCountTestService;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -48,6 +55,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
   @Value("${application.baseUrl}")
   private String baseUrl;
+
+  @Autowired private DownloadCountTestService downloadCountTestService;
 
   private ArkivDTO arkivDTO;
   private SaksmappeDTO saksmappeDTO;
@@ -187,6 +196,57 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var statisticsResponse = getTodayJournalpostStatistics();
     assertEquals(2, statisticsResponse.getSummary().getDownloadCount());
     assertEquals(2, sumDownloadCount(statisticsResponse));
+  }
+
+  @Test
+  void statisticsShouldNotLoseConcurrentDownloads() throws Exception {
+    var threads = 8;
+    var downloadsPerThread = 5;
+    var expectedDownloads = threads * downloadsPerThread;
+    var dokumentobjektId = dokumentobjektDTO.getId();
+    var startLatch = new CountDownLatch(1);
+    var futures = new ArrayList<Future<?>>();
+
+    try (var proxy = startPdfProxy();
+        var executor = Executors.newFixedThreadPool(threads)) {
+      for (var i = 0; i < threads; i++) {
+        futures.add(
+            executor.submit(
+                () -> {
+                  // Release all threads at once, so they contend for the same hourly bucket.
+                  startLatch.await();
+                  for (var j = 0; j < downloadsPerThread; j++) {
+                    var response = get("/dokumentobjekt/" + dokumentobjektId + "/download");
+                    assertEquals(HttpStatus.OK, response.getStatusCode());
+                  }
+                  return null;
+                }));
+      }
+      startLatch.countDown();
+      for (var future : futures) {
+        future.get(60, TimeUnit.SECONDS);
+      }
+      assertEquals(expectedDownloads, proxy.requests().size());
+    }
+
+    // Let every index task from the concurrent downloads finish before adding another one below.
+    awaitSideEffects();
+
+    // A read-modify-write would lose downloads here, and would also fail requests outright once
+    // the optimistic locking retries were exhausted.
+    assertEquals(expectedDownloads, downloadCountTestService.getDownloadCount(dokumentobjektId));
+
+    // The concurrent requests index the same bucket in parallel, so whichever one finishes last
+    // decides what Elasticsearch holds. One more download, indexed on its own, brings the indexed
+    // count back in step with the database.
+    try (var _ = startPdfProxy()) {
+      var response = get("/dokumentobjekt/" + dokumentobjektId + "/download");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    var statisticsResponse = getTodayJournalpostStatistics();
+    assertEquals(expectedDownloads + 1, statisticsResponse.getSummary().getDownloadCount());
+    assertEquals(expectedDownloads + 1, sumDownloadCount(statisticsResponse));
   }
 
   @Test
@@ -442,6 +502,10 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       throws Exception {
     List<ProxyRequest> requests = Collections.synchronizedList(new ArrayList<>());
     var server = HttpServer.create(new InetSocketAddress(0), 0);
+    // Without an executor, handlers run on the single dispatcher thread, which would serialize
+    // concurrent downloads.
+    var executor = Executors.newCachedThreadPool();
+    server.setExecutor(executor);
     server.createContext(
         "/",
         exchange -> {
@@ -472,7 +536,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     // Update the service to use our proxy server
     setDownloadProxy("localhost", server.getAddress().getPort());
 
-    return new StartedProxy(server, requests);
+    return new StartedProxy(server, executor, requests);
   }
 
   private void setDownloadProxy(String host, int port) {
@@ -498,11 +562,13 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
         .sum();
   }
 
-  private record StartedProxy(HttpServer server, List<ProxyRequest> requests)
+  private record StartedProxy(
+      HttpServer server, ExecutorService executor, List<ProxyRequest> requests)
       implements AutoCloseable {
     @Override
     public void close() {
       server.stop(0);
+      executor.shutdown();
     }
   }
 

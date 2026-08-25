@@ -18,11 +18,9 @@ import no.einnsyn.backend.entities.journalpost.JournalpostRepository;
 import no.einnsyn.backend.entities.moetedokument.MoetedokumentRepository;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
+import no.einnsyn.backend.utils.id.IdGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,31 +77,21 @@ public class DownloadCountService extends BaseService<DownloadCount, DownloadCou
   }
 
   /**
-   * Record a download for a Dokumentobjekt. Finds or creates an hourly bucket in the database and
-   * schedules it for ES indexing. The parent Journalpost/Moetesak/Moetemappe is resolved later at
-   * indexing time.
+   * Record a download for a Dokumentobjekt. Atomically creates or increments an hourly bucket in
+   * the database and schedules it for ES indexing. The parent Journalpost/Moetesak/Moetemappe is
+   * resolved later at indexing time.
+   *
+   * <p>The increment is a single atomic upsert rather than a read-modify-write, since concurrent
+   * downloads of the same Dokumentobjekt within the same hour are expected on this path. See {@link
+   * DownloadCountRepository#incrementCount}.
    */
   @Transactional
-  @Retryable(
-      includes = {
-        ObjectOptimisticLockingFailureException.class,
-        DataIntegrityViolationException.class
-      })
   public void recordDownload(String dokumentobjektId) {
     var bucketStart = ZonedDateTime.now(NORWEGIAN_ZONE).truncatedTo(ChronoUnit.HOURS).toInstant();
-    var existing = repository.findByDokumentobjektIdAndBucketStart(dokumentobjektId, bucketStart);
-    if (existing != null) {
-      existing.setCount(existing.getCount() + 1);
-      repository.saveAndFlush(existing);
-      scheduleIndex(existing.getId());
-    } else {
-      var stat = newObject();
-      stat.setDokumentobjektId(dokumentobjektId);
-      stat.setBucketStart(bucketStart);
-      stat.setCount(1);
-      repository.saveAndFlush(stat);
-      scheduleIndex(stat.getId());
-    }
+    var id =
+        repository.incrementCount(
+            IdGenerator.generateId(DownloadCount.class), dokumentobjektId, bucketStart);
+    scheduleIndex(id);
   }
 
   @Override
