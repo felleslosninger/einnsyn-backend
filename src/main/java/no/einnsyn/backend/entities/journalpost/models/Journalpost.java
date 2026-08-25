@@ -15,7 +15,9 @@ import jakarta.persistence.PreUpdate;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -149,7 +151,7 @@ public class Journalpost extends Registrering implements Indexable {
       })
   @ManyToMany(fetch = FetchType.LAZY)
   @OrderBy("id ASC")
-  private List<Dokumentbeskrivelse> dokumentbeskrivelse;
+  private Set<Dokumentbeskrivelse> dokumentbeskrivelse;
 
   @ManyToOne
   @JoinColumn(name = "saksmappe_id", referencedColumnName = "saksmappe_id")
@@ -187,7 +189,7 @@ public class Journalpost extends Registrering implements Indexable {
    */
   public void addDokumentbeskrivelse(Dokumentbeskrivelse db) {
     if (dokumentbeskrivelse == null) {
-      dokumentbeskrivelse = new ArrayList<>();
+      dokumentbeskrivelse = new LinkedHashSet<>();
     }
     if (!dokumentbeskrivelse.contains(db)) {
       dokumentbeskrivelse.add(db);
