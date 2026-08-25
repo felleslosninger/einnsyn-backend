@@ -929,7 +929,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
           objectUpdated != null && (lastIndexed == null || objectUpdated.isAfter(lastIndexed));
       var lastIndexedTimestamp =
           objectUpdated != null && objectUpdated.isAfter(timestamp) ? objectUpdated : timestamp;
-      var esDocument = proxy.toLegacyES(object);
+      var esDocument = proxy.toLegacyES(object, esParent);
 
       // If esDocument is null, remove any existing ES document and update lastIndexed
       if (esDocument == null) {
@@ -1117,6 +1117,22 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   protected BaseES toLegacyES(O object) {
     return toLegacyES(object, new BaseES());
+  }
+
+  /**
+   * Wrapper that creates a BaseES object for toLegacyES(), reusing an already resolved ES parent.
+   *
+   * <p>Most entities are not join children and ignore the parent, so the default implementation
+   * delegates to {@link #toLegacyES(Object)}. Services whose documents are join children should
+   * override this instead of resolving the parent again, since {@link #index} has already resolved
+   * it and resolving can be expensive.
+   *
+   * @param object the entity object to convert
+   * @param esParent the ES parent resolved by {@link #getESParent}, may be null
+   * @return the legacy ElasticSearch document
+   */
+  protected BaseES toLegacyES(O object, String esParent) {
+    return toLegacyES(object);
   }
 
   /**

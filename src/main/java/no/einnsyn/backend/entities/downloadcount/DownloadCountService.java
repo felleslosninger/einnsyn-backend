@@ -1,5 +1,6 @@
 package no.einnsyn.backend.entities.downloadcount;
 
+import java.io.IOException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -103,18 +104,42 @@ public class DownloadCountService extends BaseService<DownloadCount, DownloadCou
         return parentId;
       }
     }
-    // Try to get the parent from the ES index (needed when parent is deleted before child)
+    // Read the routing off the existing ES document. This is needed when the Dokumentobjekt is
+    // deleted before its download counts, leaving the parent unresolvable from the database.
     try {
+      var routing = findRoutingInIndex(id);
+      if (routing != null) {
+        return routing;
+      }
+
+      // Only a document indexed within this same request is not searchable yet. Download counts
+      // are indexed by earlier download requests, so this refresh is the rare path rather than the
+      // normal one — refreshing first would mean a full index refresh per document.
       esClient.indices().refresh(r -> r.index(elasticsearchIndex));
-      var esResponse =
-          esClient.search(
-              sr -> sr.index(elasticsearchIndex).query(q -> q.ids(ids -> ids.values(List.of(id)))),
-              Void.class);
-      return esResponse.hits().hits().getFirst().routing();
+      routing = findRoutingInIndex(id);
+      if (routing == null) {
+        log.debug("No ES document found for DownloadCount {}, it has no parent to resolve", id);
+      }
+      return routing;
     } catch (Exception e) {
       log.error("Failed to get parent for DownloadCount {}", id, e);
     }
     return null;
+  }
+
+  /**
+   * Look up the routing (parent id) of an indexed DownloadCount.
+   *
+   * @param id the DownloadCount id
+   * @return the routing, or null if the document is not searchable
+   */
+  private String findRoutingInIndex(String id) throws IOException {
+    var esResponse =
+        esClient.search(
+            sr -> sr.index(elasticsearchIndex).query(q -> q.ids(ids -> ids.values(List.of(id)))),
+            Void.class);
+    var hits = esResponse.hits().hits();
+    return hits.isEmpty() ? null : hits.getFirst().routing();
   }
 
   private String findParentId(String dokumentobjektId) {
@@ -169,7 +194,25 @@ public class DownloadCountService extends BaseService<DownloadCount, DownloadCou
 
   @Override
   public BaseES toLegacyES(DownloadCount downloadCount) {
-    return toLegacyES(downloadCount, new DownloadCountES());
+    // No parent has been resolved for us, so resolve it before building the document. Indexing goes
+    // through the overload below instead, reusing the parent it already resolved.
+    return toLegacyES(downloadCount, getProxy().getESParent(downloadCount, downloadCount.getId()));
+  }
+
+  /**
+   * Build the ES document using an already resolved parent. Resolving the parent walks up to six
+   * repositories, so indexing must not trigger it a second time.
+   */
+  @Override
+  public BaseES toLegacyES(DownloadCount downloadCount, String esParent) {
+    var downloadCountES = new DownloadCountES();
+    toLegacyES(downloadCount, downloadCountES);
+    if (esParent != null) {
+      var relation = new DownloadCountES.DownloadCountRelation();
+      relation.setParent(esParent);
+      downloadCountES.setStatRelation(relation);
+    }
+    return downloadCountES;
   }
 
   @Override
@@ -177,13 +220,6 @@ public class DownloadCountService extends BaseService<DownloadCount, DownloadCou
     super.toLegacyES(downloadCount, es);
     if (es instanceof DownloadCountES downloadCountES) {
       downloadCountES.setCount(downloadCount.getCount());
-
-      var parentId = getProxy().getESParent(downloadCount, downloadCount.getId());
-      if (parentId != null) {
-        var relation = new DownloadCountES.DownloadCountRelation();
-        relation.setParent(parentId);
-        downloadCountES.setStatRelation(relation);
-      }
     }
     return es;
   }

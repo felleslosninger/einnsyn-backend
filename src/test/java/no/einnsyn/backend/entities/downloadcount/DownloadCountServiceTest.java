@@ -1,8 +1,12 @@
 package no.einnsyn.backend.entities.downloadcount;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -14,11 +18,13 @@ import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
 import co.elastic.clients.elasticsearch.indices.RefreshRequest;
 import co.elastic.clients.elasticsearch.indices.RefreshResponse;
 import co.elastic.clients.util.ObjectBuilder;
+import java.time.Instant;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.backend.entities.downloadcount.models.DownloadCount;
+import no.einnsyn.backend.entities.downloadcount.models.DownloadCountES;
 import no.einnsyn.backend.entities.journalpost.JournalpostRepository;
 import no.einnsyn.backend.entities.moetedokument.MoetedokumentRepository;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
@@ -131,5 +137,130 @@ class DownloadCountServiceTest {
     when(hit.routing()).thenReturn(esParentId);
 
     assertEquals(esParentId, downloadCountService.getESParent(downloadCount, downloadCountId));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void shouldNotRefreshWhenEsDocumentIsAlreadySearchable() throws Exception {
+    var dokumentobjektId = "do_01jxyz123456789abcdefghij";
+    var downloadCountId = "dc_01jxyz123456789abcdefghij";
+    var esParentId = "jp_01jxyz123456789fallback123";
+    var downloadCount = new DownloadCount();
+    var indicesClient = mock(ElasticsearchIndicesClient.class);
+    var searchResponse = (SearchResponse<Void>) mock(SearchResponse.class);
+    var hitsMetadata = (HitsMetadata<Void>) mock(HitsMetadata.class);
+    var hit = (Hit<Void>) mock(Hit.class);
+
+    downloadCount.setDokumentobjektId(dokumentobjektId);
+
+    when(dokumentbeskrivelseRepository.findIdByDokumentobjektId(dokumentobjektId)).thenReturn(null);
+    when(esClient.indices()).thenReturn(indicesClient);
+    when(esClient.search(
+            ArgumentMatchers.<Function<SearchRequest.Builder, ObjectBuilder<SearchRequest>>>any(),
+            eq(Void.class)))
+        .thenReturn(searchResponse);
+    when(searchResponse.hits()).thenReturn(hitsMetadata);
+    when(hitsMetadata.hits()).thenReturn(List.of(hit));
+    when(hit.routing()).thenReturn(esParentId);
+
+    assertEquals(esParentId, downloadCountService.getESParent(downloadCount, downloadCountId));
+
+    // Refreshing the whole shared index per document is what made deletes expensive.
+    verify(indicesClient, never())
+        .refresh(
+            ArgumentMatchers
+                .<Function<RefreshRequest.Builder, ObjectBuilder<RefreshRequest>>>any());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void shouldRefreshAndRetryWhenEsDocumentIsNotYetSearchable() throws Exception {
+    var dokumentobjektId = "do_01jxyz123456789abcdefghij";
+    var downloadCountId = "dc_01jxyz123456789abcdefghij";
+    var esParentId = "jp_01jxyz123456789fallback123";
+    var downloadCount = new DownloadCount();
+    var indicesClient = mock(ElasticsearchIndicesClient.class);
+    var emptyResponse = (SearchResponse<Void>) mock(SearchResponse.class);
+    var emptyHits = (HitsMetadata<Void>) mock(HitsMetadata.class);
+    var foundResponse = (SearchResponse<Void>) mock(SearchResponse.class);
+    var foundHits = (HitsMetadata<Void>) mock(HitsMetadata.class);
+    var hit = (Hit<Void>) mock(Hit.class);
+
+    downloadCount.setDokumentobjektId(dokumentobjektId);
+
+    when(dokumentbeskrivelseRepository.findIdByDokumentobjektId(dokumentobjektId)).thenReturn(null);
+    when(esClient.indices()).thenReturn(indicesClient);
+    when(indicesClient.refresh(
+            ArgumentMatchers
+                .<Function<RefreshRequest.Builder, ObjectBuilder<RefreshRequest>>>any()))
+        .thenReturn(mock(RefreshResponse.class));
+    when(esClient.search(
+            ArgumentMatchers.<Function<SearchRequest.Builder, ObjectBuilder<SearchRequest>>>any(),
+            eq(Void.class)))
+        .thenReturn(emptyResponse, foundResponse);
+    when(emptyResponse.hits()).thenReturn(emptyHits);
+    when(emptyHits.hits()).thenReturn(List.of());
+    when(foundResponse.hits()).thenReturn(foundHits);
+    when(foundHits.hits()).thenReturn(List.of(hit));
+    when(hit.routing()).thenReturn(esParentId);
+
+    assertEquals(esParentId, downloadCountService.getESParent(downloadCount, downloadCountId));
+
+    verify(indicesClient)
+        .refresh(
+            ArgumentMatchers
+                .<Function<RefreshRequest.Builder, ObjectBuilder<RefreshRequest>>>any());
+  }
+
+  @Test
+  void toLegacyESShouldUseResolvedParentWithoutResolvingAgain() {
+    var now = Instant.now();
+    var esParentId = "jp_01jxyz123456789abcdefghij";
+    var downloadCount = new DownloadCount();
+    downloadCount.setId("dc_01jxyz123456789abcdefghij");
+    downloadCount.setDokumentobjektId("do_01jxyz123456789abcdefghij");
+    downloadCount.setCount(7);
+    downloadCount.setCreated(now);
+    downloadCount.setUpdated(now);
+
+    var es = (DownloadCountES) downloadCountService.toLegacyES(downloadCount, esParentId);
+
+    assertEquals(7, es.getCount());
+    assertEquals(esParentId, es.getStatRelation().getParent());
+    assertEquals("download", es.getStatRelation().getName());
+
+    // index() has already resolved the parent. Resolving it again here is what doubled the
+    // repository round trips for every indexed download.
+    verifyNoInteractions(
+        dokumentbeskrivelseRepository,
+        journalpostRepository,
+        moetesakRepository,
+        moetedokumentRepository,
+        moetemappeRepository);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void shouldReturnNullWithoutThrowingWhenNoEsDocumentExists() throws Exception {
+    var downloadCountId = "dc_01jxyz123456789abcdefghij";
+    var indicesClient = mock(ElasticsearchIndicesClient.class);
+    var emptyResponse = (SearchResponse<Void>) mock(SearchResponse.class);
+    var emptyHits = (HitsMetadata<Void>) mock(HitsMetadata.class);
+
+    when(esClient.indices()).thenReturn(indicesClient);
+    when(indicesClient.refresh(
+            ArgumentMatchers
+                .<Function<RefreshRequest.Builder, ObjectBuilder<RefreshRequest>>>any()))
+        .thenReturn(mock(RefreshResponse.class));
+    when(esClient.search(
+            ArgumentMatchers.<Function<SearchRequest.Builder, ObjectBuilder<SearchRequest>>>any(),
+            eq(Void.class)))
+        .thenReturn(emptyResponse);
+    when(emptyResponse.hits()).thenReturn(emptyHits);
+    when(emptyHits.hits()).thenReturn(List.of());
+
+    // A count deleted before it was ever indexed has no document and no parent. This used to raise
+    // NoSuchElementException and log an error with a stack trace.
+    assertNull(downloadCountService.getESParent(null, downloadCountId));
   }
 }
