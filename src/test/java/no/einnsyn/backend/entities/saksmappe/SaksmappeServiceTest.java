@@ -298,7 +298,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     // Verify that there is one dokumentbeskrivelse in the returned journalpost
     var insertedDokumentbeskrivelseList = insertedJournalpost.getDokumentbeskrivelse();
     assertEquals(1, insertedDokumentbeskrivelseList.size());
-    var insertedDokumentbeskrivelse = insertedDokumentbeskrivelseList.getFirst();
+    var insertedDokumentbeskrivelse = insertedDokumentbeskrivelseList.iterator().next();
 
     // The Dokumentbeskrivelse should be related to one journalpost
     assertEquals(1, journalpostRepository.countByDokumentbeskrivelse(insertedDokumentbeskrivelse));

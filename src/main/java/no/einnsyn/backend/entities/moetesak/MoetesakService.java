@@ -451,11 +451,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
         dokumentbeskrivelseService.findForUpdateOrThrow(dokumentbeskrivelseId);
     var dokumentbeskrivelseList = moetesak.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
-      var updatedDokumentbeskrivelseList =
-          dokumentbeskrivelseList.stream()
-              .filter(dokbesk -> !dokbesk.getId().equals(dokumentbeskrivelseId))
-              .toList();
-      moetesak.setDokumentbeskrivelse(updatedDokumentbeskrivelseList);
+      dokumentbeskrivelseList.removeIf(dokbesk -> dokbesk.getId().equals(dokumentbeskrivelseId));
     }
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
