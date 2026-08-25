@@ -4,7 +4,6 @@ import jakarta.mail.MessagingException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -434,8 +433,7 @@ public class InnsynskravBestillingService
 
     // Verifying an already verified order is a no-op: the side effects below must happen only once
     if (!innsynskravBestilling.isVerified()) {
-      innsynskravBestilling.setVerifisertDato(new Date());
-      innsynskravBestilling.setVerified(true);
+      innsynskravBestilling.setVerifiedAt(Instant.now());
       repository.saveAndFlush(innsynskravBestilling);
 
       // Ensure Elasticsearch documents (including child innsynskrav docs) are reindexed with the

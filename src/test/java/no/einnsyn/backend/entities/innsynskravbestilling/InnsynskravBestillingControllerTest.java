@@ -253,9 +253,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var actualXml = orderCaptor.getValue();
     var orderXmlV1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
     orderXmlV1DateFormat.setTimeZone(TimeZone.getTimeZone("Europe/Oslo"));
-    assertNotNull(innsynskravBestilling.getVerifisertDato());
+    assertNotNull(innsynskravBestilling.getVerifiedAt());
     var orderXmlV1DateString =
-        orderXmlV1DateFormat.format(innsynskravBestilling.getVerifisertDato());
+        orderXmlV1DateFormat.format(Date.from(innsynskravBestilling.getVerifiedAt()));
     var createdOrderDateString =
         orderXmlV1DateFormat.format(innsynskravBestilling.getOpprettetDato());
     assertNotEquals(createdOrderDateString, orderXmlV1DateString);

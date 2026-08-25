@@ -11,6 +11,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -38,9 +39,8 @@ public class InnsynskravBestilling extends Base {
 
   private String verificationSecret;
 
-  private boolean verified;
-
-  private Date verifisertDato;
+  @Column(name = "verified_at")
+  private Instant verifiedAt;
 
   private boolean locked = false;
 
@@ -69,10 +69,26 @@ public class InnsynskravBestilling extends Base {
   }
 
   public Date getBestillingsdato() {
-    if (verifisertDato != null) {
-      return verifisertDato;
+    if (verifiedAt != null) {
+      return Date.from(verifiedAt);
     }
     return opprettetDato;
+  }
+
+  public boolean isVerified() {
+    return verifiedAt != null;
+  }
+
+  public void setVerified(boolean verified) {
+    if (verified) {
+      var verifiedDate = opprettetDato != null ? opprettetDato.toInstant() : Instant.now();
+      if (opprettetDato == null) {
+        setOpprettetDato(Date.from(verifiedDate));
+      }
+      setVerifiedAt(verifiedDate);
+    } else {
+      setVerifiedAt(null);
+    }
   }
 
   @PrePersist
@@ -85,11 +101,7 @@ public class InnsynskravBestilling extends Base {
     }
 
     if (opprettetDato == null) {
-      setOpprettetDato(new Date());
-    }
-
-    if (verified && verifisertDato == null) {
-      setVerifisertDato(opprettetDato);
+      setOpprettetDato(verifiedAt != null ? Date.from(verifiedAt) : new Date());
     }
 
     if (legacyBrukerIri == null && bruker != null) {
