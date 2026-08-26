@@ -68,13 +68,6 @@ public class InnsynskravBestilling extends Base {
     }
   }
 
-  public Date getBestillingsdato() {
-    if (verifiedAt != null) {
-      return Date.from(verifiedAt);
-    }
-    return opprettetDato;
-  }
-
   public boolean isVerified() {
     return verifiedAt != null;
   }

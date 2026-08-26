@@ -4,6 +4,7 @@ import jakarta.mail.MessagingException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -347,7 +348,7 @@ public class InnsynskravBestillingService
     context.put("innsynskravGroups", groupInnsynskravForBrukerMail(sortedInnsynskrav));
     context.put(
         "norwegianShortDate",
-        TimeConverter.dateToNorwegianShortDate(innsynskravBestilling.getBestillingsdato()));
+        TimeConverter.dateToNorwegianShortDate(Date.from(innsynskravBestilling.getVerifiedAt())));
 
     try {
       log.debug(

@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -231,7 +232,7 @@ public class InnsynskravSenderService {
       context.put("enhet", enhet);
       context.put("innsynskravBestilling", innsynskravBestilling);
       context.put("innsynskravList", innsynskravTemplateWrapperList);
-      var orderDate = innsynskravBestilling.getBestillingsdato();
+      var orderDate = Date.from(innsynskravBestilling.getVerifiedAt());
       context.put(
           "orderXmlV1Date",
           ORDER_XML_V1_DATE_FORMAT.format(TimeConverter.dateToLocalDate(orderDate)));
@@ -299,7 +300,7 @@ public class InnsynskravSenderService {
     context.put("enhet", enhet);
     context.put("innsynskravBestilling", innsynskravBestilling);
     context.put("innsynskravList", innsynskravTemplateWrapperList);
-    var orderDate = innsynskravBestilling.getBestillingsdato();
+    var orderDate = Date.from(innsynskravBestilling.getVerifiedAt());
     context.put(
         "orderXmlV1Date",
         ORDER_XML_V1_DATE_FORMAT.format(TimeConverter.dateToLocalDate(orderDate)));

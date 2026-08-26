@@ -277,8 +277,14 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertTrue(actualMail.contains("Saksbehandler: [Ufordelt]"));
     assertTrue(actualMail.contains("Enhet: \n"));
 
-    // Verify that confirmation email was sent
-    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+    // Verify that confirmation email was sent, with the same order date as OrderXML
+    var confirmationMailCaptor = ArgumentCaptor.forClass(MimeMessage.class);
+    verify(javaMailSender, times(2)).send(confirmationMailCaptor.capture());
+    var confirmationMail = confirmationMailCaptor.getAllValues().get(1);
+    assertTrue(
+        getTxtContent(confirmationMail).contains("Bestillingsdato: " + orderXmlV1DateString));
+    assertTrue(
+        getHtmlContent(confirmationMail).contains("Bestillingsdato: " + orderXmlV1DateString));
 
     // Delete the InnsynskravBestilling
     response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId);
@@ -1329,6 +1335,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getVerified());
+    var verifiedAt = innsynskravBestillingService.find(innsynskravBestillingId).getVerifiedAt();
+    assertNotNull(verifiedAt);
 
     // Wait for the order confirmation email to the orderer and the eFormidling shipment to the
     // Enhet
@@ -1361,6 +1369,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getVerified());
+    assertEquals(
+        verifiedAt, innsynskravBestillingService.find(innsynskravBestillingId).getVerifiedAt());
 
     // Neither the rejected attempt nor the repeated verification may re-send the order or the
     // confirmation email
@@ -1454,6 +1464,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var innsynskravBestillingId = innsynskravBestillingDTO.getId();
     assertEquals(brukerDTO.getEmail(), innsynskravBestillingDTO.getEmail());
     assertEquals(brukerDTO.getId(), innsynskravBestillingDTO.getBruker().getId());
+    var innsynskravBestilling = innsynskravBestillingService.find(innsynskravBestillingId);
+    assertTrue(innsynskravBestilling.isVerified());
+    assertNotNull(innsynskravBestilling.getVerifiedAt());
 
     // Verify that the InnsynskravBestilling got sent automatically, and that a receipt was sent to
     // the user.
