@@ -5,8 +5,8 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.OrderBy;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
@@ -29,11 +29,11 @@ public class Utredning extends ArkivBase {
   @JoinTable(name = "utredning_utredningsdokument")
   @ManyToMany
   @OrderBy("id ASC")
-  private List<Dokumentbeskrivelse> utredningsdokument;
+  private Set<Dokumentbeskrivelse> utredningsdokument;
 
   public void addUtredningsdokument(Dokumentbeskrivelse dokumentbeskrivelse) {
     if (utredningsdokument == null) {
-      utredningsdokument = new ArrayList<>();
+      utredningsdokument = new LinkedHashSet<>();
     }
     if (!utredningsdokument.contains(dokumentbeskrivelse)) {
       utredningsdokument.add(dokumentbeskrivelse);

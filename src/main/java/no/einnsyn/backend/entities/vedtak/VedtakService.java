@@ -216,10 +216,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     var dokumentbeskrivelse = dokumentbeskrivelseService.findForUpdateOrThrow(vedtaksdokumentId);
     var vedtaksdokumentList = vedtak.getVedtaksdokument();
     if (vedtaksdokumentList != null) {
-      vedtak.setVedtaksdokument(
-          vedtaksdokumentList.stream()
-              .filter(dokument -> !dokument.getId().equals(vedtaksdokumentId))
-              .toList());
+      vedtaksdokumentList.removeIf(dokument -> dokument.getId().equals(vedtaksdokumentId));
     }
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
