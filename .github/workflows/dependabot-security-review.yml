@@ -18,8 +18,7 @@ permissions: {}
 
 on:
   pull_request_target:
-    types: [opened]
-
+    types: [opened, reopened]
 jobs:
   request-review:
     runs-on: ubuntu-latest
