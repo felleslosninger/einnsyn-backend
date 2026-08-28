@@ -1,0 +1,60 @@
+# Requests a review from @felleslosninger/ein-interne on Dependabot PRs that
+# fix a known vulnerability (PRs associated with a Dependabot alert). Ordinary
+# version bumps get no review request.
+#
+# pull_request_target rather than pull_request: Dependabot-triggered
+# pull_request runs get a read-only token and cannot read Actions secrets,
+# which the alert lookup below needs. This is only safe because the workflow
+# never checks out or executes code from the PR — keep it that way.
+#
+# The alert lookup reads this repository's Dependabot alerts, which the
+# built-in GITHUB_TOKEN cannot do. We mint an installation token for the
+# einnsyn codegen app (the same app dispatch-codegen.yml uses), downscoped to
+# "Dependabot alerts: read". The app must be granted that permission and be
+# installed on this repository, or the token step fails.
+name: Dependabot security review
+
+permissions: {}
+
+on:
+  pull_request_target:
+    types: [opened]
+
+jobs:
+  request-review:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Get alert lookup token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # pin@v3.2.0
+        with:
+          client-id: ${{ secrets.EIN_CODEGEN_CLIENT_ID }}
+          private-key: ${{ secrets.EIN_CODEGEN_APP_PRIVATE_KEY }}
+          owner: felleslosninger
+          repositories: einnsyn-backend
+          permission-vulnerability-alerts: read
+
+      - name: Fetch Dependabot metadata
+        id: dependabot-metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # pin@v3.1.0
+        with:
+          alert-lookup: true
+          github-token: ${{ steps.app-token.outputs.token }}
+
+      - name: Request review from ein-interne
+        if: steps.dependabot-metadata.outputs.ghsa-id != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GHSA_ID: ${{ steps.dependabot-metadata.outputs.ghsa-id }}
+          CVSS: ${{ steps.dependabot-metadata.outputs.cvss }}
+        run: |
+          gh api "repos/${GH_REPO}/pulls/${PR_NUMBER}/requested_reviewers" \
+            -f 'team_reviewers[]=ein-interne'
+          echo "Requested review from ein-interne: fixes ${GHSA_ID} (CVSS ${CVSS})" \
+            >> "$GITHUB_STEP_SUMMARY"
