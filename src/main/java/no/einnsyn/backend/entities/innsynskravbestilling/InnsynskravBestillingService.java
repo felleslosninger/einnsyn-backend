@@ -182,8 +182,14 @@ public class InnsynskravBestillingService
 
     // This should never pass through the controller, and is only set internally
     if (dto.getVerified() != null) {
-      innsynskravBestilling.setVerified(dto.getVerified());
-      log.trace("innsynskravBestilling.setVerified(" + innsynskravBestilling.isVerified() + ")");
+      if (dto.getVerified()) {
+        if (innsynskravBestilling.getVerifiedAt() == null) {
+          innsynskravBestilling.setVerifiedAt(Instant.now());
+        }
+      } else {
+        innsynskravBestilling.setVerifiedAt(null);
+      }
+      log.trace("innsynskravBestilling.verifiedAt(" + innsynskravBestilling.getVerifiedAt() + ")");
     }
 
     // This should never pass through the controller, and is only set internally

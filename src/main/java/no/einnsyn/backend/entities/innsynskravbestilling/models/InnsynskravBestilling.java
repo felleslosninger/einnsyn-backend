@@ -72,18 +72,6 @@ public class InnsynskravBestilling extends Base {
     return verifiedAt != null;
   }
 
-  public void setVerified(boolean verified) {
-    if (verified) {
-      var verifiedDate = opprettetDato != null ? opprettetDato.toInstant() : Instant.now();
-      if (opprettetDato == null) {
-        setOpprettetDato(Date.from(verifiedDate));
-      }
-      setVerifiedAt(verifiedDate);
-    } else {
-      setVerifiedAt(null);
-    }
-  }
-
   @PrePersist
   @Override
   protected void prePersist() {
