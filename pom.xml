@@ -12,7 +12,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>4.1.0</version>
+    <version>4.1.1</version>
     <relativePath />
   </parent>
 
@@ -20,14 +20,25 @@
     <java.version>25</java.version>
     <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
     <nocommons.version>0.17.0</nocommons.version>
-    <shedlock.version>7.8.0</shedlock.version>
+    <shedlock.version>7.9.0</shedlock.version>
     <java-uuid-generator.version>5.2.0</java-uuid-generator.version>
     <json.version>20260719</json.version>
     <mustache.version>0.9.14</mustache.version>
-    <spotless-maven-plugin.version>3.9.0</spotless-maven-plugin.version>
-    <google-java-format.version>1.28.0</google-java-format.version>
+    <spotless-maven-plugin.version>3.10.0</spotless-maven-plugin.version>
+    <google-java-format.version>1.36.1</google-java-format.version>
     <jacoco.version>0.8.15</jacoco.version>
   </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- Track the formatter as a Maven dependency so Dependabot can update the version used by Spotless. -->
+      <dependency>
+        <groupId>com.google.googlejavaformat</groupId>
+        <artifactId>google-java-format</artifactId>
+        <version>${google-java-format.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
