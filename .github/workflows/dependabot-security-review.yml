@@ -33,8 +33,8 @@ jobs:
         with:
           client-id: ${{ secrets.EIN_CODEGEN_CLIENT_ID }}
           private-key: ${{ secrets.EIN_CODEGEN_APP_PRIVATE_KEY }}
-          owner: felleslosninger
-          repositories: einnsyn-backend
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
           permission-vulnerability-alerts: read
 
       - name: Fetch Dependabot metadata
