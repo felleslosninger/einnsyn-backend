@@ -280,8 +280,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     // Verify that confirmation email was sent, with the same order date as OrderXML
     var confirmationMailCaptor = ArgumentCaptor.forClass(MimeMessage.class);
     Awaitility.await()
-        .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
-    verify(javaMailSender, times(2)).send(confirmationMailCaptor.capture());
+        .untilAsserted(
+            () -> verify(javaMailSender, times(2)).send(confirmationMailCaptor.capture()));
     var expectedOrderDate = "Bestillingsdato: " + orderXmlV1DateString;
     assertNotNull(findMailTextContaining(confirmationMailCaptor.getAllValues(), expectedOrderDate));
     assertNotNull(findMailHtmlContaining(confirmationMailCaptor.getAllValues(), expectedOrderDate));
