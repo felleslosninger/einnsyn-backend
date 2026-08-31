@@ -7,17 +7,13 @@ BEGIN
     SELECT 1
     FROM information_schema.columns
     WHERE table_name = 'innsynskrav'
-      AND column_name = 'oppdatert_dato'
+      AND column_name = 'verified'
   ) THEN
     UPDATE innsynskrav
-    SET verified_at = COALESCE(oppdatert_dato, _updated, opprettet_dato)
-    WHERE verified IS TRUE
-      AND verified_at IS NULL;
-  ELSE
-    UPDATE innsynskrav
-    SET verified_at = COALESCE(_updated, opprettet_dato)
-    WHERE verified IS TRUE
-      AND verified_at IS NULL;
+    SET verified_at = CASE
+      WHEN verified IS TRUE THEN opprettet_dato
+      ELSE NULL
+    END;
   END IF;
 END $$;
 
