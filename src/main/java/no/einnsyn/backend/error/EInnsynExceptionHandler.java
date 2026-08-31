@@ -136,12 +136,11 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(InvalidParameterException.class)
   public ResponseEntity<Object> handleException(InvalidParameterException ex) {
     var httpStatus = HttpStatus.BAD_REQUEST;
-    var badRequestException = new BadRequestException(ex.getMessage(), ex);
-    logAndCountWarning(badRequestException, httpStatus);
 
     // Don't echo Tomcat's message, it may contain corrupted bytes from the failed decode:
     var censoredBadRequestException =
         new BadRequestException("Invalid character encoding in request parameters.", ex);
+    logAndCountWarning(censoredBadRequestException, httpStatus);
     var clientResponse = censoredBadRequestException.toClientResponse();
     return ResponseEntity.status(httpStatus).body(clientResponse);
   }
