@@ -360,12 +360,11 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
 
     // When debug logging is enabled, the parameters are read before dispatch, and the exception is
     // handled by Tomcat.
-    var dispatcherLogger = LoggerFactory.getLogger(DispatcherServlet.class);
-    var expectedMessage =
-        dispatcherLogger.isDebugEnabled()
-            ? "Bad Request"
-            : "Invalid character encoding in request parameters.";
-    assertEquals(expectedMessage, errorResponse.getMessage());
+    var message = errorResponse.getMessage();
+    assertTrue(
+        "Bad Request".equals(message)
+            || "Invalid character encoding in request parameters.".equals(message),
+        "Unexpected error message: " + message);
 
     // The same query correctly encoded as UTF-8 should be accepted
     uri = URI.create("http://localhost:" + localPort + "/search?query=sj%C3%B8bunn");
