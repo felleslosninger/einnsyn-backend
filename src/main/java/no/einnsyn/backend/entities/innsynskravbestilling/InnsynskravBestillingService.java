@@ -181,10 +181,8 @@ public class InnsynskravBestillingService
     super.fromDTO(dto, innsynskravBestilling);
 
     // This should never pass through the controller, and is only set internally
-    if (Boolean.TRUE.equals(dto.getVerified())) {
-      if (innsynskravBestilling.getVerifiedAt() == null) {
-        innsynskravBestilling.setVerifiedAt(Instant.now());
-      }
+    if (Boolean.TRUE.equals(dto.getVerified()) && innsynskravBestilling.getVerifiedAt() == null) {
+      innsynskravBestilling.setVerifiedAt(Instant.now());
       log.trace("innsynskravBestilling.verifiedAt({})", innsynskravBestilling.getVerifiedAt());
     }
 
