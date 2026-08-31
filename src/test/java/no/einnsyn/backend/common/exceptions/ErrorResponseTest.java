@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
+import java.net.URI;
 import java.util.stream.Stream;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.exceptions.models.AuthenticationException;
@@ -22,16 +23,25 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.client.RestTemplate;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 public class ErrorResponseTest extends EinnsynControllerTestBase {
+
+  @LocalServerPort private int localPort;
+
+  @Autowired private RestTemplate rawRestTemplate;
 
   @Test
   void testNotFound() throws Exception {
@@ -330,6 +340,34 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
     var errorResponse = gson.fromJson(response.getBody(), BadRequestException.ClientResponse.class);
     assertEquals("badRequest", errorResponse.getType());
     assertNotNull(errorResponse.getMessage());
+  }
+
+  /**
+   * Query parameters percent-encoded with a non-UTF-8 charset (e.g. ISO-8859-1) should give 400 Bad
+   * Request, not 500. Tomcat throws InvalidParameterException when decoding such parameters.
+   */
+  @Test
+  void testMalformedParameterEncoding() throws Exception {
+    // %F8 is "ø" in ISO-8859-1, and is not a valid UTF-8 sequence. Use the URI overload of
+    // exchange() to keep the raw bytes, since a String url would be re-encoded.
+    var uri = URI.create("http://localhost:" + localPort + "/search?query=sj%F8bunn");
+    var response = rawRestTemplate.exchange(uri, HttpMethod.GET, HttpEntity.EMPTY, String.class);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    var errorResponse = gson.fromJson(response.getBody(), BadRequestException.ClientResponse.class);
+    assertEquals("badRequest", errorResponse.getType());
+
+    // When debug logging is enabled, the parameters are read before dispatch, and the exception is
+    // handled by Tomcat.
+    var message = errorResponse.getMessage();
+    assertTrue(
+        "Bad Request".equals(message)
+            || "Invalid character encoding in request parameters.".equals(message),
+        "Unexpected error message: " + message);
+
+    // The same query correctly encoded as UTF-8 should be accepted
+    uri = URI.create("http://localhost:" + localPort + "/search?query=sj%C3%B8bunn");
+    response = rawRestTemplate.exchange(uri, HttpMethod.GET, HttpEntity.EMPTY, String.class);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
   @Test
