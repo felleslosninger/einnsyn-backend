@@ -279,12 +279,12 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
 
     // Verify that confirmation email was sent, with the same order date as OrderXML
     var confirmationMailCaptor = ArgumentCaptor.forClass(MimeMessage.class);
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
     verify(javaMailSender, times(2)).send(confirmationMailCaptor.capture());
-    var confirmationMail = confirmationMailCaptor.getAllValues().get(1);
-    assertTrue(
-        getTxtContent(confirmationMail).contains("Bestillingsdato: " + orderXmlV1DateString));
-    assertTrue(
-        getHtmlContent(confirmationMail).contains("Bestillingsdato: " + orderXmlV1DateString));
+    var expectedOrderDate = "Bestillingsdato: " + orderXmlV1DateString;
+    assertNotNull(findMailTextContaining(confirmationMailCaptor.getAllValues(), expectedOrderDate));
+    assertNotNull(findMailHtmlContaining(confirmationMailCaptor.getAllValues(), expectedOrderDate));
 
     // Delete the InnsynskravBestilling
     response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId);
