@@ -23,16 +23,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.DispatcherServlet;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -350,14 +353,23 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
     // %F8 is "ø" in ISO-8859-1, and is not a valid UTF-8 sequence. Use the URI overload of
     // exchange() to keep the raw bytes, since a String url would be re-encoded.
     var uri = URI.create("http://localhost:" + localPort + "/search?query=sj%F8bunn");
-    var response = rawRestTemplate.exchange(uri, HttpMethod.GET, null, String.class);
+    var response = rawRestTemplate.exchange(uri, HttpMethod.GET, HttpEntity.EMPTY, String.class);
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     var errorResponse = gson.fromJson(response.getBody(), BadRequestException.ClientResponse.class);
     assertEquals("badRequest", errorResponse.getType());
 
+    // When debug logging is enabled, the parameters are read before dispatch, and the exception is
+    // handled by Tomcat.
+    var dispatcherLogger = LoggerFactory.getLogger(DispatcherServlet.class);
+    var expectedMessage =
+        dispatcherLogger.isDebugEnabled()
+            ? "Bad Request"
+            : "Invalid character encoding in request parameters.";
+    assertEquals(expectedMessage, errorResponse.getMessage());
+
     // The same query correctly encoded as UTF-8 should be accepted
     uri = URI.create("http://localhost:" + localPort + "/search?query=sj%C3%B8bunn");
-    response = rawRestTemplate.exchange(uri, HttpMethod.GET, null, String.class);
+    response = rawRestTemplate.exchange(uri, HttpMethod.GET, HttpEntity.EMPTY, String.class);
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
