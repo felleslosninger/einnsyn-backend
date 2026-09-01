@@ -16,6 +16,7 @@ import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO.JournalposttypeEnum;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
@@ -1903,5 +1904,206 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
 
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+  }
+
+  /**
+   * The legacy Saksbehandler is resolved from the Korrespondansepart matching the direction of the
+   * Journalpost: the recipient for incoming documents, the sender for outgoing documents.
+   */
+  @Test
+  void testLegacySaksbehandlerResolution() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var avsenderJSON = getKorrespondansepartJSON();
+    avsenderJSON.put("korrespondanseparttype", "avsender");
+    avsenderJSON.put("saksbehandler", "Avsender Saksbehandler");
+    var mottakerJSON = getKorrespondansepartJSON();
+    mottakerJSON.put("korrespondanseparttype", "mottaker");
+    mottakerJSON.put("saksbehandler", "Mottaker Saksbehandler");
+
+    // For an incoming Journalpost the Saksbehandler is resolved from the Mottaker
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("journalposttype", "inngaaende_dokument");
+    journalpostJSON.put("korrespondansepart", new JSONArray().put(avsenderJSON).put(mottakerJSON));
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var incomingDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var saksbehandler = journalpostService.getSaksbehandlerKorrespondansepart(incomingDTO.getId());
+    assertNotNull(saksbehandler);
+    assertEquals("Mottaker Saksbehandler", saksbehandler.getSaksbehandler());
+
+    // For an outgoing Journalpost the Saksbehandler is resolved from the Avsender
+    journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("journalposttype", "utgaaende_dokument");
+    journalpostJSON.put("korrespondansepart", new JSONArray().put(avsenderJSON).put(mottakerJSON));
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var outgoingDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    saksbehandler = journalpostService.getSaksbehandlerKorrespondansepart(outgoingDTO.getId());
+    assertNotNull(saksbehandler);
+    assertEquals("Avsender Saksbehandler", saksbehandler.getSaksbehandler());
+
+    // A Korrespondansepart marked erBehandlingsansvarlig wins over the direction match
+    var behandlingsansvarligJSON = getKorrespondansepartJSON();
+    behandlingsansvarligJSON.put("korrespondanseparttype", "avsender");
+    behandlingsansvarligJSON.put("saksbehandler", "Behandlingsansvarlig Saksbehandler");
+    behandlingsansvarligJSON.put("erBehandlingsansvarlig", true);
+    journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("journalposttype", "inngaaende_dokument");
+    journalpostJSON.put(
+        "korrespondansepart", new JSONArray().put(mottakerJSON).put(behandlingsansvarligJSON));
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var explicitDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    saksbehandler = journalpostService.getSaksbehandlerKorrespondansepart(explicitDTO.getId());
+    assertNotNull(saksbehandler);
+    assertEquals("Behandlingsansvarlig Saksbehandler", saksbehandler.getSaksbehandler());
+
+    // "Ufordelt" saksbehandlere and kopimottakere are ignored, and a Korrespondansepart with an
+    // administrativEnhet is preferred over one without
+    var ufordeltJSON = getKorrespondansepartJSON();
+    ufordeltJSON.put("korrespondanseparttype", "mottaker");
+    ufordeltJSON.put("saksbehandler", "Ufordelt");
+    var kopimottakerJSON = getKorrespondansepartJSON();
+    kopimottakerJSON.put("korrespondanseparttype", "kopimottaker");
+    kopimottakerJSON.put("saksbehandler", "Kopimottaker Saksbehandler");
+    var withEnhetJSON = getKorrespondansepartJSON();
+    withEnhetJSON.put("korrespondanseparttype", "mottaker");
+    withEnhetJSON.put("saksbehandler", "Med Enhet");
+    withEnhetJSON.put("administrativEnhet", "Enhetskode");
+    journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("journalposttype", "inngaaende_dokument");
+    journalpostJSON.put(
+        "korrespondansepart",
+        new JSONArray()
+            .put(ufordeltJSON)
+            .put(kopimottakerJSON)
+            .put(mottakerJSON)
+            .put(withEnhetJSON));
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var filteredDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    saksbehandler = journalpostService.getSaksbehandlerKorrespondansepart(filteredDTO.getId());
+    assertNotNull(saksbehandler);
+    assertEquals("Med Enhet", saksbehandler.getSaksbehandler());
+
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+  }
+
+  /** A Skjerming can only be removed through the Journalpost it belongs to. */
+  @Test
+  void testDeleteSkjermingFromJournalpost() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var skjerming1JSON = getSkjermingJSON();
+    skjerming1JSON.put("tilgangsrestriksjon", "delete-skjerming-test-1");
+    var journalpost1JSON = getJournalpostJSON();
+    journalpost1JSON.put("skjerming", skjerming1JSON);
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpost1JSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpost1DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var skjerming1Id = journalpost1DTO.getSkjerming().getId();
+
+    // Skjerming objects are deduplicated by content, so a different tilgangsrestriksjon is needed
+    // to get a separate Skjerming
+    var skjerming2JSON = getSkjermingJSON();
+    skjerming2JSON.put("tilgangsrestriksjon", "delete-skjerming-test-2");
+    var journalpost2JSON = getJournalpostJSON();
+    journalpost2JSON.put("skjerming", skjerming2JSON);
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpost2JSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpost2DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var skjerming2Id = journalpost2DTO.getSkjerming().getId();
+    assertNotEquals(skjerming1Id, skjerming2Id);
+
+    // A Skjerming belonging to another Journalpost cannot be deleted through this one
+    response = delete("/journalpost/" + journalpost1DTO.getId() + "/skjerming/" + skjerming2Id);
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+
+    // Deleting the Journalpost's own Skjerming removes it from the Journalpost, and the orphaned
+    // Skjerming is deleted
+    response = delete("/journalpost/" + journalpost1DTO.getId() + "/skjerming/" + skjerming1Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = get("/journalpost/" + journalpost1DTO.getId());
+    journalpost1DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertNull(journalpost1DTO.getSkjerming());
+    assertEquals(HttpStatus.NOT_FOUND, get("/skjerming/" + skjerming1Id).getStatusCode());
+
+    // Replacing a Skjerming deletes the old one when it becomes orphaned
+    response = get("/journalpost/" + journalpost2DTO.getId());
+    journalpost2DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(skjerming2Id, journalpost2DTO.getSkjerming().getId());
+    var skjerming3JSON = getSkjermingJSON();
+    skjerming3JSON.put("tilgangsrestriksjon", "delete-skjerming-test-3");
+    response =
+        patch(
+            "/journalpost/" + journalpost2DTO.getId(),
+            new JSONObject().put("skjerming", skjerming3JSON));
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpost2DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertNotEquals(skjerming2Id, journalpost2DTO.getSkjerming().getId());
+    assertEquals(HttpStatus.NOT_FOUND, get("/skjerming/" + skjerming2Id).getStatusCode());
+
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+  }
+
+  /**
+   * The administrative Enhet of a Journalpost can be given as a code, as an object reference, or
+   * both, and falls back to the Saksmappe's administrative Enhet.
+   */
+  @Test
+  void testAdministrativEnhetResolution() throws Exception {
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("enhetskode", "JPADMENHET");
+    var response = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    // No administrativEnhet given: fall back to the Saksmappe's administrative Enhet
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(
+        saksmappeDTO.getAdministrativEnhetObjekt().getId(),
+        journalpostDTO.getAdministrativEnhetObjekt().getId());
+
+    // Only the code given: resolve the Enhet object from the code
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("administrativEnhet", "JPADMENHET");
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals("JPADMENHET", journalpostDTO.getAdministrativEnhet());
+    assertEquals(enhetDTO.getId(), journalpostDTO.getAdministrativEnhetObjekt().getId());
+
+    // Only the object given
+    journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("administrativEnhetObjekt", enhetDTO.getId());
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(enhetDTO.getId(), journalpostDTO.getAdministrativEnhetObjekt().getId());
+
+    // Both the code and the object given: use both as-is
+    journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("administrativEnhet", "JPADMENHET");
+    journalpostJSON.put("administrativEnhetObjekt", enhetDTO.getId());
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals("JPADMENHET", journalpostDTO.getAdministrativEnhet());
+    assertEquals(enhetDTO.getId(), journalpostDTO.getAdministrativEnhetObjekt().getId());
+
+    // Clean up. The Enhet is not deletable until the Saksmappe (and its Journalposts) are gone.
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/enhet/" + enhetDTO.getId()).getStatusCode());
   }
 }
