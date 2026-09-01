@@ -347,6 +347,40 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
         null);
   }
 
+  /** When the source omits the Content-Type, it is guessed from the file name. */
+  @Test
+  void downloadShouldGuessContentTypeWhenSourceOmitsIt() throws Exception {
+    try (var proxy =
+        startProxyServer(
+            HttpStatus.OK.value(), null, "pdf-body".getBytes(StandardCharsets.UTF_8), null, null)) {
+      var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      assertEquals("application/pdf", response.getHeaders().getFirst("Content-Type"));
+      assertEquals("pdf-body", response.getBody());
+    }
+  }
+
+  /** Unknown file types without a Content-Type fall back to application/octet-stream. */
+  @Test
+  void downloadShouldFallBackToOctetStreamForUnknownContentType() throws Exception {
+    var dokumentobjektJSON = getDokumentobjektJSON();
+    dokumentobjektJSON.put("referanseDokumentfil", "http://example.com/dokument.ukjent");
+    var response =
+        post(
+            "/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId() + "/dokumentobjekt",
+            dokumentobjektJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var unknownTypeDTO = gson.fromJson(response.getBody(), DokumentobjektDTO.class);
+
+    try (var proxy =
+        startProxyServer(
+            HttpStatus.OK.value(), null, "body".getBytes(StandardCharsets.UTF_8), null, null)) {
+      response = get("/dokumentobjekt/" + unknownTypeDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      assertEquals("application/octet-stream", response.getHeaders().getFirst("Content-Type"));
+    }
+  }
+
   private StartedProxy startProxyServer(
       int returnStatusCode,
       String returnContentType,
