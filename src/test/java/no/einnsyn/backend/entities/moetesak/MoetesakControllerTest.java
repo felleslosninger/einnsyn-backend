@@ -14,6 +14,7 @@ import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.entities.utredning.models.UtredningDTO;
 import no.einnsyn.backend.entities.vedtak.models.VedtakDTO;
@@ -943,5 +944,19 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     response = get("/moetesak/" + moetesakDTO.getId() + "/vedtak");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals(vedtakDTO.getId(), gson.fromJson(response.getBody(), VedtakDTO.class).getId());
+  }
+
+  /** The slug base includes moetesaksaar and moetesakssekvensnummer when they are set. */
+  @Test
+  void testGetSlugBase() {
+    var moetesak = new Moetesak();
+    moetesak.setOffentligTittel("tittel");
+    assertEquals("tittel", moetesakService.getSlugBase(moetesak));
+
+    moetesak.setMoetesaksaar(2020);
+    assertEquals("2020-tittel", moetesakService.getSlugBase(moetesak));
+
+    moetesak.setMoetesakssekvensnummer(42);
+    assertEquals("2020-42-tittel", moetesakService.getSlugBase(moetesak));
   }
 }

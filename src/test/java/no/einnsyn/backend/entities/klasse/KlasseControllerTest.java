@@ -282,6 +282,12 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
     assertEquals(1, klasseList.getItems().size());
     assertEquals(subklasseDTO.getId(), klasseList.getItems().get(0).getId());
 
+    // The lists can also be sorted ascending
+    for (var subResource : new String[] {"saksmappe", "moetemappe", "klasse"}) {
+      response = get("/klasse/" + klasseDTO.getId() + "/" + subResource + "?sortOrder=asc");
+      assertEquals(HttpStatus.OK, response.getStatusCode(), subResource);
+    }
+
     delete("/arkiv/" + arkivDTO.getId());
   }
 }
