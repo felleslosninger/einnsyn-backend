@@ -1260,4 +1260,95 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/arkivdel/" + arkivdelDTO.getId()).getStatusCode());
     assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
   }
+
+  /**
+   * An Enhet that still handles data (Saksmappe, Moetemappe or Moetesak) cannot be deleted. Once
+   * the data is gone, deleting the Enhet cascades to its underenheter and API keys.
+   */
+  @Test
+  void testDeleteEnhetRequiresNoDataAndCascades() throws Exception {
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("enhetskode", "CASCADE");
+    var response = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    // Underenhet of the Enhet
+    response = post("/enhet/" + enhetDTO.getId() + "/underenhet", getEnhetJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var underenhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    // ApiKey for the Enhet
+    response = post("/enhet/" + enhetDTO.getId() + "/apiKey", getApiKeyJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var apiKeyDTO = gson.fromJson(response.getBody(), ApiKeyDTO.class);
+
+    var arkivResponse = post("/arkiv", getArkivJSON());
+    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
+    // The Enhet cannot be deleted while it handles a Saksmappe
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("administrativEnhet", "CASCADE");
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals(enhetDTO.getId(), saksmappeDTO.getAdministrativEnhetObjekt().getId());
+    assertEquals(HttpStatus.FORBIDDEN, delete("/enhet/" + enhetDTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+
+    // The Enhet cannot be deleted while it handles a Moetemappe
+    var moetemappeJSON = getMoetemappeJSON();
+    moetemappeJSON.put("utvalg", "CASCADE");
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+    assertEquals(enhetDTO.getId(), moetemappeDTO.getUtvalgObjekt().getId());
+    assertEquals(HttpStatus.FORBIDDEN, delete("/enhet/" + enhetDTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappeDTO.getId()).getStatusCode());
+
+    // The Enhet cannot be deleted while it handles a standalone Moetesak
+    var moetesakJSON = getMoetesakJSON();
+    moetesakJSON.put("utvalg", "CASCADE");
+    response = post("/moetesak", moetesakJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    assertEquals(enhetDTO.getId(), moetesakDTO.getUtvalgObjekt().getId());
+    assertEquals(HttpStatus.FORBIDDEN, delete("/enhet/" + enhetDTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/moetesak/" + moetesakDTO.getId()).getStatusCode());
+
+    // Without data, the parent Enhet can delete, and underenheter and API keys cascade
+    response = delete("/enhet/" + enhetDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, getAdmin("/enhet/" + enhetDTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, getAdmin("/enhet/" + underenhetDTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, getAdmin("/apiKey/" + apiKeyDTO.getId()).getStatusCode());
+
+    // cleanup
+    assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
+  }
+
+  /** The administrative flags on an Enhet are persisted and returned. */
+  @Test
+  void testEnhetAdministrativeFlags() throws Exception {
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("visToppnode", true);
+    enhetJSON.put("teknisk", true);
+    enhetJSON.put("skalKonvertereId", true);
+    enhetJSON.put("skalMottaKvittering", true);
+    enhetJSON.put("orderXmlVersjon", 2);
+    var response = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    assertEquals(true, enhetDTO.getVisToppnode());
+    assertEquals(true, enhetDTO.getTeknisk());
+    assertEquals(true, enhetDTO.getSkalKonvertereId());
+    assertEquals(true, enhetDTO.getSkalMottaKvittering());
+    assertEquals(2, enhetDTO.getOrderXmlVersjon());
+
+    // cleanup
+    assertEquals(HttpStatus.OK, delete("/enhet/" + enhetDTO.getId()).getStatusCode());
+  }
 }
