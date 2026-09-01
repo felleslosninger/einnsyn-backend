@@ -2,8 +2,10 @@ package no.einnsyn.backend.entities.lagretsoek;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.UUID;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -232,5 +234,37 @@ class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
     assertTrue(deletedIds.contains(lagretSoekDTO.getId()));
 
     delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+  }
+
+  // Imported legacy LagretSoek objects can also be looked up by their legacy UUID
+  @Test
+  void testFindByLegacyId() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    // Assign a legacy id directly, like imported legacy data would have
+    var legacyId = UUID.randomUUID();
+    var lagretSoek = lagretSoekRepository.findById(lagretSoekDTO.getId()).orElseThrow();
+    lagretSoek.setLegacyId(legacyId);
+    lagretSoekRepository.save(lagretSoek);
+
+    // Lookup by legacy id
+    var found = lagretSoekService.find(legacyId.toString());
+    assertNotNull(found);
+    assertEquals(lagretSoekDTO.getId(), found.getId());
+
+    // Lookup by an unknown legacy id finds nothing
+    assertNull(lagretSoekService.find(UUID.randomUUID().toString()));
+
+    // Lookup by the eInnsyn id still works
+    found = lagretSoekService.find(lagretSoekDTO.getId());
+    assertNotNull(found);
+    assertEquals(lagretSoekDTO.getId(), found.getId());
+
+    // Clean up
+    response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 }
