@@ -115,4 +115,39 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     response = delete("/bruker/" + bruker2DTO.getEmail(), accessToken2);
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
+
+  // Only admin can list Bruker, since the list exposes e-mail addresses
+  @Test
+  void testListBruker() throws Exception {
+    var brukerJSON = getBrukerJSON();
+    var response = post("/bruker", brukerJSON);
+    var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
+    var bruker = brukerService.find(brukerDTO.getId());
+
+    // Activate bruker and get a token
+    response = patchAnon("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret(), null);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = post("/auth/token", getLoginJSON(brukerJSON));
+    var accessToken = gson.fromJson(response.getBody(), TokenResponse.class).getToken();
+
+    // Anonymous cannot list Bruker
+    response = getAnon("/bruker");
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // A normal user cannot list Bruker
+    response = get("/bruker", accessToken);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // An Enhet cannot list Bruker
+    response = get("/bruker");
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // Admin can list Bruker
+    response = getAdmin("/bruker");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Clean up
+    response = delete("/bruker/" + brukerDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
 }
