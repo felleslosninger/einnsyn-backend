@@ -4,6 +4,7 @@ import jakarta.mail.MessagingException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -180,9 +181,9 @@ public class InnsynskravBestillingService
     super.fromDTO(dto, innsynskravBestilling);
 
     // This should never pass through the controller, and is only set internally
-    if (dto.getVerified() != null) {
-      innsynskravBestilling.setVerified(dto.getVerified());
-      log.trace("innsynskravBestilling.setVerified(" + innsynskravBestilling.isVerified() + ")");
+    if (Boolean.TRUE.equals(dto.getVerified()) && innsynskravBestilling.getVerifiedAt() == null) {
+      innsynskravBestilling.setVerifiedAt(Instant.now());
+      log.trace("innsynskravBestilling.verifiedAt({})", innsynskravBestilling.getVerifiedAt());
     }
 
     // This should never pass through the controller, and is only set internally
@@ -347,7 +348,7 @@ public class InnsynskravBestillingService
     context.put("innsynskravGroups", groupInnsynskravForBrukerMail(sortedInnsynskrav));
     context.put(
         "norwegianShortDate",
-        TimeConverter.dateToNorwegianShortDate(innsynskravBestilling.getOpprettetDato()));
+        TimeConverter.dateToNorwegianShortDate(Date.from(innsynskravBestilling.getVerifiedAt())));
 
     try {
       log.debug(
@@ -433,15 +434,22 @@ public class InnsynskravBestillingService
 
     // Verifying an already verified order is a no-op: the side effects below must happen only once
     if (!innsynskravBestilling.isVerified()) {
-      innsynskravBestilling.setVerified(true);
+      innsynskravBestilling.setVerifiedAt(Instant.now());
       repository.saveAndFlush(innsynskravBestilling);
 
       // Ensure Elasticsearch documents (including child innsynskrav docs) are reindexed with the
       // updated verified state.
       scheduleIndex(innsynskravBestilling.getId());
 
-      innsynskravSenderService.sendInnsynskravBestillingAsync(innsynskravBestilling.getId());
-      proxy.sendOrderConfirmationToBruker(innsynskravBestilling.getId());
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+              innsynskravSenderService.sendInnsynskravBestillingAsync(
+                  innsynskravBestilling.getId());
+              proxy.sendOrderConfirmationToBruker(innsynskravBestilling.getId());
+            }
+          });
     }
 
     return proxy.toDTO(innsynskravBestilling);
