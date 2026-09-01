@@ -263,8 +263,56 @@ class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
     assertNotNull(found);
     assertEquals(lagretSoekDTO.getId(), found.getId());
 
+    // Hits can also be registered on the legacy id
+    lagretSoekService.incrementHitCount(legacyId.toString(), saksmappeDTO.getId());
+    assertEquals(1, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
+
+    // Moetemappe hits are also cached
+    lagretSoekService.incrementHitCount(legacyId.toString(), moetemappeDTO.getId());
+    assertEquals(2, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
+
+    // An unknown legacy id is logged and ignored
+    lagretSoekService.incrementHitCount(UUID.randomUUID().toString(), saksmappeDTO.getId());
+
+    // A document with an unknown entity type is ignored
+    lagretSoekService.incrementHitCount(lagretSoekDTO.getId(), "unknown-document-id");
+
     // Clean up
     response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  /** Corrupt legacy searchParameters must not break the API responses for a LagretSoek. */
+  @Test
+  void testCorruptSearchParameters() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    var lagretSoek = lagretSoekRepository.findById(lagretSoekDTO.getId()).orElseThrow();
+    lagretSoek.setSearchParameters("this is not JSON {");
+    lagretSoekRepository.save(lagretSoek);
+
+    // The LagretSoek is still readable, with searchParameters left out
+    response = get("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var refreshedDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    assertNull(refreshedDTO.getSearchParameters());
+
+    // Clean up
+    response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  /** Titles in hit notifications are truncated to 60 characters. */
+  @Test
+  void testTruncate() {
+    assertNull(lagretSoekService.truncate(null));
+    assertEquals("short title", lagretSoekService.truncate("short title"));
+
+    var longTitle = "x".repeat(80);
+    var truncated = lagretSoekService.truncate(longTitle);
+    assertEquals("x".repeat(60) + "...", truncated);
   }
 }
