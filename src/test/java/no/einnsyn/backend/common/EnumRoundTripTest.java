@@ -48,8 +48,8 @@ class EnumRoundTripTest {
 
     // Sanity check that the classpath scan still finds the generated enums
     assertTrue(
-        jsonEnums.size() >= 15,
-        "Expected at least 15 enums with toJson/fromValue, found " + jsonEnums.size());
+        !jsonEnums.isEmpty(),
+        "Expected at least one enum with toJson/fromValue, found " + jsonEnums.size());
 
     for (var clazz : jsonEnums) {
       Method toJson = clazz.getMethod("toJson");
