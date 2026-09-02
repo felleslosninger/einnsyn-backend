@@ -12,6 +12,7 @@ import no.einnsyn.backend.EinnsynServiceTestBase;
 import no.einnsyn.backend.authentication.AuthenticationService;
 import no.einnsyn.backend.authentication.EInnsynAuthentication;
 import no.einnsyn.backend.authentication.EInnsynPrincipalEnhet;
+import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.ConflictException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -220,7 +222,31 @@ public class BaseServiceTest extends EinnsynServiceTestBase {
         BadRequestException.class,
         () -> saksmappeService.findForUpdateOrThrow((ExpandableField<SaksmappeDTO>) null));
 
-    // Cleanup
+    // An unauthenticated caller does not have update rights
+    var adminContext = SecurityContextHolder.getContext();
+    SecurityContextHolder.clearContext();
+    assertThrowsExactly(
+        AuthorizationException.class, () -> saksmappeService.findForUpdateOrThrow(created.getId()));
+
+    // An Enhet that does not own the Saksmappe does not have update rights
+    var journalenhet2ApiKey = apiKeyService.findBySecretKey(journalenhet2Key);
+    var journalenhet2Principal =
+        new EInnsynPrincipalEnhet(
+            "ApiKey",
+            journalenhet2ApiKey.getId(),
+            journalenhet2ApiKey.getEnhet().getId(),
+            journalenhet2ApiKey.getEnhet().getOrgnummer(),
+            false);
+    var journalenhet2Authentication = Mockito.mock(EInnsynAuthentication.class);
+    doReturn(journalenhet2Principal).when(journalenhet2Authentication).getPrincipal();
+    var journalenhet2Context = SecurityContextHolder.createEmptyContext();
+    journalenhet2Context.setAuthentication(journalenhet2Authentication);
+    SecurityContextHolder.setContext(journalenhet2Context);
+    assertThrowsExactly(
+        AuthorizationException.class, () -> saksmappeService.findForUpdateOrThrow(created.getId()));
+
+    // Cleanup, as the owner
+    SecurityContextHolder.setContext(adminContext);
     saksmappeService.delete(created.getId());
   }
 
