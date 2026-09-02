@@ -3,28 +3,59 @@ package no.einnsyn.backend;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
+import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * Runs a normal CRUD and order flow with TRACE logging enabled for the application. The debug and
- * trace log statements serialize entities and raw e-mails, and this verifies that those code paths
- * work instead of blowing up the request that triggers them in production.
+ * Runs a normal CRUD and order flow with TRACE logging enabled for the classes that guard log
+ * statements behind isDebugEnabled / isTraceEnabled.
+ *
+ * <p>The log levels are raised at runtime instead of through @SpringBootTest properties, so this
+ * class can reuse the cached application context instead of booting its own.
  */
-@SpringBootTest(
-    webEnvironment = WebEnvironment.RANDOM_PORT,
-    properties = "logging.level.no.einnsyn.backend=TRACE")
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class DebugLoggingTest extends EinnsynControllerTestBase {
+
+  private static final List<String> TRACED_LOGGERS =
+      List.of(BaseService.class.getName(), MailSenderService.class.getName());
+
+  private final Map<String, Level> originalLevels = new HashMap<>();
+
+  @BeforeAll
+  void enableTraceLogging() {
+    for (var loggerName : TRACED_LOGGERS) {
+      var logger = (Logger) LoggerFactory.getLogger(loggerName);
+      originalLevels.put(loggerName, logger.getLevel());
+      logger.setLevel(Level.TRACE);
+    }
+  }
+
+  @AfterAll
+  void restoreLogging() {
+    for (var loggerName : TRACED_LOGGERS) {
+      ((Logger) LoggerFactory.getLogger(loggerName)).setLevel(originalLevels.get(loggerName));
+    }
+  }
 
   @Test
   void testCrudAndOrderFlowWithTraceLogging() throws Exception {
