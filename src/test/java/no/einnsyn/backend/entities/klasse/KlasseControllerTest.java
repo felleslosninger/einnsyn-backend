@@ -239,54 +239,81 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
     var klasseDTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klasseDTO.getId());
 
-    // Add a Saksmappe, Moetemappe and a child Klasse to the Klasse
+    // Add two Saksmappe, two Moetemappe and two child Klasse to the Klasse
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put("klasse", klasseDTO.getId());
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var saksmappe1DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe2DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
     var moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.put("klasse", klasseDTO.getId());
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+    var moetemappe1DTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappe2DTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 
     response = post("/klasse/" + klasseDTO.getId() + "/klasse", getKlasseJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var subklasseDTO = gson.fromJson(response.getBody(), KlasseDTO.class);
+    var subklasse1DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
+    response = post("/klasse/" + klasseDTO.getId() + "/klasse", getKlasseJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var subklasse2DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
 
-    // List Saksmappe by Klasse
+    // List Saksmappe by Klasse, newest first by default, oldest first ascending
+    var saksmappeListType = new TypeToken<PaginatedList<SaksmappeDTO>>() {}.getType();
     response = get("/klasse/" + klasseDTO.getId() + "/saksmappe");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var saksmappeListType = new TypeToken<PaginatedList<SaksmappeDTO>>() {}.getType();
     PaginatedList<SaksmappeDTO> saksmappeList =
         gson.fromJson(response.getBody(), saksmappeListType);
-    assertEquals(1, saksmappeList.getItems().size());
-    assertEquals(saksmappeDTO.getId(), saksmappeList.getItems().get(0).getId());
+    assertEquals(2, saksmappeList.getItems().size());
+    assertEquals(saksmappe2DTO.getId(), saksmappeList.getItems().get(0).getId());
+    assertEquals(saksmappe1DTO.getId(), saksmappeList.getItems().get(1).getId());
 
-    // List Moetemappe by Klasse
+    response = get("/klasse/" + klasseDTO.getId() + "/saksmappe?sortOrder=asc");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    saksmappeList = gson.fromJson(response.getBody(), saksmappeListType);
+    assertEquals(2, saksmappeList.getItems().size());
+    assertEquals(saksmappe1DTO.getId(), saksmappeList.getItems().get(0).getId());
+    assertEquals(saksmappe2DTO.getId(), saksmappeList.getItems().get(1).getId());
+
+    // List Moetemappe by Klasse, newest first by default, oldest first ascending
+    var moetemappeListType = new TypeToken<PaginatedList<MoetemappeDTO>>() {}.getType();
     response = get("/klasse/" + klasseDTO.getId() + "/moetemappe");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var moetemappeListType = new TypeToken<PaginatedList<MoetemappeDTO>>() {}.getType();
     PaginatedList<MoetemappeDTO> moetemappeList =
         gson.fromJson(response.getBody(), moetemappeListType);
-    assertEquals(1, moetemappeList.getItems().size());
-    assertEquals(moetemappeDTO.getId(), moetemappeList.getItems().get(0).getId());
+    assertEquals(2, moetemappeList.getItems().size());
+    assertEquals(moetemappe2DTO.getId(), moetemappeList.getItems().get(0).getId());
+    assertEquals(moetemappe1DTO.getId(), moetemappeList.getItems().get(1).getId());
 
-    // List child Klasse by Klasse
+    response = get("/klasse/" + klasseDTO.getId() + "/moetemappe?sortOrder=asc");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    moetemappeList = gson.fromJson(response.getBody(), moetemappeListType);
+    assertEquals(2, moetemappeList.getItems().size());
+    assertEquals(moetemappe1DTO.getId(), moetemappeList.getItems().get(0).getId());
+    assertEquals(moetemappe2DTO.getId(), moetemappeList.getItems().get(1).getId());
+
+    // List child Klasse by Klasse, newest first by default, oldest first ascending
+    var klasseListType = new TypeToken<PaginatedList<KlasseDTO>>() {}.getType();
     response = get("/klasse/" + klasseDTO.getId() + "/klasse");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var klasseListType = new TypeToken<PaginatedList<KlasseDTO>>() {}.getType();
     PaginatedList<KlasseDTO> klasseList = gson.fromJson(response.getBody(), klasseListType);
-    assertEquals(1, klasseList.getItems().size());
-    assertEquals(subklasseDTO.getId(), klasseList.getItems().get(0).getId());
+    assertEquals(2, klasseList.getItems().size());
+    assertEquals(subklasse2DTO.getId(), klasseList.getItems().get(0).getId());
+    assertEquals(subklasse1DTO.getId(), klasseList.getItems().get(1).getId());
 
-    // The lists can also be sorted ascending
-    for (var subResource : new String[] {"saksmappe", "moetemappe", "klasse"}) {
-      response = get("/klasse/" + klasseDTO.getId() + "/" + subResource + "?sortOrder=asc");
-      assertEquals(HttpStatus.OK, response.getStatusCode(), subResource);
-    }
+    response = get("/klasse/" + klasseDTO.getId() + "/klasse?sortOrder=asc");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    klasseList = gson.fromJson(response.getBody(), klasseListType);
+    assertEquals(2, klasseList.getItems().size());
+    assertEquals(subklasse1DTO.getId(), klasseList.getItems().get(0).getId());
+    assertEquals(subklasse2DTO.getId(), klasseList.getItems().get(1).getId());
 
     delete("/arkiv/" + arkivDTO.getId());
   }
