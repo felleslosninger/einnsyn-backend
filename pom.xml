@@ -299,7 +299,7 @@
         <configuration>
           <excludes>
             <!-- @Profile("!test"): never loaded when running the test suite -->
-            <exclude>no/einnsyn/backend/configuration/SchedulingConfiguration.class</exclude>
+            <exclude>no/einnsyn/backend/configuration/SchedulingConfiguration*</exclude>
           </excludes>
         </configuration>
         <executions>
