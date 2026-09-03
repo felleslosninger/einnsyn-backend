@@ -122,7 +122,8 @@ public class ElasticsearchReindexScheduler {
     var startTime = Instant.now();
     log.info("Starting reindexing of {}, schemaVersion: {}.", entityName, schemaVersion);
 
-    // `lastIndexed` is set to the start time of the run that indexed the row, so if schemaVersion is
+    // `lastIndexed` is set to the start time of the run that indexed the row, so if schemaVersion
+    // is
     // in the future it will match on every run until wall-clock time passes schemaVersion. Refuse
     // it rather than grind through the whole table every hour.
     if (schemaVersion.isAfter(startTime)) {
