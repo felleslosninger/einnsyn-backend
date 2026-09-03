@@ -48,8 +48,8 @@ public interface MoetemappeRepository
       """
       SELECT o FROM Moetemappe o
       WHERE parentKlasse = :klasse
-      AND id >= COALESCE(:pivot, id)
-      ORDER BY id ASC
+      AND id <= COALESCE(:pivot, id)
+      ORDER BY id DESC
       """)
   Slice<Moetemappe> paginateDesc(Klasse klasse, String pivot, Pageable pageable);
 
@@ -66,8 +66,8 @@ public interface MoetemappeRepository
       """
       SELECT o FROM Moetemappe o
       WHERE utvalgObjekt = :utvalgObjekt
-      AND id >= COALESCE(:pivot, id)
-      ORDER BY id ASC
+      AND id <= COALESCE(:pivot, id)
+      ORDER BY id DESC
       """)
   Slice<Moetemappe> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 

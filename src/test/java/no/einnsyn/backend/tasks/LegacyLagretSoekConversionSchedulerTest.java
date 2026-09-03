@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.UUID;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
@@ -75,6 +77,28 @@ class LegacyLagretSoekConversionSchedulerTest extends EinnsynLegacyElasticTestBa
 
     // Verify that delete was called on ES client
     captureDeletedDocuments(1);
+  }
+
+  /** Converting a LagretSoek with a legacyId also deletes the legacy Elasticsearch document. */
+  @Test
+  void testConvertLegacyLagretSoekWithLegacyId() throws Exception {
+    ReflectionTestUtils.setField(scheduler, "dryRun", false);
+
+    var legacyId = UUID.randomUUID();
+    var lagretSoekEntity = lagretSoekRepository.findById(lagretSoekDTO.getId()).orElseThrow();
+    lagretSoekEntity.setLegacyId(legacyId);
+    lagretSoekRepository.saveAndFlush(lagretSoekEntity);
+
+    scheduler.convertLegacyLagretSoek();
+    awaitSideEffects();
+
+    var response = get("/lagretSoek/" + lagretSoekDTO.getId(), brukerToken);
+    var updatedLagretSoek = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    assertNotNull(updatedLagretSoek.getSearchParameters());
+
+    // The legacy Elasticsearch document is deleted
+    var deletedIds = captureDeletedDocuments(1);
+    assertEquals(Set.of(legacyId.toString()), deletedIds);
   }
 
   @Test

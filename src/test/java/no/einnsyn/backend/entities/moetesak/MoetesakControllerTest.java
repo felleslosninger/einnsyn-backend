@@ -14,7 +14,10 @@ import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
+import no.einnsyn.backend.entities.utredning.models.UtredningDTO;
+import no.einnsyn.backend.entities.vedtak.models.VedtakDTO;
 import no.einnsyn.backend.utils.SlugGenerator;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -899,5 +902,61 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     var refreshedDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
     assertEquals(utredningId, refreshedDTO.getUtredning().getId());
+  }
+
+  @Test
+  void testUtredningAndVedtakSubResources() throws Exception {
+    // Create a Moetesak without utredning and vedtak
+    var moetesakJSON = getMoetesakJSON();
+    moetesakJSON.remove("utredning");
+    moetesakJSON.remove("vedtak");
+    var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+
+    // Get utredning and vedtak before they exist
+    response = get("/moetesak/" + moetesakDTO.getId() + "/utredning");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNull(gson.fromJson(response.getBody(), UtredningDTO.class));
+
+    response = get("/moetesak/" + moetesakDTO.getId() + "/vedtak");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNull(gson.fromJson(response.getBody(), VedtakDTO.class));
+
+    // Add utredning
+    response = post("/moetesak/" + moetesakDTO.getId() + "/utredning", getUtredningJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var utredningDTO = gson.fromJson(response.getBody(), UtredningDTO.class);
+    assertNotNull(utredningDTO.getId());
+
+    // Add vedtak
+    response = post("/moetesak/" + moetesakDTO.getId() + "/vedtak", getVedtakJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var vedtakDTO = gson.fromJson(response.getBody(), VedtakDTO.class);
+    assertNotNull(vedtakDTO.getId());
+
+    // Get utredning and vedtak
+    response = get("/moetesak/" + moetesakDTO.getId() + "/utredning");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(
+        utredningDTO.getId(), gson.fromJson(response.getBody(), UtredningDTO.class).getId());
+
+    response = get("/moetesak/" + moetesakDTO.getId() + "/vedtak");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(vedtakDTO.getId(), gson.fromJson(response.getBody(), VedtakDTO.class).getId());
+  }
+
+  /** The slug base includes moetesaksaar and moetesakssekvensnummer when they are set. */
+  @Test
+  void testGetSlugBase() {
+    var moetesak = new Moetesak();
+    moetesak.setOffentligTittel("tittel");
+    assertEquals("tittel", moetesakService.getSlugBase(moetesak));
+
+    moetesak.setMoetesaksaar(2020);
+    assertEquals("2020-tittel", moetesakService.getSlugBase(moetesak));
+
+    moetesak.setMoetesakssekvensnummer(42);
+    assertEquals("2020-42-tittel", moetesakService.getSlugBase(moetesak));
   }
 }
