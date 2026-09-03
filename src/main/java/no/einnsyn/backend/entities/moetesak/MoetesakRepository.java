@@ -82,6 +82,26 @@ public interface MoetesakRepository
   @Query(
       """
       SELECT ms.id FROM Moetesak ms
+      JOIN ms.utredning u
+      JOIN u.utredningsdokument d
+      WHERE d.id = :dokumentbeskrivelseId
+      ORDER BY ms.id DESC
+      """)
+  Stream<String> streamIdByUtredningsdokumentId(String dokumentbeskrivelseId);
+
+  @Query(
+      """
+      SELECT ms.id FROM Moetesak ms
+      JOIN ms.vedtak v
+      JOIN v.vedtaksdokument d
+      WHERE d.id = :dokumentbeskrivelseId
+      ORDER BY ms.id DESC
+      """)
+  Stream<String> streamIdByVedtaksdokumentId(String dokumentbeskrivelseId);
+
+  @Query(
+      """
+      SELECT ms.id FROM Moetesak ms
       JOIN ms.moetemappe mm
       WHERE mm.id = :moetemappeId
       ORDER BY ms.id DESC

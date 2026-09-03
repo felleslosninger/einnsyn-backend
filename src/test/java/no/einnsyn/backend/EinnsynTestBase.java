@@ -35,6 +35,7 @@ import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseReposi
 import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.backend.entities.dokumentobjekt.DokumentobjektRepository;
 import no.einnsyn.backend.entities.dokumentobjekt.DokumentobjektService;
+import no.einnsyn.backend.entities.downloadcount.DownloadCountRepository;
 import no.einnsyn.backend.entities.enhet.EnhetRepository;
 import no.einnsyn.backend.entities.enhet.EnhetService;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
@@ -115,6 +116,7 @@ public abstract class EinnsynTestBase {
   @Autowired protected BrukerRepository brukerRepository;
   @Autowired protected DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
   @Autowired protected DokumentobjektRepository dokumentobjektRepository;
+  @Autowired protected DownloadCountRepository downloadCountRepository;
   @Autowired protected EnhetRepository enhetRepository;
   @Autowired protected IdentifikatorRepository identifikatorRepository;
   @Autowired protected InnsynskravBestillingRepository innsynskravBestillingRepository;
@@ -407,6 +409,7 @@ public abstract class EinnsynTestBase {
     counts.put("bruker", brukerRepository.count());
     counts.put("dokumentbeskrivelse", dokumentbeskrivelseRepository.count());
     counts.put("dokumentobjekt", dokumentobjektRepository.count());
+    counts.put("downloadCount", downloadCountRepository.count());
     counts.put("enhet", enhetRepository.count());
     counts.put("identifikator", identifikatorRepository.count());
     counts.put("innsynskravBestilling", innsynskravBestillingRepository.count());
