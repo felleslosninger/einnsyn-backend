@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.registrering.models;
 
-import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -14,12 +13,9 @@ import no.einnsyn.backend.common.hasslug.HasSlug;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Getter
 @Setter
-@EntityListeners(AuditingEntityListener.class)
 @MappedSuperclass
 public abstract class Registrering extends ArkivBase implements HasSlug {
 
@@ -33,12 +29,11 @@ public abstract class Registrering extends ArkivBase implements HasSlug {
 
   protected Instant publisertDato;
 
+  protected Instant oppdatertDato;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "avhendet_til__id")
   protected Enhet avhendetTil;
-
-  // Legacy
-  @LastModifiedDate protected Instant oppdatertDato;
 
   // Legacy, IRI of administrativEnhet (or journalenhet as fallback)
   protected String arkivskaper;
