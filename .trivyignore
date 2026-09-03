@@ -1,11 +1,11 @@
-# Remove once Spring Boot's BOM reaches pgjdbc 42.7.12 or later.
-# Not exploitable: we don't connect with channelBinding=require.
-CVE-2026-54291
-
-# Remove once Spring Boot's BOM reaches httpcore5 5.4.3 or later. Both entries
-# below are the same 5.4.2 -> 5.4.3 bump, and both are remote-peer DoS bugs in
-# code we only ever run as a client: httpcore5 and httpcore5-h2 reach us via
-# spring-boot-starter-elasticsearch and only ever talk to our own cluster.
-# Inbound HTTP, including HTTP/2, is handled by Tomcat.
-CVE-2026-54399
-CVE-2026-54428
+# Remove once Spring Boot's BOM reaches tomcat 11.0.25 or later. All three
+# entries are the same 11.0.24 -> 11.0.25 bump, and all three are bugs in
+# Tomcat's container-managed security: <security-constraint> path matching and
+# the DIGEST and FORM authenticator valves. Not exploitable: we ship no
+# web.xml and declare no security constraints or Tomcat realm, so those
+# authenticators never run. Authentication is Spring Security filter chains
+# (API-KEY and Bearer, both stateless), and authorization is enforced in the
+# controllers.
+CVE-2026-65182
+CVE-2026-65905
+CVE-2026-68525
