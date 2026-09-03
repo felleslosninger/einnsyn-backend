@@ -183,12 +183,14 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Force a background reindex through the schema-version path without changing
-    // the row.
+    // the row. The timestamp must be at or before now: reindexForEntity refuses a
+    // schemaVersion in the future, and `lastIndexed` was just set a moment ago, so
+    // `lastIndexed < schemaVersion` already selects the row.
     var originalSchemaTimestamp =
         (Instant)
             ReflectionTestUtils.getField(elasticsearchReindexScheduler, "saksmappeSchemaTimestamp");
     ReflectionTestUtils.setField(
-        elasticsearchReindexScheduler, "saksmappeSchemaTimestamp", Instant.now().plusSeconds(3600));
+        elasticsearchReindexScheduler, "saksmappeSchemaTimestamp", Instant.now());
 
     try {
       taskTestService.updateOutdatedDocuments();
@@ -246,15 +248,15 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Force a background reindex through the schema-version path without changing
-    // the row.
+    // the row. The timestamp must be at or before now: reindexForEntity refuses a
+    // schemaVersion in the future, and `lastIndexed` was just set a moment ago, so
+    // `lastIndexed < schemaVersion` already selects the row.
     var originalSchemaTimestamp =
         (Instant)
             ReflectionTestUtils.getField(
                 elasticsearchReindexScheduler, "moetemappeSchemaTimestamp");
     ReflectionTestUtils.setField(
-        elasticsearchReindexScheduler,
-        "moetemappeSchemaTimestamp",
-        Instant.now().plusSeconds(3600));
+        elasticsearchReindexScheduler, "moetemappeSchemaTimestamp", Instant.now());
 
     try {
       taskTestService.updateOutdatedDocuments();
