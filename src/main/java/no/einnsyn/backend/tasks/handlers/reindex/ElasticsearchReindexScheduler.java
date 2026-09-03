@@ -122,13 +122,14 @@ public class ElasticsearchReindexScheduler {
     var startTime = Instant.now();
     log.info("Starting reindexing of {}, schemaVersion: {}.", entityName, schemaVersion);
 
-    // `lastIndexed` is set to the start time of the run that indexed the row, so a schemaVersion in
-    // the future is never satisfied: the row is reindexed on every run, forever. Refuse it rather
-    // than grind through the whole table every hour.
+    // `lastIndexed` is set to the start time of the run that indexed the row, so if schemaVersion is
+    // in the future it will match on every run until wall-clock time passes schemaVersion. Refuse
+    // it rather than grind through the whole table every hour.
     if (schemaVersion.isAfter(startTime)) {
       log.error(
           "Refusing to reindex {}: schemaVersion {} is in the future, which would reindex every"
-              + " row on every run. Set it to a time at or before now, after the data changed.",
+              + " row on every run until the system clock passes that timestamp. Set it to a time"
+              + " at or before now, after the data changed.",
           entityName,
           schemaVersion);
       return;
