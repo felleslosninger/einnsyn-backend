@@ -32,6 +32,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class ElasticsearchRemoveStaleScheduler {
 
+  /**
+   * Sort keys for the Registrering / Mappe scans. None of the dates or the case number are unique,
+   * so the document id is appended as a tiebreaker. Without it, search_after skips the remaining
+   * documents that share a sort tuple across a batch boundary, and they are never cleaned up.
+   */
+  private static final List<String> REGISTRERING_SORT_BY =
+      List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert", "id");
+
   private final ElasticsearchClient esClient;
 
   private final JournalpostService journalpostService;
@@ -218,25 +226,25 @@ public class ElasticsearchRemoveStaleScheduler {
 
     removeForEntity(
         "Journalpost",
-        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
+        REGISTRERING_SORT_BY,
         journalpostService.getRepository(),
         journalpostService.getElasticsearchIndex());
 
     removeForEntity(
         "Saksmappe",
-        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
+        REGISTRERING_SORT_BY,
         saksmappeService.getRepository(),
         saksmappeService.getElasticsearchIndex());
 
     removeForEntity(
         "Moetemappe",
-        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
+        REGISTRERING_SORT_BY,
         moetemappeService.getRepository(),
         moetemappeService.getElasticsearchIndex());
 
     removeForEntity(
         "Møtesaksregistrering",
-        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
+        REGISTRERING_SORT_BY,
         moetesakService.getRepository(),
         moetesakService.getElasticsearchIndex());
 
@@ -244,7 +252,7 @@ public class ElasticsearchRemoveStaleScheduler {
     // KommerTilBehandlingMøtesaksregistrering
     removeForEntity(
         "KommerTilBehandlingMøtesaksregistrering",
-        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
+        REGISTRERING_SORT_BY,
         moetesakService.getRepository(),
         moetesakService.getElasticsearchIndex());
 
