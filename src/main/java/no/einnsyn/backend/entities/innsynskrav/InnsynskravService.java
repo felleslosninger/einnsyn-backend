@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.base.BaseService;
@@ -139,9 +140,11 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     var enhet = innsynskrav.getEnhet();
     dto.setEnhet(enhetService.maybeExpand(enhet, "enhet", expandPaths, currentPath));
 
+    // The InnsynskravBestilling holds the requester's details and every Innsynskrav in the order,
+    // including those sent to other Enhets, so it is only expanded for callers who may get it.
     var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
     dto.setInnsynskravBestilling(
-        innsynskravBestillingService.maybeExpand(
+        innsynskravBestillingService.maybeExpandAuthorized(
             innsynskravBestilling, "innsynskravBestilling", expandPaths, currentPath));
 
     if (innsynskrav.getSent() != null) {
@@ -314,7 +317,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       return;
     }
 
-    var innsynskrav = innsynskravService.findOrThrow(id);
+    var innsynskrav = innsynskravService.findOrThrow(id, NotFoundException.class);
     var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
     if (innsynskravBestilling != null) {
       var innsynskravBruker = innsynskravBestilling.getBruker();
