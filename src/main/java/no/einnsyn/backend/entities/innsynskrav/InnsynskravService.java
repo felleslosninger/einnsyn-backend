@@ -139,9 +139,11 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     var enhet = innsynskrav.getEnhet();
     dto.setEnhet(enhetService.maybeExpand(enhet, "enhet", expandPaths, currentPath));
 
+    // The InnsynskravBestilling holds the requester's details and every Innsynskrav in the order,
+    // including those sent to other Enhets, so it is only expanded for callers who may get it.
     var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
     dto.setInnsynskravBestilling(
-        innsynskravBestillingService.maybeExpand(
+        innsynskravBestillingService.maybeExpandAuthorized(
             innsynskravBestilling, "innsynskravBestilling", expandPaths, currentPath));
 
     if (innsynskrav.getSent() != null) {
