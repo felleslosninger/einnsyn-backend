@@ -1469,6 +1469,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * #authorizeGet(String)}. Use this where objects are reached without going through the scoped
    * paginators, so that callers only ever see what they could fetch directly.
    *
+   * <p>A denied authorization or a hidden object is the expected "no". Any other checked failure
+   * from the authorization hook is a bug in that hook, so it is logged and treated as a denial:
+   * failing closed keeps the response valid while keeping the fault visible.
+   *
    * @param id The ID of the object to check
    * @return true if the caller is authorized to get the object
    */
@@ -1476,7 +1480,15 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     try {
       authorizeGet(id);
       return true;
+    } catch (AuthorizationException | NotFoundException e) {
+      return false;
     } catch (EInnsynException e) {
+      log.error(
+          "Unexpected {} authorizing get of {}:{}, denying access",
+          e.getClass().getSimpleName(),
+          objectClassName,
+          id,
+          e);
       return false;
     }
   }
