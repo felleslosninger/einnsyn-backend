@@ -174,7 +174,8 @@ class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
             accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultList = gson.fromJson(response.getBody(), type);
-    assertTrue(resultList.getItems() == null || resultList.getItems().isEmpty());
+    assertNotNull(resultList.getItems());
+    assertTrue(resultList.getItems().isEmpty());
 
     // The owner still finds it
     response =
