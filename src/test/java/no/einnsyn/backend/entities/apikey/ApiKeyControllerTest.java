@@ -94,6 +94,9 @@ class ApiKeyControllerTest extends EinnsynControllerTestBase {
       response = get("/apiKey/" + apiKeyDTO.getId(), secretKey);
       assertEquals(HttpStatus.OK, response.getStatusCode());
 
+      assertFalse(
+          listAppender.list.isEmpty(),
+          "No BaseService log events captured; test would not verify secret redaction");
       for (var event : listAppender.list) {
         assertFalse(event.getFormattedMessage().contains(secretKey), "Secret found in log message");
         var keyValuePairs = event.getKeyValuePairs();
