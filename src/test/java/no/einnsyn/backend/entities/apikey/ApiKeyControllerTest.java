@@ -2,12 +2,17 @@ package no.einnsyn.backend.entities.apikey;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.google.gson.reflect.TypeToken;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
+import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
@@ -69,5 +74,41 @@ class ApiKeyControllerTest extends EinnsynControllerTestBase {
 
     response = delete("/enhet/" + enhetDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test
+  void testSecretKeyIsNotLogged() throws Exception {
+    var logger = (Logger) LoggerFactory.getLogger(BaseService.class);
+    var listAppender = new ListAppender<ILoggingEvent>();
+    listAppender.start();
+    logger.addAppender(listAppender);
+
+    try {
+      var response = post("/enhet/" + journalenhetId + "/apiKey", getApiKeyJSON());
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var apiKeyDTO = gson.fromJson(response.getBody(), ApiKeyDTO.class);
+      var secretKey = apiKeyDTO.getSecretKey();
+      assertNotNull(secretKey);
+
+      // The returned secret must be the one the key was created with
+      response = get("/apiKey/" + apiKeyDTO.getId(), secretKey);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+
+      for (var event : listAppender.list) {
+        assertFalse(event.getFormattedMessage().contains(secretKey), "Secret found in log message");
+        var keyValuePairs = event.getKeyValuePairs();
+        if (keyValuePairs != null) {
+          for (var keyValuePair : keyValuePairs) {
+            assertFalse(
+                String.valueOf(keyValuePair.value).contains(secretKey),
+                "Secret found in log key-value " + keyValuePair.key);
+          }
+        }
+      }
+
+      assertEquals(HttpStatus.OK, delete("/apiKey/" + apiKeyDTO.getId()).getStatusCode());
+    } finally {
+      logger.detachAppender(listAppender);
+    }
   }
 }
