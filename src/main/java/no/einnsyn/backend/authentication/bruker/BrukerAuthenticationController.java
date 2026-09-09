@@ -48,7 +48,7 @@ public class BrukerAuthenticationController {
         throw new AuthenticationException("Invalid refresh token");
       }
 
-      username = jwt.getSubject();
+      username = tokenService.getBrukerId(jwt);
       if (username == null) {
         throw new AuthenticationException("Invalid refresh token");
       }
