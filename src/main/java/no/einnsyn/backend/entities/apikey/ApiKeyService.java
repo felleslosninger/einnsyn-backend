@@ -68,7 +68,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
       var secretKey = IdGenerator.generateSecret("secret");
       apiKey.setSecretKey(secretKey);
       apiKey.setSecret(HashUtils.sha256Hex(secretKey));
-      log.trace("apiKey.setSecret(" + apiKey.getSecret() + ")");
+      log.trace("apiKey secret hash generated");
     }
 
     if (dto.getName() != null) {
