@@ -938,12 +938,14 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         try {
           esClient.delete(d -> d.index(elasticsearchIndex).id(id).routing(esParent));
         } catch (Exception e) {
+          // Leave lastIndexed untouched, so the next reindex run retries the removal
           log.error(
               "Could not delete {} : {} from ElasticSearch: {}",
               objectClassName,
               id,
               e.getMessage(),
               e);
+          return;
         }
         var repository = getRepository();
         if (repository instanceof IndexableRepository<?> indexableRepository) {
