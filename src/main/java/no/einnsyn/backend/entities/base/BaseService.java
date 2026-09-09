@@ -1360,7 +1360,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     if (obj == null) {
       return null;
     }
-    var updatedPath = getExpandPath(propertyName, currentPath);
+    var updatedPath = ExpandPathResolver.getPath(currentPath, propertyName);
     var shouldExpand = expandPaths != null && expandPaths.contains(updatedPath);
     log.trace("maybeExpand {}:{}, {}", objectClassName, obj.getId(), shouldExpand);
     var expandedObject = shouldExpand ? toDTO(obj, newDTO(), expandPaths, updatedPath) : null;
@@ -1383,17 +1383,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       O obj, String propertyName, Set<String> expandPaths, String currentPath) {
     if (obj != null
         && expandPaths != null
-        && expandPaths.contains(getExpandPath(propertyName, currentPath))
+        && expandPaths.contains(ExpandPathResolver.getPath(currentPath, propertyName))
         && !isAuthorizedToGet(obj.getId())) {
       return new ExpandableField<>(obj.getId());
     }
     return maybeExpand(obj, propertyName, expandPaths, currentPath);
-  }
-
-  private static String getExpandPath(String propertyName, String currentPath) {
-    return currentPath == null || currentPath.isEmpty()
-        ? propertyName
-        : currentPath + "." + propertyName;
   }
 
   /**

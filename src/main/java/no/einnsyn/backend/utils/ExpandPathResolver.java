@@ -12,6 +12,21 @@ public class ExpandPathResolver {
 
   private ExpandPathResolver() {}
 
+  /**
+   * Builds the dotted path of a property below a parent path, e.g. "innsynskravBestilling" below
+   * "innsynskrav" gives "innsynskrav.innsynskravBestilling". This is the format used both when
+   * resolving paths from a DTO and when checking whether a relation should be expanded.
+   *
+   * @param currentPath the path of the parent object, null or empty at the root
+   * @param propertyName the name of the property on the parent
+   * @return the path of the property
+   */
+  public static String getPath(String currentPath, String propertyName) {
+    return currentPath == null || currentPath.isEmpty()
+        ? propertyName
+        : currentPath + "." + propertyName;
+  }
+
   public static Set<String> resolve(HasId obj) {
     return resolve(obj, new HashSet<>(), null);
   }
@@ -54,7 +69,7 @@ public class ExpandPathResolver {
         continue;
       }
 
-      var path = currentPath == null ? field.getName() : currentPath + "." + field.getName();
+      var path = getPath(currentPath, field.getName());
 
       if (fieldObj instanceof List<?> list) {
         for (var item : list) {
