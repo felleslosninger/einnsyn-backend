@@ -313,13 +313,22 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
       return;
     }
 
-    var lagretSoekIds = lagretSoekList.stream().map(LagretSoek::getId).toList();
-
-    log.debug("Resetting LagretSoek hit count for {}", lagretSoekIds);
-    repository.resetHitCount(lagretSoekIds);
-
-    log.debug("Deleting LagretSoek hits for {}", lagretSoekIds);
-    repository.deleteHits(lagretSoekIds);
+    // Acknowledge exactly what was sent. Matches that arrived while the mail was being built are
+    // left for the next notification.
+    for (var lagretSoek : lagretSoekList) {
+      log.debug(
+          "Acknowledging {} hits for LagretSoek {}", lagretSoek.getHitCount(), lagretSoek.getId());
+      repository.acknowledgeHits(lagretSoek.getId(), lagretSoek.getHitCount());
+    }
+    var hitIds =
+        lagretSoekList.stream()
+            .flatMap(lagretSoek -> lagretSoek.getHitList().stream())
+            .map(LagretSoekHit::getId)
+            .toList();
+    if (!hitIds.isEmpty()) {
+      log.debug("Deleting notified LagretSoek hits {}", hitIds);
+      repository.deleteHitsById(hitIds);
+    }
   }
 
   /** Generate template context for a LagretSoek */

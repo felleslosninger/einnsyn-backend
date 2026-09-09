@@ -3,6 +3,8 @@ package no.einnsyn.backend.tasks;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -136,6 +138,60 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     // Delete the LagretSoek
     response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void testHitsArrivingDuringNotificationAreKept() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    // One matching Saksmappe ("foo"), and one that does not match
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("offentligTittel", "foo");
+    saksmappeJSON.put("offentligTittelSensitiv", "foo");
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var matchingSaksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var otherSaksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(2)).index(any(Function.class)));
+    resetEs();
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+
+    // Simulate a match committed by the indexer while the mail is being sent
+    doAnswer(
+            invocation -> {
+              lagretSoekService.incrementHitCount(lagretSoekDTO.getId(), otherSaksmappeDTO.getId());
+              return null;
+            })
+        .when(javaMailSender)
+        .send(any(MimeMessage.class));
+    taskTestService.notifyLagretSoek();
+    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+
+    // The late match must survive the acknowledgement of the notified hits
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    assertEquals(1, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
+
+    // It is included in the next notification
+    doNothing().when(javaMailSender).send(any(MimeMessage.class));
+    taskTestService.notifyLagretSoek();
+    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+    assertEquals(0, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    assertEquals(0, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
+
+    assertEquals(
+        HttpStatus.OK, delete("/saksmappe/" + matchingSaksmappeDTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + otherSaksmappeDTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.OK, delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken).getStatusCode());
   }
 
   @SuppressWarnings("unchecked")
