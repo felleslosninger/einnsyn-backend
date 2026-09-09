@@ -1310,6 +1310,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     if (ids != null) {
       var resolvedIds = getProxy().resolveIds(ids);
       var entityList = getRepository().findByIdIn(resolvedIds);
+      entityList.removeIf(entity -> !isAuthorizedToGet(entity.getId()));
       Collections.sort(
           entityList, Comparator.comparingInt(entity -> resolvedIds.indexOf(entity.getId())));
       return entityList;
@@ -1318,6 +1319,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var externalIds = params.getExternalIds();
     if (externalIds != null) {
       var entityList = getRepository().findByExternalIdIn(externalIds);
+      entityList.removeIf(entity -> !isAuthorizedToGet(entity.getId()));
       Collections.sort(
           entityList,
           Comparator.comparingInt(entity -> externalIds.indexOf(entity.getExternalId())));
@@ -1436,6 +1438,23 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   protected void authorizeGet(String id) throws EInnsynException {
     throw new AuthorizationException("Not authorized to get " + objectClassName + " with id " + id);
+  }
+
+  /**
+   * Checks whether the current caller may get the given object, using the same rules as {@link
+   * #authorizeGet(String)}. Use this where objects are reached without going through the scoped
+   * paginators, so that callers only ever see what they could fetch directly.
+   *
+   * @param id The ID of the object to check
+   * @return true if the caller is authorized to get the object
+   */
+  public boolean isAuthorizedToGet(String id) {
+    try {
+      authorizeGet(id);
+      return true;
+    } catch (EInnsynException e) {
+      return false;
+    }
   }
 
   /**
