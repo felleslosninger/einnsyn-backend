@@ -6,7 +6,9 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -97,14 +99,15 @@ public class ElasticsearchRemoveStaleScheduler {
         break;
       }
 
-      var ids = iterator.nextBatch().stream().map(Hit::id).toList();
+      var routingById = getRoutingById(iterator.nextBatch());
+      var ids = List.copyOf(routingById.keySet());
       found += ids.size();
       var future =
           parallelRunner.run(
               () -> {
                 var removeList = repository.findNonExistingIds(ids.toArray(new String[0]));
                 removed.addAndGet(removeList.size());
-                deleteDocumentList(removeList, elasticsearchIndex, entityName);
+                deleteDocumentList(removeList, routingById, elasticsearchIndex, entityName);
               });
 
       futures.add(future);
@@ -161,13 +164,14 @@ public class ElasticsearchRemoveStaleScheduler {
         break;
       }
 
-      var ids = iterator.nextBatch().stream().map(Hit::id).toList();
+      var routingById = getRoutingById(iterator.nextBatch());
+      var ids = List.copyOf(routingById.keySet());
       found += ids.size();
       var future =
           parallelRunner.run(
               () -> {
                 removed.addAndGet(ids.size());
-                deleteDocumentList(ids, elasticsearchIndex, "MissingType");
+                deleteDocumentList(ids, routingById, elasticsearchIndex, "MissingType");
               });
 
       futures.add(future);
@@ -281,13 +285,34 @@ public class ElasticsearchRemoveStaleScheduler {
   }
 
   /**
+   * Map document IDs to their routing value. Child documents such as Innsynskrav are routed by
+   * their parent, and a delete without the same routing lands on the wrong shard and silently
+   * misses the document.
+   *
+   * @param hits a batch of search hits
+   * @return document ID to routing (null for documents without routing)
+   */
+  private static Map<String, String> getRoutingById(List<Hit<Void>> hits) {
+    var routingById = new HashMap<String, String>();
+    for (var hit : hits) {
+      routingById.put(hit.id(), hit.routing());
+    }
+    return routingById;
+  }
+
+  /**
    * Helper method to delete a list of documents from Elasticsearch.
    *
    * @param idList the list of document IDs to delete
+   * @param routingById routing per document ID, as returned by the search
    * @param elasticsearchIndex the Elasticsearch index
    * @param entityName the name of the entity type for the documents being deleted
    */
-  void deleteDocumentList(List<String> idList, String elasticsearchIndex, String entityName) {
+  void deleteDocumentList(
+      List<String> idList,
+      Map<String, String> routingById,
+      String elasticsearchIndex,
+      String entityName) {
     if (idList.isEmpty()) {
       return;
     }
@@ -301,7 +326,8 @@ public class ElasticsearchRemoveStaleScheduler {
 
     var br = new BulkRequest.Builder();
     for (String id : idList) {
-      br.operations(op -> op.delete(del -> del.index(elasticsearchIndex).id(id)));
+      var routing = routingById.get(id);
+      br.operations(op -> op.delete(del -> del.index(elasticsearchIndex).id(id).routing(routing)));
     }
 
     try {

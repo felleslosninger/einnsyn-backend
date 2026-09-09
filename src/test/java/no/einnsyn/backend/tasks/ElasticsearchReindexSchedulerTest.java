@@ -7,7 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,8 +27,10 @@ import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import org.awaitility.Awaitility;
 import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -479,6 +484,60 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     delete("/arkiv/" + arkivDTO.getId());
     captureDeletedDocuments(20);
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void testReindexRemoveInnsynskravFromESKeepsRouting() throws Exception {
+    var response = post("/arkiv", getArkivJSON());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("journalpost", new JSONArray().put(getJournalpostJSON()));
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var journalpostId = getJournalpostList(saksmappeDTO.getId()).getItems().getFirst().getId();
+    captureIndexedDocuments(2);
+    resetEs();
+
+    // An Innsynskrav is indexed as a child of its Journalpost, i.e. routed by the Journalpost id
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostId);
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var innsynskravId = innsynskravBestillingDTO.getInnsynskrav().getFirst().getId();
+    captureIndexedDocuments(1);
+    resetEs();
+
+    // Delete the Innsynskrav from the database, but fail to delete it from ES
+    doThrow(new IOException("Failed to delete document"))
+        .when(esClient)
+        .delete(any(Function.class));
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+    captureDeletedDocuments(1);
+    resetEs();
+    doCallRealMethod().when(esClient).delete(any(Function.class));
+    deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+
+    // The stale document must be deleted with the routing it was indexed with
+    taskTestService.removeStaleDocuments();
+    var requestCaptor = ArgumentCaptor.forClass(BulkRequest.class);
+    Awaitility.await()
+        .untilAsserted(() -> verify(esClient, times(1)).bulk(requestCaptor.capture()));
+    var operations = requestCaptor.getValue().operations();
+    assertEquals(1, operations.size());
+    assertEquals(innsynskravId, operations.getFirst().delete().id());
+    assertEquals(journalpostId, operations.getFirst().delete().routing());
+    resetEs();
+
+    delete("/arkiv/" + arkivDTO.getId());
+    captureDeletedDocuments(2);
   }
 
   @SuppressWarnings("unchecked")
