@@ -1360,14 +1360,34 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     if (obj == null) {
       return null;
     }
-    if (currentPath == null) {
-      currentPath = "";
-    }
-    var updatedPath = currentPath.isEmpty() ? propertyName : currentPath + "." + propertyName;
+    var updatedPath = ExpandPathResolver.getPath(currentPath, propertyName);
     var shouldExpand = expandPaths != null && expandPaths.contains(updatedPath);
     log.trace("maybeExpand {}:{}, {}", objectClassName, obj.getId(), shouldExpand);
     var expandedObject = shouldExpand ? toDTO(obj, newDTO(), expandPaths, updatedPath) : null;
     return new ExpandableField<>(obj.getId(), expandedObject);
+  }
+
+  /**
+   * Variant of {@link #maybeExpand(Base, String, Set, String)} for relations to private objects.
+   * Being allowed to get the object under conversion does not imply being allowed to get the
+   * related object, so it is only expanded if the current caller could also get it directly.
+   * Otherwise only the ID is returned.
+   *
+   * @param obj The entity object to expand
+   * @param propertyName The property name to check for expansion
+   * @param expandPaths A set of paths indicating properties to expand
+   * @param currentPath The current path in the object tree, used for nested expansions
+   * @return an ExpandableField containing either a full DTO or just the ID
+   */
+  public ExpandableField<D> maybeExpandAuthorized(
+      O obj, String propertyName, Set<String> expandPaths, String currentPath) {
+    if (obj != null
+        && expandPaths != null
+        && expandPaths.contains(ExpandPathResolver.getPath(currentPath, propertyName))
+        && !isAuthorizedToGet(obj.getId())) {
+      return new ExpandableField<>(obj.getId());
+    }
+    return maybeExpand(obj, propertyName, expandPaths, currentPath);
   }
 
   /**
@@ -1436,6 +1456,35 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   protected void authorizeGet(String id) throws EInnsynException {
     throw new AuthorizationException("Not authorized to get " + objectClassName + " with id " + id);
+  }
+
+  /**
+   * Checks whether the current caller may get the given object, using the same rules as {@link
+   * #authorizeGet(String)}. Use this where objects are reached without going through the scoped
+   * paginators, so that callers only ever see what they could fetch directly.
+   *
+   * <p>A denied authorization or a hidden object is the expected "no". Any other checked failure
+   * from the authorization hook is a bug in that hook, so it is logged and treated as a denial:
+   * failing closed keeps the response valid while keeping the fault visible.
+   *
+   * @param id The ID of the object to check
+   * @return true if the caller is authorized to get the object
+   */
+  public boolean isAuthorizedToGet(String id) {
+    try {
+      authorizeGet(id);
+      return true;
+    } catch (AuthorizationException | NotFoundException e) {
+      return false;
+    } catch (EInnsynException e) {
+      log.error(
+          "Unexpected {} authorizing get of {}:{}, denying access",
+          e.getClass().getSimpleName(),
+          objectClassName,
+          id,
+          e);
+      return false;
+    }
   }
 
   /**
