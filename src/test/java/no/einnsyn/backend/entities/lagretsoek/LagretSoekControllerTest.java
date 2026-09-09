@@ -3,7 +3,12 @@ package no.einnsyn.backend.entities.lagretsoek;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doThrow;
 
+import java.io.IOException;
+import java.util.function.Function;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -13,10 +18,12 @@ import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.tasks.TaskTestService;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
@@ -26,6 +33,8 @@ import org.testcontainers.shaded.com.google.common.reflect.TypeToken;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
+
+  @Autowired TaskTestService taskTestService;
 
   BrukerDTO brukerDTO;
   ArkivDTO arkivDTO;
@@ -302,6 +311,37 @@ class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
     response = patch("/lagretSoek/" + lagretSoekDTO.getId(), updateJSON, accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
+    var deletedIds = captureDeletedDocuments(1);
+    assertTrue(deletedIds.contains(lagretSoekDTO.getId()));
+
+    delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+  }
+
+  // A failed removal of the percolator document must be retried by the reindexer, i.e.
+  // lastIndexed must not be advanced when the delete fails.
+  @SuppressWarnings("unchecked")
+  @Test
+  void testFailedPercolatorRemovalIsRetried() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    captureIndexedDocuments(1);
+    resetEs();
+
+    doThrow(new IOException("Failed to delete document"))
+        .when(esClient)
+        .delete(any(Function.class));
+    var updateJSON = new JSONObject();
+    updateJSON.put("subscribe", false);
+    response = patch("/lagretSoek/" + lagretSoekDTO.getId(), updateJSON, accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    captureDeletedDocuments(1);
+    resetEs();
+    doCallRealMethod().when(esClient).delete(any(Function.class));
+
+    // The LagretSoek is still considered outdated, so the removal is retried
+    taskTestService.updateOutdatedDocuments();
     var deletedIds = captureDeletedDocuments(1);
     assertTrue(deletedIds.contains(lagretSoekDTO.getId()));
 
