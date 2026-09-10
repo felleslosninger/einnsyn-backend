@@ -129,6 +129,80 @@ class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
   }
 
   @Test
+  void testBulkLookupOnlyReturnsOwnLagretSoek() throws Exception {
+    // Another user with a LagretSoek
+    var otherBrukerJSON = getBrukerJSON();
+    var response = post("/bruker", otherBrukerJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var otherBrukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
+    var otherBruker = brukerService.find(otherBrukerDTO.getId());
+    response = patch("/bruker/" + otherBrukerDTO.getId() + "/activate/" + otherBruker.getSecret());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = post("/auth/token", getLoginJSON(otherBrukerJSON));
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var otherAccessToken = gson.fromJson(response.getBody(), TokenResponse.class).getToken();
+    var otherLagretSoekJSON = getLagretSoekJSON();
+    otherLagretSoekJSON.put("externalId", "other-lagret-soek");
+    response =
+        post(
+            "/bruker/" + otherBrukerDTO.getId() + "/lagretSoek",
+            otherLagretSoekJSON,
+            otherAccessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var otherLagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    // Our own LagretSoek
+    response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var ownLagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    var type = new TypeToken<PaginatedList<LagretSoekDTO>>() {}.getType();
+    PaginatedList<LagretSoekDTO> resultList;
+
+    // Lookup by ids only returns objects the caller could get directly
+    response =
+        get(
+            "/bruker/"
+                + brukerDTO.getId()
+                + "/lagretSoek?ids="
+                + ownLagretSoekDTO.getId()
+                + "&ids="
+                + otherLagretSoekDTO.getId()
+                + "&expand=bruker",
+            accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(ownLagretSoekDTO.getId(), resultList.getItems().getFirst().getId());
+
+    // Same for lookup by externalIds
+    response =
+        get(
+            "/bruker/" + brukerDTO.getId() + "/lagretSoek?externalIds=other-lagret-soek",
+            accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), type);
+    assertNotNull(resultList.getItems());
+    assertTrue(resultList.getItems().isEmpty());
+
+    // The owner still finds it
+    response =
+        get(
+            "/bruker/" + otherBrukerDTO.getId() + "/lagretSoek?ids=" + otherLagretSoekDTO.getId(),
+            otherAccessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(otherLagretSoekDTO.getId(), resultList.getItems().getFirst().getId());
+
+    // Clean up
+    delete("/lagretSoek/" + ownLagretSoekDTO.getId(), accessToken);
+    delete("/lagretSoek/" + otherLagretSoekDTO.getId(), otherAccessToken);
+    assertEquals(HttpStatus.OK, deleteAdmin("/bruker/" + otherBrukerDTO.getId()).getStatusCode());
+  }
+
+  @Test
   void testLagretSoekPagination() throws Exception {
 
     var lagretSoekJSON = getLagretSoekJSON();

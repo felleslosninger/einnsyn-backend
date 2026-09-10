@@ -1312,6 +1312,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     if (ids != null) {
       var resolvedIds = getProxy().resolveIds(ids);
       var entityList = getRepository().findByIdIn(resolvedIds);
+      entityList.removeIf(entity -> !isAuthorizedToGet(entity.getId()));
       Collections.sort(
           entityList, Comparator.comparingInt(entity -> resolvedIds.indexOf(entity.getId())));
       return entityList;
@@ -1320,6 +1321,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var externalIds = params.getExternalIds();
     if (externalIds != null) {
       var entityList = getRepository().findByExternalIdIn(externalIds);
+      entityList.removeIf(entity -> !isAuthorizedToGet(entity.getId()));
       Collections.sort(
           entityList,
           Comparator.comparingInt(entity -> externalIds.indexOf(entity.getExternalId())));
