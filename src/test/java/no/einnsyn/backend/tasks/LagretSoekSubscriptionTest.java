@@ -18,6 +18,7 @@ import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
+import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -531,6 +532,57 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     assertEquals(0, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
 
     response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void testHitIsDroppedWhenEnhetIsHidden() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    // A child Enhet that the Saksmappe is filed under
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("enhetskode", "LAGRETSOEK_SKJULT");
+    response = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    // A public Saksmappe matching "foo" registers a hit
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("offentligTittel", "foo");
+    saksmappeJSON.put("offentligTittelSensitiv", "foo");
+    saksmappeJSON.put("administrativEnhet", "LAGRETSOEK_SKJULT");
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals(enhetDTO.getId(), saksmappeDTO.getAdministrativEnhetObjekt().getId());
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+
+    // The Enhet is hidden before the notification is sent
+    var enhetUpdateJSON = new JSONObject();
+    enhetUpdateJSON.put("skjult", true);
+    response = patch("/enhet/" + enhetDTO.getId(), enhetUpdateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // No mail is sent, and the hit is cleared
+    taskTestService.notifyLagretSoek();
+    verify(javaMailSender, never()).send(any(MimeMessage.class));
+    assertEquals(0, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    assertEquals(0, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
+
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/enhet/" + enhetDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());

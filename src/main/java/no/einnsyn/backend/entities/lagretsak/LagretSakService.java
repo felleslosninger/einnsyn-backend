@@ -151,6 +151,14 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
       return;
     }
 
+    // The matcher never registers hits for hidden Enhets. If the Enhet was hidden after the hit
+    // was registered, drop the hit rather than hold it, since hiding is rarely reverted.
+    if (enhetService.isSkjult(mappe)) {
+      log.debug("Dropping LagretSak {} notification, the Enhet is hidden", lagretSakId);
+      repository.resetHits(lagretSakId);
+      return;
+    }
+
     var context = new HashMap<String, Object>();
     context.put("bruker", bruker);
     context.put("lagretsak", lagretSak);

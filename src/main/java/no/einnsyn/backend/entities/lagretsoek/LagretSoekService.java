@@ -20,8 +20,8 @@ import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.search.SearchQueryService;
 import no.einnsyn.backend.common.search.models.SavedSearchParameters;
 import no.einnsyn.backend.common.search.models.SearchParameters;
+import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.base.BaseService;
-import no.einnsyn.backend.entities.base.models.Base;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
@@ -371,23 +371,32 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   /**
    * Whether the object behind a hit is still public. A Journalpost or Moetesak is only public while
    * its parent mappe is, so the parent is checked too. This mirrors the Hibernate filters and the
-   * search index, where a child inherits a later accessibleAfter from its parent.
+   * search index, where a child inherits a later accessibleAfter from its parent. The matcher never
+   * registers hits for hidden Enhets, so an Enhet hidden since the match also makes the hit
+   * inaccessible.
    */
   boolean isHitAccessible(LagretSoekHit hit) {
-    var journalpost = hit.getJournalpost();
-    var moetesak = hit.getMoetesak();
-    var objects =
-        Stream.of(
-                hit.getSaksmappe(),
-                hit.getMoetemappe(),
-                journalpost,
-                journalpost != null ? journalpost.getSaksmappe() : null,
-                moetesak,
-                moetesak != null ? moetesak.getMoetemappe() : null)
+    var object =
+        Stream.<ArkivBase>of(
+                hit.getSaksmappe(), hit.getJournalpost(), hit.getMoetemappe(), hit.getMoetesak())
             .filter(Objects::nonNull)
-            .toList();
+            .findFirst()
+            .orElse(null);
+    if (object == null || !object.isAccessible()) {
+      return false;
+    }
 
-    return !objects.isEmpty() && objects.stream().allMatch(Base::isAccessible);
+    var parent =
+        switch (object) {
+          case Journalpost journalpost -> journalpost.getSaksmappe();
+          case Moetesak moetesak -> moetesak.getMoetemappe();
+          default -> null;
+        };
+    if (parent != null && !parent.isAccessible()) {
+      return false;
+    }
+
+    return !enhetService.isSkjult(object);
   }
 
   /** Generate template context for LagretSoekHit */
