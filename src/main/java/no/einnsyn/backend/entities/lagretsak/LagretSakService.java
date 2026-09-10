@@ -132,6 +132,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void notifyLagretSak(String lagretSakId) {
     var lagretSak = proxy.find(lagretSakId);
+    var notifiedHitCount = lagretSak.getHitCount();
     var bruker = lagretSak.getBruker();
     var saksmappe = lagretSak.getSaksmappe();
     var moetemappe = lagretSak.getMoetemappe();
@@ -164,7 +165,9 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
       return;
     }
 
-    repository.resetHits(lagretSakId);
+    // Acknowledge only the hits included in this mail. Updates that arrived while it was being
+    // sent are left for the next notification.
+    repository.acknowledgeHits(lagretSakId, notifiedHitCount);
   }
 
   @Override
