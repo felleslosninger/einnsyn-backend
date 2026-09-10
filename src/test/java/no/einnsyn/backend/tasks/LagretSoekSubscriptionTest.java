@@ -174,7 +174,7 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
         .when(javaMailSender)
         .send(any(MimeMessage.class));
     taskTestService.notifyLagretSoek();
-    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
     // The late match must survive the acknowledgement of the notified hits
     assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
