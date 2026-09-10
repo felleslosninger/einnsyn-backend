@@ -805,6 +805,57 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     }
   }
 
+  /**
+   * `lastIndexed` must never move backwards. The same row can be indexed concurrently by
+   * request-end indexing and by an async sender that indexes after updating the row. Each indexer
+   * writes its own timestamp in a separate transaction, so a slower indexer holding an older
+   * timestamp must not overwrite a newer one, or the row would look outdated forever after.
+   */
+  @Test
+  void testUpdateLastIndexedNeverMovesBackwards() throws Exception {
+    var response = post("/arkiv", getArkivJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var saksmappeId = saksmappeDTO.getId();
+    captureIndexedDocuments(1);
+    resetEs();
+
+    var indexed = saksmappeRepository.findById(saksmappeId).orElseThrow().getLastIndexed();
+    assertNotNull(indexed);
+
+    // An older timestamp, as held by an indexer that read the row before a concurrent update, must
+    // not overwrite the newer value
+    saksmappeRepository.updateLastIndexed(saksmappeId, indexed.minusSeconds(1));
+    assertEquals(indexed, saksmappeRepository.findById(saksmappeId).orElseThrow().getLastIndexed());
+
+    saksmappeRepository.updateLastIndexed(List.of(saksmappeId), indexed.minusSeconds(1));
+    assertEquals(indexed, saksmappeRepository.findById(saksmappeId).orElseThrow().getLastIndexed());
+
+    // A newer timestamp still advances the value
+    var newer = indexed.plusSeconds(1);
+    saksmappeRepository.updateLastIndexed(saksmappeId, newer);
+    assertEquals(newer, saksmappeRepository.findById(saksmappeId).orElseThrow().getLastIndexed());
+
+    var newest = indexed.plusSeconds(2);
+    saksmappeRepository.updateLastIndexed(List.of(saksmappeId), newest);
+    assertEquals(newest, saksmappeRepository.findById(saksmappeId).orElseThrow().getLastIndexed());
+
+    // The row was indexed after its last update, so the reindexer must leave it alone
+    taskTestService.updateOutdatedDocuments();
+    captureIndexedDocuments(0);
+
+    delete("/arkiv/" + arkivDTO.getId());
+    captureDeletedDocuments(1);
+  }
+
   private boolean esDocumentExists(String index, String id) throws Exception {
     var response =
         esClient.search(
