@@ -69,4 +69,18 @@ public abstract class Base {
   protected void preUpdate() {
     setUpdated(Instant.now());
   }
+
+  /**
+   * Whether the object is publicly visible yet. Web requests get this enforced by the Hibernate
+   * filters, but scheduled tasks run with the filters disabled and must check explicitly before
+   * exposing an object's contents.
+   *
+   * <p>Mirrors the {@code _accessible_after <= NOW()} filter condition. A missing timestamp is
+   * treated as not accessible, since the filters and the search query hide such rows too.
+   *
+   * @return true if accessibleAfter is set and not in the future
+   */
+  public boolean isAccessible() {
+    return accessibleAfter != null && !accessibleAfter.isAfter(Instant.now());
+  }
 }

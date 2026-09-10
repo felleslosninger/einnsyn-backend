@@ -1,5 +1,7 @@
 package no.einnsyn.backend.tasks;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import jakarta.transaction.Transactional;
 import java.time.temporal.TemporalUnit;
 import java.util.List;
@@ -34,28 +36,32 @@ public class TaskTestService {
   public void notifyLagretSak() {
     var url = "http://localhost:" + port + "/lagretSakTest/notifyLagretSak";
     var request = new HttpEntity<>("");
-    restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    var response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    assertTrue(response.getStatusCode().is2xxSuccessful(), url + " failed: " + response);
     sideEffectService.awaitSideEffects();
   }
 
   public void notifyLagretSoek() {
     var url = "http://localhost:" + port + "/lagretSoekTest/notifyLagretSoek";
     var request = new HttpEntity<>("");
-    restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    var response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    assertTrue(response.getStatusCode().is2xxSuccessful(), url + " failed: " + response);
     sideEffectService.awaitSideEffects();
   }
 
   public void updateOutdatedDocuments() {
     var url = "http://localhost:" + port + "/updateOutdatedDocuments";
     var request = new HttpEntity<>("");
-    restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    var response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    assertTrue(response.getStatusCode().is2xxSuccessful(), url + " failed: " + response);
     sideEffectService.awaitSideEffects();
   }
 
   public void removeStaleDocuments() {
     var url = "http://localhost:" + port + "/removeStaleDocuments";
     var request = new HttpEntity<>("");
-    restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    var response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    assertTrue(response.getStatusCode().is2xxSuccessful(), url + " failed: " + response);
     sideEffectService.awaitSideEffects();
   }
 

@@ -6,8 +6,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.gson.reflect.TypeToken;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
@@ -18,6 +20,7 @@ import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.search.SearchQueryService;
 import no.einnsyn.backend.common.search.models.SavedSearchParameters;
 import no.einnsyn.backend.common.search.models.SearchParameters;
+import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
@@ -295,26 +298,35 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
     var bruker = brukerService.find(brukerId);
     var lagretSoekList = repository.findLagretSoekWithHitsByBruker(brukerId);
-
-    // Build mail template context
-    var context = new HashMap<String, Object>();
-    context.put("bruker", bruker);
-    context.put("maxHits", maxResults);
-    context.put("lagretSoek", lagretSoekList.stream().map(this::getLagretSoekContext).toList());
-
-    var emailTo = bruker.getEmail();
-    var language = bruker.getLanguage();
-
-    log.info("Sending LagretSoek hits to {}", emailTo);
-    try {
-      mailSender.send(emailFrom, emailTo, "lagretSoekSubscription", language, context);
-    } catch (Exception e) {
-      log.error("Failed to send LagretSoek hits to {}", emailTo, e);
-      return;
-    }
-
     var lagretSoekIds = lagretSoekList.stream().map(LagretSoek::getId).toList();
 
+    // Hits were matched while the documents were public, but the mail is sent later with the
+    // accessibility filters disabled. Searches whose cached hits have all been withdrawn since are
+    // left out of the mail, and no mail is sent if nothing remains.
+    var lagretSoekContextList =
+        lagretSoekList.stream().map(this::getLagretSoekContext).filter(Objects::nonNull).toList();
+
+    if (lagretSoekContextList.isEmpty()) {
+      log.debug("No accessible LagretSoek hits for bruker {}, skipping mail", brukerId);
+    } else {
+      var context = new HashMap<String, Object>();
+      context.put("bruker", bruker);
+      context.put("maxHits", maxResults);
+      context.put("lagretSoek", lagretSoekContextList);
+
+      var emailTo = bruker.getEmail();
+      var language = bruker.getLanguage();
+
+      log.info("Sending LagretSoek hits to {}", emailTo);
+      try {
+        mailSender.send(emailFrom, emailTo, "lagretSoekSubscription", language, context);
+      } catch (Exception e) {
+        log.error("Failed to send LagretSoek hits to {}", emailTo, e);
+        return;
+      }
+    }
+
+    // Reset every selected search, including the skipped ones, so withdrawn hits do not linger
     log.debug("Resetting LagretSoek hit count for {}", lagretSoekIds);
     repository.resetHitCount(lagretSoekIds);
 
@@ -322,17 +334,69 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     repository.deleteHits(lagretSoekIds);
   }
 
-  /** Generate template context for a LagretSoek */
+  /**
+   * Generate template context for a LagretSoek. Hits whose document has been withdrawn since it was
+   * matched are dropped, and the reported hit count is reduced accordingly.
+   *
+   * @return the context, or null if no accessible hits remain
+   */
   Map<String, Object> getLagretSoekContext(LagretSoek lagretSoek) {
+    var accessibleHits = lagretSoek.getHitList().stream().filter(this::isHitAccessible).toList();
+
+    // Only the first hits are cached, so the total may be larger than the cached list. Withdrawn
+    // hits are only known among the cached ones, so the adjusted count may still include uncached
+    // matches that were withdrawn too.
+    var withdrawnHits = lagretSoek.getHitList().size() - accessibleHits.size();
+    var hitCount = lagretSoek.getHitCount() - withdrawnHits;
+
+    // Decide on the adjusted total, not on the cached list. The cached hits are just the first
+    // matches of the day, so they may all belong to one withdrawn batch while later matches from
+    // other sources are still public. Skipping would silently drop those. When only uncached
+    // matches remain, the entry is sent with the count and a link to the live search, which applies
+    // the public filters.
+    if (hitCount <= 0) {
+      log.debug("LagretSoek {} has no accessible hits left", lagretSoek.getId());
+      return null;
+    }
+
     var lagretSoekMap = new HashMap<String, Object>();
     lagretSoekMap.put("label", lagretSoek.getLabel());
-    lagretSoekMap.put(
-        "hitCount", lagretSoek.getHitCount() > 100 ? "100+" : lagretSoek.getHitCount());
-    lagretSoekMap.put("hasMoreHits", lagretSoek.getHitCount() > maxResults);
+    lagretSoekMap.put("hitCount", hitCount > 100 ? "100+" : hitCount);
+    lagretSoekMap.put("hasMoreHits", hitCount > accessibleHits.size());
     lagretSoekMap.put("filterId", lagretSoek.getLegacyQuery());
-    lagretSoekMap.put(
-        "hitList", lagretSoek.getHitList().stream().map(this::getHitContext).toList());
+    lagretSoekMap.put("hitList", accessibleHits.stream().map(this::getHitContext).toList());
     return lagretSoekMap;
+  }
+
+  /**
+   * Whether the object behind a hit is still public. A Journalpost or Moetesak is only public while
+   * its parent mappe is, so the parent is checked too. This mirrors the Hibernate filters and the
+   * search index, where a child inherits a later accessibleAfter from its parent. The matcher never
+   * registers hits for hidden Enhets, so an Enhet hidden since the match also makes the hit
+   * inaccessible.
+   */
+  boolean isHitAccessible(LagretSoekHit hit) {
+    var object =
+        Stream.<ArkivBase>of(
+                hit.getSaksmappe(), hit.getJournalpost(), hit.getMoetemappe(), hit.getMoetesak())
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(null);
+    if (object == null || !object.isAccessible()) {
+      return false;
+    }
+
+    var parent =
+        switch (object) {
+          case Journalpost journalpost -> journalpost.getSaksmappe();
+          case Moetesak moetesak -> moetesak.getMoetemappe();
+          default -> null;
+        };
+    if (parent != null && !parent.isAccessible()) {
+      return false;
+    }
+
+    return !enhetService.isSkjult(object);
   }
 
   /** Generate template context for LagretSoekHit */
