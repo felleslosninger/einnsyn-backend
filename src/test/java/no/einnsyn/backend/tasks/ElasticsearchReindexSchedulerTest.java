@@ -7,7 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,8 +27,10 @@ import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import org.awaitility.Awaitility;
 import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -483,6 +488,60 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
   @SuppressWarnings("unchecked")
   @Test
+  void testReindexRemoveInnsynskravFromESKeepsRouting() throws Exception {
+    var response = post("/arkiv", getArkivJSON());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("journalpost", new JSONArray().put(getJournalpostJSON()));
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var journalpostId = getJournalpostList(saksmappeDTO.getId()).getItems().getFirst().getId();
+    captureIndexedDocuments(2);
+    resetEs();
+
+    // An Innsynskrav is indexed as a child of its Journalpost, i.e. routed by the Journalpost id
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostId);
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var innsynskravId = innsynskravBestillingDTO.getInnsynskrav().getFirst().getId();
+    captureIndexedDocuments(1);
+    resetEs();
+
+    // Delete the Innsynskrav from the database, but fail to delete it from ES
+    doThrow(new IOException("Failed to delete document"))
+        .when(esClient)
+        .delete(any(Function.class));
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+    captureDeletedDocuments(1);
+    resetEs();
+    doCallRealMethod().when(esClient).delete(any(Function.class));
+    deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+
+    // The stale document must be deleted with the routing it was indexed with
+    taskTestService.removeStaleDocuments();
+    var requestCaptor = ArgumentCaptor.forClass(BulkRequest.class);
+    Awaitility.await()
+        .untilAsserted(() -> verify(esClient, times(1)).bulk(requestCaptor.capture()));
+    var operations = requestCaptor.getValue().operations();
+    assertEquals(1, operations.size());
+    assertEquals(innsynskravId, operations.getFirst().delete().id());
+    assertEquals(journalpostId, operations.getFirst().delete().routing());
+    resetEs();
+
+    delete("/arkiv/" + arkivDTO.getId());
+    captureDeletedDocuments(2);
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
   void testReindexMissingInnsynskrav() throws Exception {
     // Add Arkiv, Saksmappe with Journalposts
     var response = post("/arkiv", getArkivJSON());
@@ -744,6 +803,57 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
       esClient.delete(d -> d.index(elasticsearchIndex).id(withTypeId));
       esClient.indices().refresh(r -> r.index(elasticsearchIndex));
     }
+  }
+
+  /**
+   * `lastIndexed` must never move backwards. The same row can be indexed concurrently by
+   * request-end indexing and by an async sender that indexes after updating the row. Each indexer
+   * writes its own timestamp in a separate transaction, so a slower indexer holding an older
+   * timestamp must not overwrite a newer one, or the row would look outdated forever after.
+   */
+  @Test
+  void testUpdateLastIndexedNeverMovesBackwards() throws Exception {
+    var response = post("/arkiv", getArkivJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var saksmappeId = saksmappeDTO.getId();
+    captureIndexedDocuments(1);
+    resetEs();
+
+    var indexed = saksmappeRepository.findById(saksmappeId).orElseThrow().getLastIndexed();
+    assertNotNull(indexed);
+
+    // An older timestamp, as held by an indexer that read the row before a concurrent update, must
+    // not overwrite the newer value
+    saksmappeRepository.updateLastIndexed(saksmappeId, indexed.minusSeconds(1));
+    assertEquals(indexed, saksmappeRepository.findById(saksmappeId).orElseThrow().getLastIndexed());
+
+    saksmappeRepository.updateLastIndexed(List.of(saksmappeId), indexed.minusSeconds(1));
+    assertEquals(indexed, saksmappeRepository.findById(saksmappeId).orElseThrow().getLastIndexed());
+
+    // A newer timestamp still advances the value
+    var newer = indexed.plusSeconds(1);
+    saksmappeRepository.updateLastIndexed(saksmappeId, newer);
+    assertEquals(newer, saksmappeRepository.findById(saksmappeId).orElseThrow().getLastIndexed());
+
+    var newest = indexed.plusSeconds(2);
+    saksmappeRepository.updateLastIndexed(List.of(saksmappeId), newest);
+    assertEquals(newest, saksmappeRepository.findById(saksmappeId).orElseThrow().getLastIndexed());
+
+    // The row was indexed after its last update, so the reindexer must leave it alone
+    taskTestService.updateOutdatedDocuments();
+    captureIndexedDocuments(0);
+
+    delete("/arkiv/" + arkivDTO.getId());
+    captureDeletedDocuments(1);
   }
 
   private boolean esDocumentExists(String index, String id) throws Exception {
