@@ -137,6 +137,20 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
     var moetemappe = lagretSak.getMoetemappe();
     var enhet = lagretSak.getEnhet();
 
+    var mappe = saksmappe != null ? saksmappe : moetemappe;
+    if (mappe == null) {
+      log.warn("Cannot notify LagretSak {}: no saksmappe/moetemappe linked", lagretSakId);
+      return;
+    }
+
+    // Scheduled tasks run without the accessibility filters. Hold the notification while the
+    // mappe is not public, so a postponed publication is not disclosed. The hits are kept, and
+    // the mail goes out once the mappe is accessible again.
+    if (!mappe.isAccessible()) {
+      log.debug("Holding LagretSak {} notification, the mappe is not accessible", lagretSakId);
+      return;
+    }
+
     var context = new HashMap<String, Object>();
     context.put("bruker", bruker);
     context.put("lagretsak", lagretSak);

@@ -5,7 +5,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.json.JsonData;
 import com.google.gson.Gson;
 import java.io.StringReader;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
@@ -63,20 +63,26 @@ public class SubscriptionMatcher {
         return;
       }
 
-      if (document instanceof MappeES mappeDocument && event.isUpdatedSinceLastIndex()) {
+      // Never match a document that is not public. A postponed publication would otherwise be
+      // disclosed to subscribers.
+      if (!isAccessible(document)) {
+        log.debug(
+            "Do not match against subscriptions for inaccessible document: {}", document.getId());
+        return;
+      }
+
+      // A Mappe that just turned accessible is reported as an insert. Treat that as an update for
+      // saved-case subscribers, since changes made while it was not public were held back.
+      if (document instanceof MappeES mappeDocument
+          && (event.isUpdatedSinceLastIndex() || event.isInsert())) {
         log.debug("Match against Mappe subscriptions: {}", mappeDocument.getId());
         handleSak(mappeDocument);
       }
 
-      // Handle inserts for accessible documents or documents that just turned accessible
+      // Handle inserts, including documents that just turned accessible
       if (event.isInsert()) {
-        if (isAccessible(document)) {
-          log.debug("Match against search subscriptions: {}", document.getId());
-          handleSearch(document);
-        } else {
-          log.debug(
-              "Do not match against subscriptions for inaccessible document: {}", document.getId());
-        }
+        log.debug("Match against search subscriptions: {}", document.getId());
+        handleSearch(document);
       }
     }
   }
@@ -134,12 +140,18 @@ public class SubscriptionMatcher {
   }
 
   /**
-   * Check if document is accessible.
+   * Check if document is accessible. Mirrors {@code Base.isAccessible()} and the {@code
+   * accessibleAfter <= now} filter used by search. A missing timestamp is treated as not
+   * accessible, since search and the Hibernate filters would hide such a document too.
    *
    * @param document the document to check
    * @return true if the document is accessible
    */
   private boolean isAccessible(BaseES document) {
-    return ZonedDateTime.parse(document.getAccessibleAfter()).isBefore(ZonedDateTime.now());
+    var accessibleAfter = document.getAccessibleAfter();
+    if (accessibleAfter == null) {
+      return false;
+    }
+    return !TimeConverter.timestampToInstant(accessibleAfter).isAfter(Instant.now());
   }
 }

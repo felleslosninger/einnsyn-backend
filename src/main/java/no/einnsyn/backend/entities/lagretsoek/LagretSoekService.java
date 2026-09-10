@@ -6,8 +6,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.gson.reflect.TypeToken;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
@@ -331,8 +333,25 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     lagretSoekMap.put("hasMoreHits", lagretSoek.getHitCount() > maxResults);
     lagretSoekMap.put("filterId", lagretSoek.getLegacyQuery());
     lagretSoekMap.put(
-        "hitList", lagretSoek.getHitList().stream().map(this::getHitContext).toList());
+        "hitList",
+        lagretSoek.getHitList().stream()
+            .filter(this::isHitAccessible)
+            .map(this::getHitContext)
+            .toList());
     return lagretSoekMap;
+  }
+
+  /**
+   * Hits are matched when a document is public, but the mail is sent later with the accessibility
+   * filters disabled. Drop hits whose document has been withdrawn in the meantime.
+   */
+  boolean isHitAccessible(LagretSoekHit hit) {
+    var docs =
+        Stream.of(hit.getSaksmappe(), hit.getJournalpost(), hit.getMoetemappe(), hit.getMoetesak())
+            .filter(Objects::nonNull)
+            .toList();
+
+    return !docs.isEmpty() && docs.stream().allMatch(doc -> doc.isAccessible());
   }
 
   /** Generate template context for LagretSoekHit */
