@@ -151,7 +151,7 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     resetEs();
     esClient.indices().refresh(r -> r.index(percolatorIndex));
 
-    // One matching Saksmappe ("foo"), and one that does not match
+    // One matching Saksmappe ("foo"), and one extra Saksmappe used to simulate a late hit
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put("offentligTittel", "foo");
     saksmappeJSON.put("offentligTittelSensitiv", "foo");
