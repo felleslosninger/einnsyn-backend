@@ -16,6 +16,7 @@ import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
+import no.einnsyn.backend.entities.vedtak.models.VedtakDTO;
 import no.einnsyn.backend.entities.votering.models.VoteringDTO;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -237,6 +238,17 @@ class VoteringControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var addedDTO = gson.fromJson(response.getBody(), VoteringDTO.class);
     assertNotNull(addedDTO.getId());
+
+    // Read back through the Vedtak itself. This is loaded from the owning vedtak__id column and
+    // does not depend on how the list endpoint is scoped, so it fails whenever the owning side was
+    // not set, independently of the paginators.
+    response = get("/vedtak/" + vedtakId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var vedtakDTO = gson.fromJson(response.getBody(), VedtakDTO.class);
+    var voteringIds = vedtakDTO.getVotering().stream().map(ExpandableField::getId).toList();
+    assertTrue(
+        voteringIds.contains(addedDTO.getId()),
+        "The added Votering should be related to the Vedtak");
 
     response = get("/vedtak/" + vedtakId + "/votering");
     assertEquals(HttpStatus.OK, response.getStatusCode());
