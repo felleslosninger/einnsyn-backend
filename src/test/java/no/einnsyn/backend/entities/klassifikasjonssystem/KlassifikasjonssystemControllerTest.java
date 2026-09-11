@@ -288,4 +288,40 @@ class KlassifikasjonssystemControllerTest extends EinnsynControllerTestBase {
 
     assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
   }
+
+  @Test
+  void testChildrenAddedThroughTheParentEndpointAreListed() throws Exception {
+    var response = post("/arkiv", getArkivJSON());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
+    // Adding through the nested endpoints must set the relation the list queries filter on.
+    response =
+        post(
+            "/arkivdel/" + arkivdelDTO.getId() + "/klassifikasjonssystem",
+            getKlassifikasjonssystemJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var ksysDTO = gson.fromJson(response.getBody(), KlassifikasjonssystemDTO.class);
+
+    response = post("/klassifikasjonssystem/" + ksysDTO.getId() + "/klasse", getKlasseJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var klasseDTO = gson.fromJson(response.getBody(), KlasseDTO.class);
+
+    response = get("/arkivdel/" + arkivdelDTO.getId() + "/klassifikasjonssystem");
+    var ksysListType = new TypeToken<PaginatedList<KlassifikasjonssystemDTO>>() {}.getType();
+    PaginatedList<KlassifikasjonssystemDTO> ksysList =
+        gson.fromJson(response.getBody(), ksysListType);
+    assertEquals(
+        List.of(ksysDTO.getId()),
+        ksysList.getItems().stream().map(KlassifikasjonssystemDTO::getId).toList());
+
+    response = get("/klassifikasjonssystem/" + ksysDTO.getId() + "/klasse");
+    var klasseListType = new TypeToken<PaginatedList<KlasseDTO>>() {}.getType();
+    PaginatedList<KlasseDTO> klasseList = gson.fromJson(response.getBody(), klasseListType);
+    assertEquals(
+        List.of(klasseDTO.getId()), klasseList.getItems().stream().map(KlasseDTO::getId).toList());
+
+    assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
+  }
 }

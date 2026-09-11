@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
 import java.util.List;
@@ -223,5 +224,27 @@ class VoteringControllerTest extends EinnsynControllerTestBase {
     assertEquals(Set.copyOf(vedtak1VoteringIds), Set.copyOf(ids));
 
     assertEquals(HttpStatus.OK, delete("/moetesak/" + moetesak2DTO.getId()).getStatusCode());
+  }
+
+  @Test
+  void testVoteringAddedThroughVedtakIsListed() throws Exception {
+    var vedtakId = moetesakDTO.getVedtak().getExpandedObject().getId();
+
+    // Votering owns the relation to Vedtak, so adding through this endpoint must set it. If only
+    // the inverse collection on Vedtak is updated, the Votering is persisted without a vedtak and
+    // disappears from the list below.
+    var response = post("/vedtak/" + vedtakId + "/votering", getVoteringJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var addedDTO = gson.fromJson(response.getBody(), VoteringDTO.class);
+    assertNotNull(addedDTO.getId());
+
+    response = get("/vedtak/" + vedtakId + "/votering");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var listType = new TypeToken<PaginatedList<VoteringDTO>>() {}.getType();
+    PaginatedList<VoteringDTO> list = gson.fromJson(response.getBody(), listType);
+    var ids = list.getItems().stream().map(VoteringDTO::getId).toList();
+    assertTrue(ids.contains(addedDTO.getId()), "The added Votering should be listed");
+
+    assertEquals(HttpStatus.OK, delete("/votering/" + addedDTO.getId()).getStatusCode());
   }
 }
