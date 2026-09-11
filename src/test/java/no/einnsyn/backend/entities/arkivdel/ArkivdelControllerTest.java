@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.gson.reflect.TypeToken;
+import java.util.ArrayList;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -169,5 +170,32 @@ class ArkivdelControllerTest extends EinnsynControllerTestBase {
     assertEquals(arkivdel2DTO.getId(), arkivdelResultList.getItems().get(0).getId());
 
     delete("/arkiv/" + arkivDTO.getId());
+  }
+
+  @Test
+  void testArkivdelListByJournalenhetIsPaginated() throws Exception {
+    var response = post("/arkiv", getArkivJSON());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    // Five Arkivdel for the journalenhet we filter by, and one for another journalenhet that must
+    // not show up in the filtered list.
+    var arkivdelList = new ArrayList<ArkivdelDTO>();
+    for (var i = 0; i < 5; i++) {
+      var arkivdelJSON = getArkivdelJSON();
+      arkivdelJSON.put("journalenhet", underenhetId);
+      response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", arkivdelJSON);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      arkivdelList.add(gson.fromJson(response.getBody(), ArkivdelDTO.class));
+    }
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var otherArkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    assertNotNull(otherArkivdelDTO.getId());
+
+    var resultListType = new TypeToken<PaginatedList<ArkivdelDTO>>() {}.getType();
+    testPaginatedList(
+        resultListType, arkivdelList, "/arkivdel?journalenhet=" + underenhetId, 2, journalenhetKey);
+
+    assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
   }
 }

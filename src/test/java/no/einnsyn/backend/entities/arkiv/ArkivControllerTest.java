@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
+import java.util.ArrayList;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -153,5 +154,32 @@ class ArkivControllerTest extends EinnsynControllerTestBase {
     delete("/arkiv/" + arkivDTO.getId());
     delete("/arkiv/" + arkiv2DTO.getId());
     delete("/arkiv/" + arkiv3DTO.getId());
+  }
+
+  @Test
+  void testArkivListByJournalenhetIsPaginated() throws Exception {
+    // Five Arkiv for the journalenhet we filter by, and one for another journalenhet that must
+    // not show up in the filtered list.
+    var arkivList = new ArrayList<ArkivDTO>();
+    for (var i = 0; i < 5; i++) {
+      var arkivJSON = getArkivJSON();
+      arkivJSON.put("journalenhet", underenhetId);
+      var response = post("/arkiv", arkivJSON);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      arkivList.add(gson.fromJson(response.getBody(), ArkivDTO.class));
+    }
+
+    var otherResponse = post("/arkiv", getArkivJSON());
+    var otherArkivDTO = gson.fromJson(otherResponse.getBody(), ArkivDTO.class);
+    assertNotNull(otherArkivDTO.getId());
+
+    var resultListType = new TypeToken<PaginatedList<ArkivDTO>>() {}.getType();
+    testPaginatedList(
+        resultListType, arkivList, "/arkiv?journalenhet=" + underenhetId, 2, journalenhetKey);
+
+    for (var arkivDTO : arkivList) {
+      assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
+    }
+    assertEquals(HttpStatus.OK, delete("/arkiv/" + otherArkivDTO.getId()).getStatusCode());
   }
 }

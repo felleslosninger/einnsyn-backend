@@ -5,6 +5,7 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseDTO;
@@ -13,6 +14,7 @@ import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.UniqueFieldMatch;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.base.models.BaseES;
+import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
@@ -168,6 +170,23 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
       }
     }
     return es;
+  }
+
+  /**
+   * Paginators for a list filtered by journalenhet. Entities whose IRI / systemId is not unique
+   * across journalenhets are listed per journalenhet, so that the filter can be applied without
+   * losing pagination.
+   *
+   * @param journalenhet The journalenhet to list objects for
+   * @return paginators over the objects belonging to the given journalenhet
+   */
+  protected Paginators<O> getJournalenhetPaginators(Enhet journalenhet) {
+    var repository = getRepository();
+    return new Paginators<>(
+        (pivot, pageRequest) ->
+            repository.paginateByJournalenhetAsc(journalenhet, pivot, pageRequest),
+        (pivot, pageRequest) ->
+            repository.paginateByJournalenhetDesc(journalenhet, pivot, pageRequest));
   }
 
   /**

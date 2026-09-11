@@ -198,16 +198,17 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   }
 
   /**
-   * Override listEntity to filter by journalenhet, since Arkiv is not unique by IRI / system_id.
+   * Override listEntity to resolve externalIds within the given journalenhet, since Arkiv is not
+   * unique by IRI / system_id. Listing by journalenhet alone is paginated, and is handled by {@link
+   * #getPaginators(ListParameters)}.
    */
   @Override
   protected List<Arkiv> listEntity(ListParameters params, int limit) throws EInnsynException {
-    if (params.getJournalenhet() != null) {
+    if (params.getIds() == null
+        && params.getExternalIds() != null
+        && params.getJournalenhet() != null) {
       var journalenhet = enhetService.findOrThrow(params.getJournalenhet());
-      if (params.getExternalIds() != null) {
-        return repository.findByExternalIdInAndJournalenhet(params.getExternalIds(), journalenhet);
-      }
-      return repository.findByJournalenhet(journalenhet);
+      return repository.findByExternalIdInAndJournalenhet(params.getExternalIds(), journalenhet);
     }
     return super.listEntity(params, limit);
   }
@@ -227,6 +228,12 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
           (pivot, pageRequest) -> repository.paginateAsc(enhet, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(enhet, pivot, pageRequest));
     }
+
+    if (params.getJournalenhet() != null) {
+      var journalenhet = enhetService.findOrThrow(params.getJournalenhet());
+      return getJournalenhetPaginators(journalenhet);
+    }
+
     return super.getPaginators(params);
   }
 }
