@@ -185,6 +185,9 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     var vedtak = vedtakService.findForUpdateOrThrow(vedtakId);
     var votering = voteringService.createOrThrow(new ExpandableField<>(voteringField));
     vedtak.addVotering(votering);
+    // Votering owns the relation, Vedtak.votering is mappedBy. Without this the new Votering is
+    // persisted with no vedtak, and is not found when listing the Vedtak's voteringer.
+    votering.setVedtak(vedtak);
     vedtakService.scheduleIndex(vedtakId, -1);
 
     return voteringService.get(votering.getId());
