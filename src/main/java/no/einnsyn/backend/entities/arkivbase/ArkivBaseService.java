@@ -1,6 +1,8 @@
 package no.einnsyn.backend.entities.arkivbase;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
@@ -187,6 +189,20 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
             repository.paginateByJournalenhetAsc(journalenhet, pivot, pageRequest),
         (pivot, pageRequest) ->
             repository.paginateByJournalenhetDesc(journalenhet, pivot, pageRequest));
+  }
+
+  /**
+   * Sort a lookup by externalIds into the order the ids were requested in, the way the generic
+   * lookup in {@link BaseService#listEntity} does. Used by the entities whose externalId is only
+   * unique per journalenhet, which resolve externalIds within the journalenhet filter.
+   *
+   * @param entityList The objects matching the requested external ids
+   * @param externalIds The requested external ids
+   * @return the same list, sorted in the order of the requested external ids
+   */
+  protected List<O> sortByExternalIds(List<O> entityList, List<String> externalIds) {
+    entityList.sort(Comparator.comparingInt(entity -> externalIds.indexOf(entity.getExternalId())));
+    return entityList;
   }
 
   /**

@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -181,5 +183,35 @@ class ArkivControllerTest extends EinnsynControllerTestBase {
       assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
     }
     assertEquals(HttpStatus.OK, delete("/arkiv/" + otherArkivDTO.getId()).getStatusCode());
+  }
+
+  @Test
+  void testArkivListByExternalIdsAndJournalenhetKeepsRequestedOrder() throws Exception {
+    var externalIds = List.of("externalIdC", "externalIdA", "externalIdB");
+    var arkivByExternalId = new HashMap<String, ArkivDTO>();
+    for (var externalId : externalIds) {
+      var arkivJSON = getArkivJSON();
+      arkivJSON.put("externalId", externalId);
+      arkivJSON.put("journalenhet", underenhetId);
+      var response = post("/arkiv", arkivJSON);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      arkivByExternalId.put(externalId, gson.fromJson(response.getBody(), ArkivDTO.class));
+    }
+
+    // The requested order is not the insertion order, so this fails if the result comes back in
+    // whatever order the database returned it.
+    var requested = List.of("externalIdB", "externalIdC", "externalIdA");
+    var query = requested.stream().map(id -> "&externalIds=" + id).reduce("", (a, b) -> a + b);
+    var response = get("/arkiv?journalenhet=" + underenhetId + query);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var resultListType = new TypeToken<PaginatedList<ArkivDTO>>() {}.getType();
+    PaginatedList<ArkivDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(
+        requested.stream().map(id -> arkivByExternalId.get(id).getId()).toList(),
+        resultList.getItems().stream().map(ArkivDTO::getId).toList());
+
+    for (var arkivDTO : arkivByExternalId.values()) {
+      assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
+    }
   }
 }

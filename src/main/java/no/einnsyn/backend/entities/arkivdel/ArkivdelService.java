@@ -187,7 +187,9 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
         && params.getExternalIds() != null
         && params.getJournalenhet() != null) {
       var journalenhet = enhetService.findOrThrow(params.getJournalenhet());
-      return repository.findByExternalIdInAndJournalenhet(params.getExternalIds(), journalenhet);
+      return sortByExternalIds(
+          repository.findByExternalIdInAndJournalenhet(params.getExternalIds(), journalenhet),
+          params.getExternalIds());
     }
     return super.listEntity(params, limit);
   }

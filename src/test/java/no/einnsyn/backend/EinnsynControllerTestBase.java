@@ -654,7 +654,8 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
    *
    * @param <T> The DTO type of the listed items
    * @param resultListType Gson type of the PaginatedList response
-   * @param expectedItems The items the endpoint is expected to return, in ascending id order
+   * @param expectedItems The items the endpoint is expected to return, in ascending id order. Must
+   *     not be empty, since the walk asserts that every page it fetches has items.
    * @param endpoint The list endpoint, optionally with a query string
    * @param limit Page size to walk the list with
    * @param apiKeyOrJWT Credentials to use
