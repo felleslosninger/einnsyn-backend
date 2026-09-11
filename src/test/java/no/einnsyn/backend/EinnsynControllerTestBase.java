@@ -1,11 +1,16 @@
 package no.einnsyn.backend;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import no.einnsyn.backend.common.hasid.HasId;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -635,6 +640,73 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
       if (i < pivotNo) {
         assertEquals(actualItems.get(i).getId(), items.get(i).getId());
       }
+    }
+  }
+
+  /**
+   * Walks a list endpoint through its pagination links with the given page size: forwards through
+   * the next-links, then backwards through the previous-links, for both sort orders.
+   *
+   * <p>Asserts that every page respects the limit, that exactly the expected items are returned
+   * once each, that the next / previous links are present on all pages except the last / first,
+   * that the backwards walk reproduces the forward pages, and that the two sort orders are the
+   * reverse of each other.
+   *
+   * @param <T> The DTO type of the listed items
+   * @param resultListType Gson type of the PaginatedList response
+   * @param expectedItems The items the endpoint is expected to return, in ascending id order. Must
+   *     not be empty, since the walk asserts that every page it fetches has items.
+   * @param endpoint The list endpoint, optionally with a query string
+   * @param limit Page size to walk the list with
+   * @param apiKeyOrJWT Credentials to use
+   */
+  protected <T extends HasId> void testPaginatedList(
+      Type resultListType, List<T> expectedItems, String endpoint, int limit, String apiKeyOrJWT)
+      throws Exception {
+    var expectedIds = expectedItems.stream().map(HasId::getId).toList();
+    var separator = endpoint.contains("?") ? "&" : "?";
+
+    for (var sortOrder : List.of("asc", "desc")) {
+      // Forwards through the next-links until the last page
+      var ids = new ArrayList<String>();
+      var url = endpoint + separator + "limit=" + limit + "&sortOrder=" + sortOrder;
+      String previous = null;
+      var pageNo = 0;
+      while (url != null) {
+        var response = get(url, apiKeyOrJWT);
+        assertEquals(HttpStatus.OK, response.getStatusCode(), url);
+        PaginatedList<T> page = gson.fromJson(response.getBody(), resultListType);
+        if (pageNo == 0) {
+          assertNull(page.getPrevious(), "The first page should not have a previous link");
+        } else {
+          assertNotNull(page.getPrevious(), "Page " + pageNo + " should have a previous link");
+        }
+        if (page.getNext() != null) {
+          assertEquals(limit, page.getItems().size(), "Page " + pageNo + " should be full");
+        } else {
+          assertFalse(page.getItems().isEmpty(), "The last page should not be empty");
+          assertTrue(page.getItems().size() <= limit, "The last page exceeds the limit");
+        }
+        page.getItems().forEach(item -> ids.add(item.getId()));
+        previous = page.getPrevious();
+        url = page.getNext();
+        pageNo++;
+      }
+      assertEquals("asc".equals(sortOrder) ? expectedIds : expectedIds.reversed(), ids, sortOrder);
+
+      // Backwards through the previous-links from the last page. The pages must reproduce the
+      // forward walk, minus the last page we started from.
+      var backwardIds = new ArrayList<String>();
+      while (previous != null) {
+        var response = get(previous, apiKeyOrJWT);
+        assertEquals(HttpStatus.OK, response.getStatusCode(), previous);
+        PaginatedList<T> page = gson.fromJson(response.getBody(), resultListType);
+        assertNotNull(page.getNext(), "Pages reached backwards should have a next link");
+        assertEquals(limit, page.getItems().size(), "Pages reached backwards should be full");
+        backwardIds.addAll(0, page.getItems().stream().map(HasId::getId).toList());
+        previous = page.getPrevious();
+      }
+      assertEquals(ids.subList(0, (pageNo - 1) * limit), backwardIds, sortOrder);
     }
   }
 
