@@ -283,8 +283,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
       throws NotFoundException {
     var bruker = proxy.findOrThrow(brukerId, NotFoundException.class, NOT_FOUND_MESSAGE);
 
-    if (!SecretUtils.secretEquals(bruker.getSecret(), secret)
-        || bruker.getSecretExpiry() == null) {
+    if (!SecretUtils.secretEquals(bruker.getSecret(), secret) || bruker.getSecretExpiry() == null) {
       throw new NotFoundException(NOT_FOUND_MESSAGE);
     }
 
