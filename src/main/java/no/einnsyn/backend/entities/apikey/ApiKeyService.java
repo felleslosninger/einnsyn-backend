@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.apikey.models.ApiKey;
@@ -16,7 +17,6 @@ import no.einnsyn.backend.utils.TimeConverter;
 import no.einnsyn.backend.utils.id.IdGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,25 +47,6 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
     return new ApiKeyDTO();
   }
 
-  /**
-   * Override add(), to add secretKey on creation
-   *
-   * @param dto The DTO to add
-   * @return The added DTO
-   * @throws EInnsynException If the operation fails
-   */
-  @Override
-  @Transactional(rollbackFor = Exception.class)
-  @Retryable
-  public ApiKeyDTO add(ApiKeyDTO dto) throws EInnsynException {
-    // Generate a new secret
-    var secret = IdGenerator.generateSecret("secret");
-    dto.setSecretKey(secret);
-    var apiKeyDTO = super.add(dto);
-    apiKeyDTO.setSecretKey(secret);
-    return apiKeyDTO;
-  }
-
   @Override
   protected Paginators<ApiKey> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
@@ -81,11 +62,14 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   protected ApiKey fromDTO(ApiKeyDTO dto, ApiKey apiKey) throws EInnsynException {
     super.fromDTO(dto, apiKey);
 
-    // This is a readOnly field, but we set it internally in add().
-    if (dto.getSecretKey() != null) {
-      var hashedSecret = HashUtils.sha256Hex(dto.getSecretKey());
-      apiKey.setSecret(hashedSecret);
-      log.trace("apiKey.setSecretKey(" + hashedSecret + ")");
+    // Generate the secret on creation. Only the hash is stored. The plaintext is kept on the entity
+    // for the create response, and is deliberately never put on the DTO, since the request DTO is
+    // logged.
+    if (apiKey.getId() == null) {
+      var secretKey = IdGenerator.generateSecret("secret");
+      apiKey.setSecretKey(secretKey);
+      apiKey.setSecret(HashUtils.sha256Hex(secretKey));
+      log.trace("apiKey secret hash generated");
     }
 
     if (dto.getName() != null) {
@@ -119,6 +103,11 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   protected ApiKeyDTO toDTO(
       ApiKey object, ApiKeyDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(object, dto, expandPaths, currentPath);
+
+    // Only present on the instance that was just created
+    if (object.getSecretKey() != null) {
+      dto.setSecretKey(object.getSecretKey());
+    }
 
     dto.setName(object.getName());
     dto.setEnhet(enhetService.maybeExpand(object.getEnhet(), "enhet", expandPaths, currentPath));
@@ -215,7 +204,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
       return;
     }
 
-    var apiKey = apiKeyService.findOrThrow(id);
+    var apiKey = apiKeyService.findOrThrow(id, NotFoundException.class);
     if (!isOwnerOf(apiKey)) {
       throw new AuthorizationException("Not authorized to get " + id);
     }

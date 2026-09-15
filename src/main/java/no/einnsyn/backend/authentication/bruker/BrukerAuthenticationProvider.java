@@ -5,12 +5,10 @@ import no.einnsyn.backend.authentication.AuthenticationService;
 import no.einnsyn.backend.authentication.EInnsynAuthentication;
 import no.einnsyn.backend.authentication.EInnsynPrincipalBruker;
 import no.einnsyn.backend.entities.bruker.BrukerService;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -18,15 +16,15 @@ public class BrukerAuthenticationProvider implements AuthenticationProvider {
 
   private final AuthenticationService authenticationService;
   private final BrukerService brukerService;
-  private final JwtDecoder jwtDecoder;
+  private final EInnsynTokenService tokenService;
 
   public BrukerAuthenticationProvider(
       AuthenticationService authenticationService,
       BrukerService brukerService,
-      @Qualifier("eInnsynJwtDecoder") JwtDecoder jwtDecoder) {
+      EInnsynTokenService tokenService) {
     this.authenticationService = authenticationService;
     this.brukerService = brukerService;
-    this.jwtDecoder = jwtDecoder;
+    this.tokenService = tokenService;
   }
 
   @Override
@@ -35,7 +33,7 @@ public class BrukerAuthenticationProvider implements AuthenticationProvider {
 
     Jwt jwt;
     try {
-      jwt = jwtDecoder.decode(token);
+      jwt = tokenService.decodeToken(token);
     } catch (Exception e) {
       // If decoding fails, we assume it's not a valid eInnsyn token. The decoder verifies the
       // signature and the issuer, so tokens from other issuers end up here.
@@ -47,14 +45,7 @@ public class BrukerAuthenticationProvider implements AuthenticationProvider {
       return null;
     }
 
-    // Prefer ID from the token, for edge cases such as users changing their email address.
-    var username = jwt.getClaimAsString("id");
-
-    // The old API doesn't store IDs in the token, so we need a fallback.
-    if (username == null) {
-      username = jwt.getSubject();
-    }
-
+    var username = tokenService.getBrukerId(jwt);
     if (username == null) {
       return null;
     }

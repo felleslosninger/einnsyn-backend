@@ -74,4 +74,18 @@ public class EInnsynTokenService {
   public Jwt decodeToken(String token) throws JwtException {
     return jwtDecoder.decode(token);
   }
+
+  /**
+   * Resolves the Bruker identifier from a token. The immutable id claim is preferred, so tokens
+   * keep working when the user changes e-mail address, and can never resolve to another account
+   * that later takes over the old address. Tokens issued by the old API have no id claim, so those
+   * fall back to the subject (e-mail).
+   *
+   * @param jwt the decoded token
+   * @return the Bruker id, the e-mail address for legacy tokens, or null if neither is present
+   */
+  public String getBrukerId(Jwt jwt) {
+    var id = jwt.getClaimAsString("id");
+    return id != null ? id : jwt.getSubject();
+  }
 }
