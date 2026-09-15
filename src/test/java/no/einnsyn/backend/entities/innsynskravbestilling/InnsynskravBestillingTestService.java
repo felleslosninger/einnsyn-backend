@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import no.einnsyn.backend.testutils.SideEffectService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,13 @@ public class InnsynskravBestillingTestService {
     var response = restTemplate.exchange(url, HttpMethod.GET, request, String.class);
     sideEffectService.awaitSideEffects();
     return response.getBody();
+  }
+
+  @Transactional
+  public void setOpprettetDato(String id, Instant opprettetDato) {
+    var bestilling = innsynskravBestillingRepository.findById(id).orElseThrow();
+    bestilling.setOpprettetDato(Date.from(opprettetDato));
+    innsynskravBestillingRepository.saveAndFlush(bestilling);
   }
 
   public void assertSent(String id) throws Exception {

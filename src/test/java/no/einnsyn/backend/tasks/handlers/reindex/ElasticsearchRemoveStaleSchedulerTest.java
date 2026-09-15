@@ -8,7 +8,9 @@ import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,9 +30,7 @@ class ElasticsearchRemoveStaleSchedulerTest {
   @Test
   void testDeleteDocumentListIncludesRoutingWhenPresent() {
     scheduler.deleteDocumentList(
-        List.of(new ElasticsearchRemoveStaleScheduler.HitWithRouting("doc-1", "parent-1")),
-        "test-index",
-        "Innsynskrav");
+        List.of("doc-1"), Map.of("doc-1", "parent-1"), "test-index", "Innsynskrav");
 
     assertEquals(1, esClient.bulkCallCount);
     var deleteOperation = esClient.lastBulkRequest.operations().getFirst().delete();
@@ -42,9 +42,7 @@ class ElasticsearchRemoveStaleSchedulerTest {
   @Test
   void testDeleteDocumentListOmitsRoutingWhenAbsent() {
     scheduler.deleteDocumentList(
-        List.of(new ElasticsearchRemoveStaleScheduler.HitWithRouting("doc-1", null)),
-        "test-index",
-        "LagretSoek");
+        List.of("doc-1"), Collections.singletonMap("doc-1", null), "test-index", "LagretSoek");
 
     assertEquals(1, esClient.bulkCallCount);
     var deleteOperation = esClient.lastBulkRequest.operations().getFirst().delete();
@@ -55,7 +53,7 @@ class ElasticsearchRemoveStaleSchedulerTest {
 
   @Test
   void testDeleteDocumentListSkipsEmptyLists() {
-    scheduler.deleteDocumentList(List.of(), "test-index", "LagretSoek");
+    scheduler.deleteDocumentList(List.of(), Map.of(), "test-index", "LagretSoek");
 
     assertEquals(0, esClient.bulkCallCount);
     assertNull(esClient.lastBulkRequest);

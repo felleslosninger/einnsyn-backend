@@ -1,13 +1,18 @@
 package no.einnsyn.backend.entities.innsynskrav;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.gson.reflect.TypeToken;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.Bruker;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
+import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
@@ -252,5 +257,88 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
         delete("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), bruker1Token)
             .getStatusCode());
     deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+  }
+
+  @Test
+  void testEnhetCannotExpandInnsynskravBestilling() throws Exception {
+    // A Journalpost owned by another Enhet
+    var response = post("/arkiv", getArkivJSON(), journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkiv2DTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    response =
+        post("/arkiv/" + arkiv2DTO.getId() + "/arkivdel", getArkivdelJSON(), journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdel2DTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    var saksmappe2JSON = getSaksmappeJSON();
+    saksmappe2JSON.put("journalpost", new JSONArray().put(getJournalpostJSON()));
+    response =
+        post("/arkivdel/" + arkivdel2DTO.getId() + "/saksmappe", saksmappe2JSON, journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe2DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    // One order with an Innsynskrav to each Enhet
+    var innsynskrav1JSON = getInnsynskravJSON();
+    innsynskrav1JSON.put(
+        "journalpost", getJournalpostList(saksmappeDTO.getId()).getItems().getFirst().getId());
+    var innsynskrav2JSON = getInnsynskravJSON();
+    innsynskrav2JSON.put(
+        "journalpost", getJournalpostList(saksmappe2DTO.getId()).getItems().getFirst().getId());
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    innsynskravBestillingJSON.put(
+        "innsynskrav", new JSONArray().put(innsynskrav1JSON).put(innsynskrav2JSON));
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON, bruker1Token);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var innsynskravId =
+        innsynskravBestillingDTO.getInnsynskrav().stream()
+            .map(field -> field.getExpandedObject())
+            .filter(innsynskrav -> journalenhetId.equals(innsynskrav.getEnhet().getId()))
+            .findFirst()
+            .orElseThrow()
+            .getId();
+    var expand = "?expand=innsynskravBestilling.innsynskrav";
+
+    // The receiving Enhet can get its Innsynskrav, but not expand the order it belongs to. That
+    // would expose the Innsynskrav sent to other Enhets.
+    response = get("/innsynskrav/" + innsynskravId + expand);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+    assertEquals(
+        innsynskravBestillingDTO.getId(), innsynskravDTO.getInnsynskravBestilling().getId());
+    assertFalse(innsynskravDTO.getInnsynskravBestilling().isExpanded());
+
+    // Neither through the list endpoint
+    response = get("/enhet/" + journalenhetId + "/innsynskrav" + expand);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var type = new TypeToken<PaginatedList<InnsynskravDTO>>() {}.getType();
+    PaginatedList<InnsynskravDTO> resultList = gson.fromJson(response.getBody(), type);
+    assertFalse(resultList.getItems().isEmpty());
+    for (var item : resultList.getItems()) {
+      assertFalse(item.getInnsynskravBestilling().isExpanded());
+    }
+
+    // The owner can
+    response = get("/innsynskrav/" + innsynskravId + expand, bruker1Token);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+    assertTrue(innsynskravDTO.getInnsynskravBestilling().isExpanded());
+    assertEquals(
+        2, innsynskravDTO.getInnsynskravBestilling().getExpandedObject().getInnsynskrav().size());
+
+    // Admin can
+    response = getAdmin("/innsynskrav/" + innsynskravId + expand);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+    assertTrue(innsynskravDTO.getInnsynskravBestilling().isExpanded());
+
+    // Clean up
+    assertEquals(
+        HttpStatus.OK,
+        delete("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), bruker1Token)
+            .getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+    assertEquals(
+        HttpStatus.OK, delete("/arkiv/" + arkiv2DTO.getId(), journalenhet2Key).getStatusCode());
   }
 }

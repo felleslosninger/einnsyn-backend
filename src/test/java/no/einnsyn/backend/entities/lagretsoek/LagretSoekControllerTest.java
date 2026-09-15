@@ -3,7 +3,12 @@ package no.einnsyn.backend.entities.lagretsoek;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doThrow;
 
+import java.io.IOException;
+import java.util.function.Function;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -13,10 +18,12 @@ import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.tasks.TaskTestService;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
@@ -26,6 +33,8 @@ import org.testcontainers.shaded.com.google.common.reflect.TypeToken;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
+
+  @Autowired TaskTestService taskTestService;
 
   BrukerDTO brukerDTO;
   ArkivDTO arkivDTO;
@@ -117,6 +126,80 @@ class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
     // Get
     response = get("/lagretSoek/" + LagretSoekDTO.getId(), accessToken);
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+  }
+
+  @Test
+  void testBulkLookupOnlyReturnsOwnLagretSoek() throws Exception {
+    // Another user with a LagretSoek
+    var otherBrukerJSON = getBrukerJSON();
+    var response = post("/bruker", otherBrukerJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var otherBrukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
+    var otherBruker = brukerService.find(otherBrukerDTO.getId());
+    response = patch("/bruker/" + otherBrukerDTO.getId() + "/activate/" + otherBruker.getSecret());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = post("/auth/token", getLoginJSON(otherBrukerJSON));
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var otherAccessToken = gson.fromJson(response.getBody(), TokenResponse.class).getToken();
+    var otherLagretSoekJSON = getLagretSoekJSON();
+    otherLagretSoekJSON.put("externalId", "other-lagret-soek");
+    response =
+        post(
+            "/bruker/" + otherBrukerDTO.getId() + "/lagretSoek",
+            otherLagretSoekJSON,
+            otherAccessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var otherLagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    // Our own LagretSoek
+    response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var ownLagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    var type = new TypeToken<PaginatedList<LagretSoekDTO>>() {}.getType();
+    PaginatedList<LagretSoekDTO> resultList;
+
+    // Lookup by ids only returns objects the caller could get directly
+    response =
+        get(
+            "/bruker/"
+                + brukerDTO.getId()
+                + "/lagretSoek?ids="
+                + ownLagretSoekDTO.getId()
+                + "&ids="
+                + otherLagretSoekDTO.getId()
+                + "&expand=bruker",
+            accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(ownLagretSoekDTO.getId(), resultList.getItems().getFirst().getId());
+
+    // Same for lookup by externalIds
+    response =
+        get(
+            "/bruker/" + brukerDTO.getId() + "/lagretSoek?externalIds=other-lagret-soek",
+            accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), type);
+    assertNotNull(resultList.getItems());
+    assertTrue(resultList.getItems().isEmpty());
+
+    // The owner still finds it
+    response =
+        get(
+            "/bruker/" + otherBrukerDTO.getId() + "/lagretSoek?ids=" + otherLagretSoekDTO.getId(),
+            otherAccessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(otherLagretSoekDTO.getId(), resultList.getItems().getFirst().getId());
+
+    // Clean up
+    delete("/lagretSoek/" + ownLagretSoekDTO.getId(), accessToken);
+    delete("/lagretSoek/" + otherLagretSoekDTO.getId(), otherAccessToken);
+    assertEquals(HttpStatus.OK, deleteAdmin("/bruker/" + otherBrukerDTO.getId()).getStatusCode());
   }
 
   @Test
@@ -228,6 +311,37 @@ class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
     response = patch("/lagretSoek/" + lagretSoekDTO.getId(), updateJSON, accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
+    var deletedIds = captureDeletedDocuments(1);
+    assertTrue(deletedIds.contains(lagretSoekDTO.getId()));
+
+    delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+  }
+
+  // A failed removal of the percolator document must be retried by the reindexer, i.e.
+  // lastIndexed must not be advanced when the delete fails.
+  @SuppressWarnings("unchecked")
+  @Test
+  void testFailedPercolatorRemovalIsRetried() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    captureIndexedDocuments(1);
+    resetEs();
+
+    doThrow(new IOException("Failed to delete document"))
+        .when(esClient)
+        .delete(any(Function.class));
+    var updateJSON = new JSONObject();
+    updateJSON.put("subscribe", false);
+    response = patch("/lagretSoek/" + lagretSoekDTO.getId(), updateJSON, accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    captureDeletedDocuments(1);
+    resetEs();
+    doCallRealMethod().when(esClient).delete(any(Function.class));
+
+    // The LagretSoek is still considered outdated, so the removal is retried
+    taskTestService.updateOutdatedDocuments();
     var deletedIds = captureDeletedDocuments(1);
     assertTrue(deletedIds.contains(lagretSoekDTO.getId()));
 

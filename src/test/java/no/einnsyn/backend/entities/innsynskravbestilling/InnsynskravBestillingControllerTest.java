@@ -18,6 +18,8 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -202,6 +204,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     // Check that the Innsynskrav is in the DB, with a verification secret
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravBestillingId);
     assertNotNull(verificationSecret);
+    innsynskravTestService.setOpprettetDato(
+        innsynskravBestillingId, Instant.now().minus(3, ChronoUnit.DAYS));
 
     response = get("/enhet/" + enhetId + "?expand=handteresAv");
     var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
@@ -249,8 +253,12 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var actualXml = orderCaptor.getValue();
     var orderXmlV1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
     orderXmlV1DateFormat.setTimeZone(TimeZone.getTimeZone("Europe/Oslo"));
+    assertNotNull(innsynskravBestilling.getVerifiedAt());
     var orderXmlV1DateString =
-        orderXmlV1DateFormat.format(Date.from(innsynskravBestilling.getCreated()));
+        orderXmlV1DateFormat.format(Date.from(innsynskravBestilling.getVerifiedAt()));
+    var createdOrderDateString =
+        orderXmlV1DateFormat.format(innsynskravBestilling.getOpprettetDato());
+    assertNotEquals(createdOrderDateString, orderXmlV1DateString);
 
     expectedXml =
         expectedXml
@@ -269,8 +277,14 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertTrue(actualMail.contains("Saksbehandler: [Ufordelt]"));
     assertTrue(actualMail.contains("Enhet: \n"));
 
-    // Verify that confirmation email was sent
-    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+    // Verify that confirmation email was sent, with the same order date as OrderXML
+    var confirmationMailCaptor = ArgumentCaptor.forClass(MimeMessage.class);
+    Awaitility.await()
+        .untilAsserted(
+            () -> verify(javaMailSender, times(2)).send(confirmationMailCaptor.capture()));
+    var expectedOrderDate = "Bestillingsdato: " + orderXmlV1DateString;
+    assertNotNull(findMailTextContaining(confirmationMailCaptor.getAllValues(), expectedOrderDate));
+    assertNotNull(findMailHtmlContaining(confirmationMailCaptor.getAllValues(), expectedOrderDate));
 
     // Delete the InnsynskravBestilling
     response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId);
@@ -1321,6 +1335,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getVerified());
+    var verifiedAt = innsynskravBestillingService.find(innsynskravBestillingId).getVerifiedAt();
+    assertNotNull(verifiedAt);
 
     // Wait for the order confirmation email to the orderer and the eFormidling shipment to the
     // Enhet
@@ -1353,6 +1369,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getVerified());
+    assertEquals(
+        verifiedAt, innsynskravBestillingService.find(innsynskravBestillingId).getVerifiedAt());
 
     // Neither the rejected attempt nor the repeated verification may re-send the order or the
     // confirmation email
@@ -1446,6 +1464,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var innsynskravBestillingId = innsynskravBestillingDTO.getId();
     assertEquals(brukerDTO.getEmail(), innsynskravBestillingDTO.getEmail());
     assertEquals(brukerDTO.getId(), innsynskravBestillingDTO.getBruker().getId());
+    var innsynskravBestilling = innsynskravBestillingService.find(innsynskravBestillingId);
+    assertTrue(innsynskravBestilling.isVerified());
+    assertNotNull(innsynskravBestilling.getVerifiedAt());
 
     // Verify that the InnsynskravBestilling got sent automatically, and that a receipt was sent to
     // the user.

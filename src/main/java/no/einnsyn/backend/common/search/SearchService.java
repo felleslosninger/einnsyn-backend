@@ -274,10 +274,12 @@ public class SearchService {
 
     // We need to reverse the list in order to get endingBefore. Elasticsearch only supports
     // searchAfter
-    else if (endingBefore != null) {
+    var reversed = false;
+    if (endingBefore != null && startingAfter == null) {
       var fieldValueList = toCursorFieldValues("endingBefore", sortBy, endingBefore);
       searchRequestBuilder.searchAfter(fieldValueList);
       // Reverse sort order (the reverse it again when returning the result)
+      reversed = true;
       if ("desc".equalsIgnoreCase(sortOrder)) {
         sortOrder = "asc";
       } else {
@@ -285,8 +287,11 @@ public class SearchService {
       }
     }
 
-    searchRequestBuilder.sort(getSortOptions(sortBy, sortOrder));
-    searchRequestBuilder.sort(getSortOptions("id", sortOrder));
+    // Documents without the sort field go last in the requested order. The reversed query used for
+    // endingBefore must be the exact inverse, so there they go first.
+    var missing = reversed ? "_first" : "_last";
+    searchRequestBuilder.sort(getSortOptions(sortBy, sortOrder, missing));
+    searchRequestBuilder.sort(getSortOptions("id", sortOrder, missing));
 
     // We only need the ID of each match, so don't fetch sources
     searchRequestBuilder.source(b -> b.fetch(false));
@@ -325,7 +330,7 @@ public class SearchService {
             || !CollectionUtils.isEmpty(searchParams.getSkjermingshjemmel()));
   }
 
-  SortOptions getSortOptions(String sortBy, String sortOrder) {
+  SortOptions getSortOptions(String sortBy, String sortOrder, String missing) {
     var sort = SortByMapper.resolve(sortBy);
     var order = "desc".equalsIgnoreCase(sortOrder) ? SortOrder.Desc : SortOrder.Asc;
     return SortOptions.of(
@@ -336,7 +341,7 @@ public class SearchService {
                   f.order(order);
                   // .missing can't be added to built-in fields like _score
                   if (sort != null && !sort.startsWith("_")) {
-                    f.missing("_last");
+                    f.missing(missing);
                   }
                   return f;
                 }));

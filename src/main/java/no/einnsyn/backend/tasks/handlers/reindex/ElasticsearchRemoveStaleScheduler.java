@@ -5,10 +5,10 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import jakarta.annotation.Nullable;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,6 +32,14 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class ElasticsearchRemoveStaleScheduler {
+
+  /**
+   * Sort keys for the Registrering / Mappe scans. None of the dates or the case number are unique,
+   * so the document id is appended as a tiebreaker. Without it, search_after skips the remaining
+   * documents that share a sort tuple across a batch boundary, and they are never cleaned up.
+   */
+  private static final List<String> REGISTRERING_SORT_BY =
+      List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert", "id");
 
   private final ElasticsearchClient esClient;
 
@@ -103,18 +111,15 @@ public class ElasticsearchRemoveStaleScheduler {
         break;
       }
 
-      var hitList = iterator.nextBatch().stream().map(this::toHitWithRouting).toList();
-      var ids = hitList.stream().map(HitWithRouting::id).toList();
-      found += hitList.size();
+      var routingById = getRoutingById(iterator.nextBatch());
+      var ids = List.copyOf(routingById.keySet());
+      found += ids.size();
       var future =
           parallelRunner.run(
               () -> {
-                var idsToRemove = repository.findNonExistingIds(ids.toArray(new String[0]));
-                var idsToRemoveSet = new HashSet<>(idsToRemove);
-                var removeList =
-                    hitList.stream().filter(hit -> idsToRemoveSet.contains(hit.id())).toList();
+                var removeList = repository.findNonExistingIds(ids.toArray(new String[0]));
                 removed.addAndGet(removeList.size());
-                deleteDocumentList(removeList, elasticsearchIndex, entityName);
+                deleteDocumentList(removeList, routingById, elasticsearchIndex, entityName);
               });
 
       futures.add(future);
@@ -171,13 +176,14 @@ public class ElasticsearchRemoveStaleScheduler {
         break;
       }
 
-      var hitList = iterator.nextBatch().stream().map(this::toHitWithRouting).toList();
-      found += hitList.size();
+      var routingById = getRoutingById(iterator.nextBatch());
+      var ids = List.copyOf(routingById.keySet());
+      found += ids.size();
       var future =
           parallelRunner.run(
               () -> {
-                removed.addAndGet(hitList.size());
-                deleteDocumentList(hitList, elasticsearchIndex, "MissingType");
+                removed.addAndGet(ids.size());
+                deleteDocumentList(ids, routingById, elasticsearchIndex, "MissingType");
               });
 
       futures.add(future);
@@ -185,7 +191,6 @@ public class ElasticsearchRemoveStaleScheduler {
           (_, exception) -> {
             futures.remove(future);
             if (exception != null) {
-              var ids = hitList.stream().map(HitWithRouting::id).toList();
               log.error(
                   "Failed to clean up documents without type in Elasticsearch: {}", ids, exception);
             }
@@ -225,25 +230,25 @@ public class ElasticsearchRemoveStaleScheduler {
 
     removeForEntity(
         "Journalpost",
-        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
+        REGISTRERING_SORT_BY,
         journalpostService.getRepository(),
         journalpostService.getElasticsearchIndex());
 
     removeForEntity(
         "Saksmappe",
-        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
+        REGISTRERING_SORT_BY,
         saksmappeService.getRepository(),
         saksmappeService.getElasticsearchIndex());
 
     removeForEntity(
         "Moetemappe",
-        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
+        REGISTRERING_SORT_BY,
         moetemappeService.getRepository(),
         moetemappeService.getElasticsearchIndex());
 
     removeForEntity(
         "Møtesaksregistrering",
-        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
+        REGISTRERING_SORT_BY,
         moetesakService.getRepository(),
         moetesakService.getElasticsearchIndex());
 
@@ -251,7 +256,7 @@ public class ElasticsearchRemoveStaleScheduler {
     // KommerTilBehandlingMøtesaksregistrering
     removeForEntity(
         "KommerTilBehandlingMøtesaksregistrering",
-        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
+        REGISTRERING_SORT_BY,
         moetesakService.getRepository(),
         moetesakService.getElasticsearchIndex());
 
@@ -298,19 +303,38 @@ public class ElasticsearchRemoveStaleScheduler {
   }
 
   /**
+   * Map document IDs to their routing value. Child documents such as Innsynskrav are routed by
+   * their parent, and a delete without the same routing lands on the wrong shard and silently
+   * misses the document.
+   *
+   * @param hits a batch of search hits
+   * @return document ID to routing (null for documents without routing)
+   */
+  private static Map<String, String> getRoutingById(List<Hit<Void>> hits) {
+    var routingById = new HashMap<String, String>();
+    for (var hit : hits) {
+      routingById.put(hit.id(), hit.routing());
+    }
+    return routingById;
+  }
+
+  /**
    * Helper method to delete a list of documents from Elasticsearch.
    *
-   * @param hitList the list of document IDs and optional routing values to delete
+   * @param idList the list of document IDs to delete
+   * @param routingById routing per document ID, as returned by the search
    * @param elasticsearchIndex the Elasticsearch index
    * @param entityName the name of the entity type for the documents being deleted
    */
   void deleteDocumentList(
-      List<HitWithRouting> hitList, String elasticsearchIndex, String entityName) {
-    if (hitList.isEmpty()) {
+      List<String> idList,
+      Map<String, String> routingById,
+      String elasticsearchIndex,
+      String entityName) {
+    if (idList.isEmpty()) {
       return;
     }
 
-    var idList = hitList.stream().map(HitWithRouting::id).toList();
     log.atInfo()
         .setMessage("Removing {} {} documents")
         .addArgument(idList.size())
@@ -319,16 +343,9 @@ public class ElasticsearchRemoveStaleScheduler {
         .log();
 
     var br = new BulkRequest.Builder();
-    for (var hit : hitList) {
-      br.operations(
-          op ->
-              op.delete(
-                  del -> {
-                    del.index(elasticsearchIndex);
-                    del.id(hit.id());
-                    del.routing(hit.routing());
-                    return del;
-                  }));
+    for (String id : idList) {
+      var routing = routingById.get(id);
+      br.operations(op -> op.delete(del -> del.index(elasticsearchIndex).id(id).routing(routing)));
     }
 
     try {
@@ -341,10 +358,4 @@ public class ElasticsearchRemoveStaleScheduler {
       log.error("Failed to delete documents from Elasticsearch: {}", idList, e);
     }
   }
-
-  private HitWithRouting toHitWithRouting(Hit<Void> hit) {
-    return new HitWithRouting(hit.id(), hit.routing());
-  }
-
-  record HitWithRouting(String id, @Nullable String routing) {}
 }
