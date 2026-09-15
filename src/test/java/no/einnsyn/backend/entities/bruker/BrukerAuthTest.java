@@ -21,12 +21,13 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     var response = post("/bruker", getBrukerJSON());
     var responseDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
 
-    // Check that a normal user cannot update Bruker
+    // Check that a normal user cannot update Bruker. A caller who may not see the Bruker is
+    // answered as if it did not exist, so that {id} cannot be used to look up e-mail addresses.
     var updateJSON = getBrukerJSON();
     updateJSON.remove("password");
     updateJSON.remove("email");
     response = patch("/bruker/" + responseDTO.getId(), updateJSON);
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
     // Check that admin can update Bruker
     updateJSON.put("email", "updated@example.com");
@@ -35,7 +36,7 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
 
     // Check that a normal user cannot delete Bruker
     response = delete("/bruker/" + responseDTO.getId());
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
     // Check that admin can delete Bruker
     response = deleteAdmin("/bruker/" + responseDTO.getId());
@@ -88,11 +89,11 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     updateJSON.remove("password");
     updateJSON.remove("email");
     response = patchAnon("/bruker/" + bruker1DTO.getId(), updateJSON);
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
     // Check that bruker2 cannot update bruker1
     response = patch("/bruker/" + bruker1DTO.getId(), updateJSON, accessToken2);
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
     // Check that bruker1 can update bruker1
     response = patch("/bruker/" + bruker1DTO.getId(), updateJSON, accessToken1);
@@ -101,11 +102,11 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
 
     // Check that anonymous cannot delete bruker1
     response = deleteAnon("/bruker/" + bruker1DTO.getId());
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
     // Check that bruker2 cannot delete bruker1
     response = delete("/bruker/" + bruker1DTO.getId(), accessToken2);
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
     // Check that bruker1 can delete bruker1
     response = delete("/bruker/" + bruker1DTO.getId(), accessToken1);

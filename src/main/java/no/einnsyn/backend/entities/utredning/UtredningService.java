@@ -174,10 +174,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
     var dokumentbeskrivelse = dokumentbeskrivelseService.findForUpdateOrThrow(utredningsdokumentId);
     var utredningsdokumentList = utredning.getUtredningsdokument();
     if (utredningsdokumentList != null) {
-      utredning.setUtredningsdokument(
-          utredningsdokumentList.stream()
-              .filter(dokument -> !dokument.getId().equals(utredningsdokumentId))
-              .toList());
+      utredningsdokumentList.removeIf(dokument -> dokument.getId().equals(utredningsdokumentId));
     }
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }

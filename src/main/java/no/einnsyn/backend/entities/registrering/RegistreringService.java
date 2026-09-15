@@ -3,10 +3,16 @@ package no.einnsyn.backend.entities.registrering;
 import java.time.Instant;
 import java.util.Set;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.hasslug.HasSlugService;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
+import no.einnsyn.backend.entities.journalpost.models.Journalpost;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerES;
+import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
+import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.registrering.models.Registrering;
 import no.einnsyn.backend.entities.registrering.models.RegistreringDTO;
 import no.einnsyn.backend.entities.registrering.models.RegistreringES;
@@ -101,6 +107,29 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     return registrering;
   }
 
+  protected O addMatrikkelnummerFromDTO(D dto, O registrering) throws EInnsynException {
+    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
+    if (matrikkelnummerFieldList != null) {
+      for (var matrikkelnummerField : matrikkelnummerFieldList) {
+        if (matrikkelnummerField.getId() != null) {
+          throw new BadRequestException(
+              "Cannot create a Matrikkelnummer with an ID set: " + matrikkelnummerField.getId());
+        }
+        var mnDTO = matrikkelnummerField.getExpandedObject();
+        if (mnDTO == null) continue;
+        if (registrering instanceof Journalpost) {
+          mnDTO.setJournalpost(new ExpandableField<>(registrering.getId()));
+        } else if (registrering instanceof Moetesak) {
+          mnDTO.setMoetesak(new ExpandableField<>(registrering.getId()));
+        } else if (registrering instanceof Moetedokument) {
+          mnDTO.setMoetedokument(new ExpandableField<>(registrering.getId()));
+        }
+        matrikkelnummerService.findOrCreate(new ExpandableField<>(mnDTO));
+      }
+    }
+    return registrering;
+  }
+
   /**
    * Convert a Registrering to a DTO object
    *
@@ -118,6 +147,9 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     dto.setOffentligTittel(registrering.getOffentligTittel());
     dto.setOffentligTittelSensitiv(registrering.getOffentligTittelSensitiv());
     dto.setBeskrivelse(registrering.getBeskrivelse());
+    dto.setMatrikkelnummer(
+        matrikkelnummerService.maybeExpand(
+            registrering.getMatrikkelnummer(), "matrikkelnummer", expandPaths, currentPath));
     if (registrering.getPublisertDato() != null) {
       dto.setPublisertDato(registrering.getPublisertDato().toString());
     }
@@ -144,6 +176,16 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
       if (registrering.getOppdatertDato() != null) {
         registreringES.setOppdatertDato(
             TimeConverter.instantToTimestamp(registrering.getOppdatertDato()));
+      }
+      var matrikkelnummerList = registrering.getMatrikkelnummer();
+      if (matrikkelnummerList != null && !matrikkelnummerList.isEmpty()) {
+        registreringES.setMatrikkelnummer(
+            matrikkelnummerList.stream()
+                .map(
+                    m ->
+                        (MatrikkelnummerES)
+                            matrikkelnummerService.toLegacyES(m, new MatrikkelnummerES()))
+                .toList());
       }
     }
     return es;

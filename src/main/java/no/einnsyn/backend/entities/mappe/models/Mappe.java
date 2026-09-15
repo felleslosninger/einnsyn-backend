@@ -1,12 +1,12 @@
 package no.einnsyn.backend.entities.mappe.models;
 
-import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import java.time.Instant;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.hasslug.HasSlug;
@@ -14,12 +14,10 @@ import no.einnsyn.backend.entities.arkiv.models.Arkiv;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.arkivdel.models.Arkivdel;
 import no.einnsyn.backend.entities.klasse.models.Klasse;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 
 @Getter
 @Setter
-@EntityListeners(AuditingEntityListener.class)
 @MappedSuperclass
 public abstract class Mappe extends ArkivBase implements HasSlug {
 
@@ -45,10 +43,14 @@ public abstract class Mappe extends ArkivBase implements HasSlug {
 
   protected Instant publisertDato;
 
-  @LastModifiedDate protected Instant oppdatertDato;
+  protected Instant oppdatertDato;
 
   // Legacy, IRI of administrativEnhet (or journalenhet as fallback)
   protected String arkivskaper; // Legacy
+
+  public abstract List<Matrikkelnummer> getMatrikkelnummer();
+
+  public abstract void addMatrikkelnummer(Matrikkelnummer matrikkelnummer);
 
   @PrePersist
   @Override

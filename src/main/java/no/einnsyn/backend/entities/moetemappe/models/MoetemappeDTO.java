@@ -85,13 +85,11 @@ public class MoetemappeDTO extends MappeDTO {
   @ExpandableObject(
       service = MoetedokumentService.class,
       groups = {Insert.class, Update.class})
-  @Valid
-  protected List<ExpandableField<MoetedokumentDTO>> moetedokument;
+  protected List<@Valid ExpandableField<MoetedokumentDTO>> moetedokument;
 
   /** Cases discussed in the meeting. */
   @ExpandableObject(
       service = MoetesakService.class,
       groups = {Insert.class, Update.class})
-  @Valid
-  protected List<ExpandableField<MoetesakDTO>> moetesak;
+  protected List<@Valid ExpandableField<MoetesakDTO>> moetesak;
 }

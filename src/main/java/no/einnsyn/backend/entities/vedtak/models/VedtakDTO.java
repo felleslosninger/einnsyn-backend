@@ -41,8 +41,7 @@ public class VedtakDTO extends ArkivBaseDTO {
   @ExpandableObject(
       service = VoteringService.class,
       groups = {Insert.class, Update.class})
-  @Valid
-  protected List<ExpandableField<VoteringDTO>> votering;
+  protected List<@Valid ExpandableField<VoteringDTO>> votering;
 
   /** The protocol of proceedings for the decision. */
   @ExpandableObject(
@@ -55,8 +54,7 @@ public class VedtakDTO extends ArkivBaseDTO {
   @ExpandableObject(
       service = DokumentbeskrivelseService.class,
       groups = {Insert.class, Update.class})
-  @Valid
-  protected List<ExpandableField<DokumentbeskrivelseDTO>> vedtaksdokument;
+  protected List<@Valid ExpandableField<DokumentbeskrivelseDTO>> vedtaksdokument;
 
   /** The date the decision was made. */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)

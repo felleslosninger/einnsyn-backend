@@ -9,7 +9,9 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.OrderBy;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
@@ -38,7 +40,7 @@ public class Vedtak extends ArkivBase {
   @JoinTable(name = "vedtak_vedtaksdokument")
   @ManyToMany(fetch = FetchType.LAZY)
   @OrderBy("id ASC")
-  private List<Dokumentbeskrivelse> vedtaksdokument;
+  private Set<Dokumentbeskrivelse> vedtaksdokument;
 
   private LocalDate dato;
 
@@ -53,7 +55,7 @@ public class Vedtak extends ArkivBase {
 
   public void addVedtaksdokument(Dokumentbeskrivelse vedtaksdokument) {
     if (this.vedtaksdokument == null) {
-      this.vedtaksdokument = new ArrayList<>();
+      this.vedtaksdokument = new LinkedHashSet<>();
     }
     if (!this.vedtaksdokument.contains(vedtaksdokument)) {
       this.vedtaksdokument.add(vedtaksdokument);

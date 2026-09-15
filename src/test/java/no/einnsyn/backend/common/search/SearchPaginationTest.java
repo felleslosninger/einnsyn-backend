@@ -11,6 +11,7 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 import net.minidev.json.JSONArray;
 import no.einnsyn.backend.EinnsynControllerTestBase;
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
@@ -375,6 +377,62 @@ class SearchPaginationTest extends EinnsynControllerTestBase {
           TimeConverter.timestampToInstant(v1).compareTo(TimeConverter.timestampToInstant(v2));
       case STRING -> v1.compareTo(v2);
     };
+  }
+
+  /**
+   * A cursor consists of two values, the sortBy value and the unique id. A malformed cursor is a
+   * bad request, and should not result in an internal server error.
+   */
+  @Test
+  void testMalformedCursorReturnsBadRequest() throws Exception {
+    var response = get("/search?sortBy=id&startingAfter=onlyOneValue");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    response = get("/search?sortBy=id&endingBefore=onlyOneValue");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    response = get("/search?sortBy=id&startingAfter=one&startingAfter=two&startingAfter=three");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    // A well-formed cursor is still accepted
+    response = get("/search?sortBy=id&startingAfter=aValue&startingAfter=anId");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  /**
+   * Only the Moetemappe documents have a moetedato, so sorting by it puts documents without the
+   * field last. Paging backwards must reproduce the same pages; that only holds if the reversed
+   * query puts the missing values first.
+   */
+  @ParameterizedTest(name = "sortOrder={0}")
+  @ValueSource(strings = {"desc", "asc"})
+  void testEndingBeforeWithMissingSortValues(String sortOrder) throws Exception {
+    var pages = new ArrayList<List<String>>();
+    var url = "/search?limit=2&sortBy=moetedato&sortOrder=" + sortOrder;
+    while (url != null) {
+      var response = get(url);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      PaginatedList<BaseDTO> page = gson.fromJson(response.getBody(), jptype);
+      pages.add(page.getItems().stream().map(BaseDTO::getId).toList());
+      url = page.getNext();
+    }
+    assertTrue(pages.size() >= 3, "Expected several pages, got " + pages.size());
+
+    // Walk back from the last page using the previous links, comparing page by page
+    var response = get("/search?limit=2&sortBy=moetedato&sortOrder=" + sortOrder);
+    PaginatedList<BaseDTO> page = gson.fromJson(response.getBody(), jptype);
+    for (var i = 1; i < pages.size(); i++) {
+      response = get(page.getNext());
+      page = gson.fromJson(response.getBody(), jptype);
+    }
+    for (var i = pages.size() - 1; i > 0; i--) {
+      assertEquals(pages.get(i), page.getItems().stream().map(BaseDTO::getId).toList());
+      assertNotNull(page.getPrevious(), "Expected a previous link on page " + i);
+      response = get(page.getPrevious());
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      page = gson.fromJson(response.getBody(), jptype);
+    }
+    assertEquals(pages.get(0), page.getItems().stream().map(BaseDTO::getId).toList());
   }
 
   @Test

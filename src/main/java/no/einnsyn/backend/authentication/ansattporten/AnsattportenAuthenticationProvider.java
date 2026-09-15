@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.authentication.AuthenticationService;
 import no.einnsyn.backend.authentication.EInnsynAuthentication;
 import no.einnsyn.backend.authentication.EInnsynPrincipalEnhet;
@@ -18,72 +19,85 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class AnsattportenAuthenticationProvider implements AuthenticationProvider {
+
+  private static final String ALTINN_RESOURCE = "ansattporten:altinn:resource";
 
   private final AuthenticationService authenticationService;
   private final EnhetService enhetService;
   private final JwtDecoder jwtDecoder;
   private final String ansattportenIssuerUri;
+  private final String clientId;
+  private final String resource;
 
   public AnsattportenAuthenticationProvider(
       AuthenticationService authenticationService,
       EnhetService enhetService,
       @Qualifier("ansattportenJwtDecoder") JwtDecoder jwtDecoder,
-      @Value("${application.ansattporten.issuerUri}") String ansattportenIssuerUri) {
+      @Value("${application.ansattporten.issuerUri}") String ansattportenIssuerUri,
+      @Value("${application.ansattporten.clientId}") String clientId,
+      @Value("${application.ansattporten.resource}") String resource) {
     this.authenticationService = authenticationService;
     this.enhetService = enhetService;
     this.jwtDecoder = jwtDecoder;
     this.ansattportenIssuerUri = ansattportenIssuerUri;
+    this.clientId = clientId;
+    this.resource = resource;
   }
 
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-    var token = (String) authentication.getCredentials();
-
     Jwt jwt;
     try {
-      jwt = jwtDecoder.decode(token);
+      jwt = jwtDecoder.decode((String) authentication.getCredentials());
     } catch (Exception e) {
-      // If decoding fails, we assume it's not a valid Ansattporten token.
+      log.debug("Not an Ansattporten token, could not decode: {}", e.getMessage());
       return null;
     }
 
-    var issuer = jwt.getIssuer().toString();
-    if (!issuer.equals(ansattportenIssuerUri)) {
-      // Not an Ansattporten token.
+    if (jwt.getIssuer() == null || !ansattportenIssuerUri.equals(jwt.getIssuer().toString())) {
+      log.debug(
+          "Rejecting token, expected issuer {}, got {}", ansattportenIssuerUri, jwt.getIssuer());
       return null;
     }
 
-    // Find orgnummers from the token
+    // Ansattporten access tokens carry the requesting client in "client_id", not in "aud".
+    var tokenClientId = jwt.getClaimAsString("client_id");
+    if (!clientId.equals(tokenClientId)) {
+      log.debug("Rejecting token, client_id {} does not match {}", tokenClientId, clientId);
+      return null;
+    }
+
+    var orgnummers = getAuthorizedOrgnummers(jwt);
+    if (orgnummers.isEmpty()) {
+      log.debug("Rejecting token, no orgnummer is authorized for {}", resource);
+      return null;
+    }
+
     String representingId = null;
-    String representingOrgnummer = null;
-    var orgnummers = getOrgnummersFromJWT(jwt);
+    String representingOrgnummer = orgnummers.getFirst();
     var enhetList = new ArrayList<Enhet>();
     for (var orgnummer : orgnummers) {
-      if (representingOrgnummer == null) {
-        representingOrgnummer = orgnummer;
-      }
       var enhet = enhetService.find(orgnummer);
       if (enhet != null) {
+        enhetList.add(enhet);
         if (representingId == null) {
           representingId = enhet.getId();
           representingOrgnummer = orgnummer;
         }
-        enhetList.add(enhet);
       }
     }
 
-    // Create a principal with the orgnummers and set it in the security context
+    var authorities = authenticationService.getAuthoritiesFromEnhet(enhetList, "Write");
+
     var principal =
         new EInnsynPrincipalEnhet(
             "Ansattporten", jwt.getSubject(), representingId, representingOrgnummer, false);
-
-    var authorities = authenticationService.getAuthoritiesFromEnhet(enhetList, "Write");
-    var authResult = new EInnsynAuthentication(principal, null, authorities);
-    authResult.setAuthenticated(true);
-
-    return authResult;
+    var result = new EInnsynAuthentication(principal, null, authorities);
+    result.setAuthenticated(true);
+    return result;
   }
 
   @Override
@@ -92,90 +106,62 @@ public class AnsattportenAuthenticationProvider implements AuthenticationProvide
   }
 
   /**
-   * Extracts organization numbers from the JWT's "authorization_details" claim.
-   *
-   * @param jwt The decoded Ansattporten JWT token.
-   * @return A list of orgnummer values.
+   * Collects the organization numbers the token is authorized for. Altinn 3 expresses access by
+   * listing a party under the requested resource, the parties carry no per-action claims.
    */
-  private List<String> getOrgnummersFromJWT(Jwt jwt) {
-    var authDetailsClaim = jwt.getClaim("authorization_details");
-    if (authDetailsClaim instanceof List<?> authDetailsList) {
-      var organizationNumbers = new LinkedHashSet<String>();
+  private List<String> getAuthorizedOrgnummers(Jwt jwt) {
+    var orgnummers = new LinkedHashSet<String>();
+    var claim = jwt.getClaim("authorization_details");
+    if (!(claim instanceof List<?> details)) {
+      log.debug("authorization_details is missing or not a list: {}", claim);
+      return List.of();
+    }
 
-      for (var authDetail : authDetailsList) {
-        if (authDetail instanceof Map<?, ?> authDetailMap) {
-          var typeClaim = authDetailMap.get("type");
+    for (var value : details) {
+      if (!(value instanceof Map<?, ?> detail)) {
+        log.debug("Skipping authorization_details entry, not an object: {}", value);
+        continue;
+      }
+      if (!ALTINN_RESOURCE.equals(detail.get("type")) || !resource.equals(detail.get("resource"))) {
+        log.debug(
+            "Skipping authorization_details entry, expected type {} and resource {}, got {}",
+            ALTINN_RESOURCE,
+            resource,
+            detail);
+        continue;
+      }
+      if (!(detail.get("authorized_parties") instanceof List<?> parties)) {
+        log.debug(
+            "Skipping authorization_details entry, authorized_parties is missing or not a list:"
+                + " {}",
+            detail.get("authorized_parties"));
+        continue;
+      }
 
-          // Altinn 3 resource
-          if ("ansattporten:altinn:resource".equals(typeClaim)) {
-            var authorizedPartiesClaim = authDetailMap.get("authorized_parties");
-            if (authorizedPartiesClaim instanceof List authorizedPartiesClaimList) {
-              for (var authorizedPartyClaim : authorizedPartiesClaimList) {
-                if (authorizedPartyClaim instanceof Map<?, ?> authorizedPartyMap) {
-                  var orgNoClaim = authorizedPartyMap.get("orgno");
-                  var orgNo = getOrgNoFromClaim(orgNoClaim);
-                  if (orgNo != null) {
-                    organizationNumbers.add(orgNo);
-                  }
-                }
-              }
-            }
-          }
-
-          // Altinn 2 service
-          else if ("ansattporten:altinn:service".equals(typeClaim)) {
-            var reporteesClaim = authDetailMap.get("reportees");
-            if (reporteesClaim instanceof List reporteesClaimList) {
-              for (var reportee : reporteesClaimList) {
-                if (reportee instanceof Map<?, ?> reporteeMap) {
-                  var authority = reporteeMap.get("Authority");
-                  var idClaim = reporteeMap.get("ID");
-
-                  if ("iso6523-actorid-upis".equals(authority)
-                      && idClaim instanceof String idString) {
-                    var orgNo = getOrgNoFromISO6523(idString);
-                    if (orgNo != null) {
-                      organizationNumbers.add(orgNo);
-                    }
-                  }
-                }
-              }
-            }
-          }
-
-          // Entra ID
-          else if ("ansattporten:orgno".equals(typeClaim)) {
-            var orgNoClaim = authDetailMap.get("orgno");
-            var orgNo = getOrgNoFromClaim(orgNoClaim);
-            if (orgNo != null) {
-              organizationNumbers.add(orgNo);
-            }
-          }
+      for (var partyValue : parties) {
+        if (!(partyValue instanceof Map<?, ?> party)) {
+          log.debug("Skipping authorized party, not an object: {}", partyValue);
+          continue;
         }
-      }
-
-      return List.copyOf(organizationNumbers);
-    }
-
-    return List.of();
-  }
-
-  private String getOrgNoFromClaim(Object orgnoClaim) {
-    if (orgnoClaim instanceof Map<?, ?> orgnoMap) {
-      var authority = orgnoMap.get("authority");
-      var id = orgnoMap.get("ID");
-
-      if ("iso6523-actorid-upis".equals(authority) && id instanceof String idString) {
-        return getOrgNoFromISO6523(idString);
+        var orgnummer = getOrgNoFromClaim(party.get("orgno"));
+        if (orgnummer == null) {
+          log.debug(
+              "Skipping authorized party, could not read orgnummer from {}", party.get("orgno"));
+          continue;
+        }
+        orgnummers.add(orgnummer);
       }
     }
-    return null;
+
+    return List.copyOf(orgnummers);
   }
 
-  private String getOrgNoFromISO6523(String id) {
-    // Norwegian orgnummers are prefixed with "0192:"
-    if (id != null && id.startsWith("0192:")) {
-      return id.substring(5); // Skip "0192:"
+  private String getOrgNoFromClaim(Object claim) {
+    if (claim instanceof Map<?, ?> orgno
+        && "iso6523-actorid-upis".equals(orgno.get("authority"))
+        && orgno.get("ID") instanceof String id
+        && id.startsWith("0192:")) {
+      return id.substring(5);
     }
     return null;
   }

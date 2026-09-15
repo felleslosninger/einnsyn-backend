@@ -73,11 +73,12 @@ class InnsynskravBestillingApiKeyAuthTest extends EinnsynControllerTestBase {
 
     // Verify that anon cannot list InnsynskravBestilling
     response = getAnon("/bruker/" + brukerDTO.getId() + "/innsynskravBestilling");
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
-    // Verify that other users cannot list InnsynskravBestilling
+    // Verify that other users cannot list InnsynskravBestilling, and are answered as if the
+    // Bruker did not exist
     response = get("/bruker/" + brukerDTO.getId() + "/innsynskravBestilling");
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
     // Verify that the user can list InnsynskravBestilling
     response = get("/bruker/" + brukerDTO.getId() + "/innsynskravBestilling", brukerToken);

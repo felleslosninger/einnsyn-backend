@@ -4,6 +4,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.SimpleQueryStringQuery;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.search.parser.QueryParser;
 import no.einnsyn.backend.common.search.parser.QueryTokenizer;
 import no.einnsyn.backend.common.search.parser.QueryTransformer;
@@ -43,6 +44,7 @@ import no.einnsyn.backend.common.search.parser.QueryTransformer;
  * );
  * </pre>
  */
+@Slf4j
 public final class SearchQueryParser {
 
   private SearchQueryParser() {}
@@ -91,8 +93,9 @@ public final class SearchQueryParser {
       // Transform to Elasticsearch query
       var transformer = new QueryTransformer(baseFields, exactBoost, looseBoost);
       return transformer.transform(ast);
-    } catch (Exception _) {
+    } catch (Exception e) {
       // Fallback to simple query string on error
+      log.warn("SearchQueryParser fallback for query '{}': {}", queryString, e.getMessage());
       return buildFallbackQuery(queryString, baseFields);
     }
   }

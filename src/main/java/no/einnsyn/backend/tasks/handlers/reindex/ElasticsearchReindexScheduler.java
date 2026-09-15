@@ -120,7 +120,20 @@ public class ElasticsearchReindexScheduler {
       Instant schemaVersion) {
     var futures = ConcurrentHashMap.<CompletableFuture<Void>>newKeySet();
     var startTime = Instant.now();
-    log.info("Starting reindexing of {}.", entityName);
+    log.info("Starting reindexing of {}, schemaVersion: {}.", entityName, schemaVersion);
+
+    // `lastIndexed` is set to the start time of the run that indexed the row, so if schemaVersion
+    // is in the future it will match on every run until wall-clock time passes schemaVersion.
+    // Refuse it rather than grind through the whole table every hour.
+    if (schemaVersion.isAfter(startTime)) {
+      log.error(
+          "Refusing to reindex {}: schemaVersion {} is in the future, which would reindex every"
+              + " row on every run until the system clock passes that timestamp. Set it to a time"
+              + " at or before now, after the data changed.",
+          entityName,
+          schemaVersion);
+      return;
+    }
 
     try (var idStream = repository.streamUnIndexed(schemaVersion)) {
       var found = 0;

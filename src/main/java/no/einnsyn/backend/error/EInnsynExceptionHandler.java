@@ -19,6 +19,7 @@ import no.einnsyn.backend.common.exceptions.models.TooManyRequestsException;
 import no.einnsyn.backend.common.exceptions.models.TooManyUnverifiedOrdersException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException.FieldError;
+import org.apache.tomcat.util.http.InvalidParameterException;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
@@ -119,6 +120,28 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var badRequestException = new BadRequestException(ex.getMessage(), ex);
     logAndCountWarning(badRequestException, httpStatus);
     var clientResponse = badRequestException.toClientResponse();
+    return ResponseEntity.status(httpStatus).body(clientResponse);
+  }
+
+  /**
+   * 400 Bad Request
+   *
+   * <p>Thrown by Tomcat when a request parameter cannot be decoded, e.g. a query string
+   * percent-encoded as ISO-8859-1 instead of UTF-8. Tomcat's InvalidParameterException extends
+   * IllegalStateException, so it is not covered by the IllegalArgumentException handler above.
+   *
+   * @param ex The exception
+   * @return The response entity
+   */
+  @ExceptionHandler(InvalidParameterException.class)
+  public ResponseEntity<Object> handleException(InvalidParameterException ex) {
+    var httpStatus = HttpStatus.BAD_REQUEST;
+
+    // Don't echo Tomcat's message, it may contain corrupted bytes from the failed decode:
+    var censoredBadRequestException =
+        new BadRequestException("Invalid character encoding in request parameters.", ex);
+    logAndCountWarning(censoredBadRequestException, httpStatus);
+    var clientResponse = censoredBadRequestException.toClientResponse();
     return ResponseEntity.status(httpStatus).body(clientResponse);
   }
 
@@ -349,7 +372,12 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
       var notFoundException =
           new NotFoundException("Not found: " + request.getDescription(false), ex);
       logAndCountWarning(notFoundException, httpStatus);
-      var clientResponse = notFoundException.toClientResponse();
+
+      // Don't send the requested path back: services that may not disclose whether an object
+      // exists answer a bare "Not found", and a caller must not be able to tell the two apart.
+      // The full message is logged above.
+      var censoredNotFoundException = new NotFoundException("Not found", ex);
+      var clientResponse = censoredNotFoundException.toClientResponse();
       return handleExceptionInternal(
           notFoundException, clientResponse, headers, httpStatus, request);
     }

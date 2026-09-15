@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -231,17 +232,14 @@ public class InnsynskravSenderService {
       context.put("enhet", enhet);
       context.put("innsynskravBestilling", innsynskravBestilling);
       context.put("innsynskravList", innsynskravTemplateWrapperList);
+      var orderDate = Date.from(innsynskravBestilling.getVerifiedAt());
       context.put(
           "orderXmlV1Date",
-          ORDER_XML_V1_DATE_FORMAT.format(
-              TimeConverter.dateToLocalDate(innsynskravBestilling.getOpprettetDato())));
+          ORDER_XML_V1_DATE_FORMAT.format(TimeConverter.dateToLocalDate(orderDate)));
       context.put(
           "orderXmlV2Date",
-          ORDER_XML_V2_DATE_FORMAT.format(
-              TimeConverter.dateToLocalDate(innsynskravBestilling.getOpprettetDato())));
-      context.put(
-          "norwegianShortDate",
-          TimeConverter.dateToNorwegianShortDate(innsynskravBestilling.getOpprettetDato()));
+          ORDER_XML_V2_DATE_FORMAT.format(TimeConverter.dateToLocalDate(orderDate)));
+      context.put("norwegianShortDate", TimeConverter.dateToNorwegianShortDate(orderDate));
 
       // Create attachment
       String orderxml;
@@ -302,17 +300,14 @@ public class InnsynskravSenderService {
     context.put("enhet", enhet);
     context.put("innsynskravBestilling", innsynskravBestilling);
     context.put("innsynskravList", innsynskravTemplateWrapperList);
+    var orderDate = Date.from(innsynskravBestilling.getVerifiedAt());
     context.put(
         "orderXmlV1Date",
-        ORDER_XML_V1_DATE_FORMAT.format(
-            TimeConverter.dateToLocalDate(innsynskravBestilling.getOpprettetDato())));
+        ORDER_XML_V1_DATE_FORMAT.format(TimeConverter.dateToLocalDate(orderDate)));
     context.put(
         "orderXmlV2Date",
-        ORDER_XML_V2_DATE_FORMAT.format(
-            TimeConverter.dateToLocalDate(innsynskravBestilling.getOpprettetDato())));
-    context.put(
-        "norwegianShortDate",
-        TimeConverter.dateToNorwegianShortDate(innsynskravBestilling.getOpprettetDato()));
+        ORDER_XML_V2_DATE_FORMAT.format(TimeConverter.dateToLocalDate(orderDate)));
+    context.put("norwegianShortDate", TimeConverter.dateToNorwegianShortDate(orderDate));
 
     String mailMessage;
     String orderxml;

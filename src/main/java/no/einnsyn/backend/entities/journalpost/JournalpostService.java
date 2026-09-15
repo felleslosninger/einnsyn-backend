@@ -27,6 +27,7 @@ import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameter
 import no.einnsyn.backend.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartES;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.registrering.RegistreringService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
@@ -166,6 +167,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     if (journalpost.getId() == null) {
       journalpost = repository.saveAndFlush(journalpost);
     }
+
+    journalpost = addMatrikkelnummerFromDTO(dto, journalpost);
 
     // Update skjerming
     var skjermingField = dto.getSkjerming();
@@ -458,6 +461,15 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       journalpost.setKorrespondansepart(null);
       for (var korrespondansepart : korrespondansepartList) {
         korrespondansepartService.delete(korrespondansepart.getId());
+      }
+    }
+
+    // Delete all Matrikkelnummer
+    var matrikkelnummerList = journalpost.getMatrikkelnummer();
+    if (matrikkelnummerList != null) {
+      journalpost.setMatrikkelnummer(null);
+      for (var matrikkelnummer : matrikkelnummerList) {
+        matrikkelnummerService.delete(matrikkelnummer.getId());
       }
     }
 
@@ -763,11 +775,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
         dokumentbeskrivelseService.findForUpdateOrThrow(dokumentbeskrivelseId);
     var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
-      var updatedDokumentbeskrivelseList =
-          dokumentbeskrivelseList.stream()
-              .filter(dokbesk -> !dokbesk.getId().equals(dokumentbeskrivelseId))
-              .toList();
-      journalpost.setDokumentbeskrivelse(updatedDokumentbeskrivelseList);
+      dokumentbeskrivelseList.removeIf(dokbesk -> dokbesk.getId().equals(dokumentbeskrivelseId));
     }
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
@@ -842,5 +850,21 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
         .map(Korrespondansepart::getAdministrativEnhet)
         .findFirst()
         .orElse(null);
+  }
+
+  public PaginatedList<MatrikkelnummerDTO> listMatrikkelnummer(
+      String journalpostId, ListByJournalpostParameters query) throws EInnsynException {
+    query.setJournalpostId(journalpostId);
+    return matrikkelnummerService.list(query);
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  public MatrikkelnummerDTO addMatrikkelnummer(String journalpostId, MatrikkelnummerDTO dto)
+      throws EInnsynException {
+    proxy.authorizeDelete(journalpostId);
+    dto.setJournalpost(new ExpandableField<>(journalpostId));
+    var entity = matrikkelnummerService.findOrCreate(new ExpandableField<>(dto));
+    proxy.scheduleIndex(journalpostId, -1);
+    return matrikkelnummerService.get(entity.getId());
   }
 }

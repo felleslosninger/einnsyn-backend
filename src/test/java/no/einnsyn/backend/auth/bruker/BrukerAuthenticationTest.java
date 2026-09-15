@@ -307,4 +307,45 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     response = deleteAdmin("/bruker/" + brukerDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
+
+  @Test
+  void testAccessTokenWithWrongIssuerIsRejected() throws Exception {
+    // Create and activate user
+    var brukerJSON = getBrukerJSON();
+    var response = post("/bruker", brukerJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
+    var bruker = brukerService.find(brukerDTO.getId());
+    response = patch("/bruker/" + bruker.getId() + "/activate/" + bruker.getSecret(), null);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Build an access token with the correct signature but wrong issuer
+    var now = Instant.now();
+    var claims =
+        JwtClaimsSet.builder()
+            .issuer("https://invalid-issuer.example")
+            .issuedAt(now)
+            .expiresAt(now.plus(5, ChronoUnit.MINUTES))
+            .subject(brukerDTO.getEmail())
+            .id(UUID.randomUUID().toString())
+            .claim("id", brukerDTO.getId())
+            .claim("use", "access")
+            .build();
+
+    var header =
+        JwsHeader.with(MacAlgorithm.HS256)
+            .keyId(EInnsynJwtConfiguration.EINNSYN_JWT_KEY_ID)
+            .type("JWT")
+            .build();
+    var invalidIssuerAccessToken =
+        jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
+
+    // Wrong issuer must be rejected
+    response = get("/me", invalidIssuerAccessToken);
+    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+
+    // Clean up
+    response = deleteAdmin("/bruker/" + brukerDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
 }

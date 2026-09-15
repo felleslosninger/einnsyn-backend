@@ -1,9 +1,11 @@
-CVE-2026-42198 # pg jdbc driver
-
-# Tomcat
-CVE-2026-41293
-CVE-2026-43512
-CVE-2026-41284
-CVE-2026-42498
-CVE-2026-43513
-CVE-2026-43515
+# Remove once Spring Boot's BOM reaches tomcat 11.0.25 or later. All three
+# entries are the same 11.0.24 -> 11.0.25 bump, and all three are bugs in
+# Tomcat's container-managed security: <security-constraint> path matching and
+# the DIGEST and FORM authenticator valves. Not exploitable: we ship no
+# web.xml and declare no security constraints or Tomcat realm, so those
+# authenticators never run. Authentication is Spring Security filter chains
+# (API-KEY and Bearer, both stateless), and authorization is enforced in the
+# controllers.
+CVE-2026-65182
+CVE-2026-65905
+CVE-2026-68525

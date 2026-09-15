@@ -38,9 +38,8 @@ public class InnsynskravBestillingDTO extends BaseDTO {
   @ExpandableObject(
       service = InnsynskravService.class,
       groups = {Insert.class, Update.class})
-  @Valid
   @NotNull(groups = {Insert.class})
-  protected List<ExpandableField<InnsynskravDTO>> innsynskrav;
+  protected List<@Valid ExpandableField<InnsynskravDTO>> innsynskrav;
 
   /** Indicates whether the email address has been verified. */
   @Null(groups = {Insert.class, Update.class})

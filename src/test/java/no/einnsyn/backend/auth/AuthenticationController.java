@@ -35,6 +35,7 @@ public class AuthenticationController {
     }
     if (principal instanceof EInnsynPrincipal eInnsynPrincipal) {
       response.setUsername(eInnsynPrincipal.getName());
+      response.setAdmin(eInnsynPrincipal.isAdmin());
     }
 
     if (principal instanceof EInnsynPrincipalBruker brukerPrincipal) {
@@ -53,5 +54,6 @@ public class AuthenticationController {
     public String username;
     public String id;
     public String enhetId;
+    public boolean admin;
   }
 }

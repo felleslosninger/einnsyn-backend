@@ -55,8 +55,7 @@ public class SaksmappeDTO extends MappeDTO {
   @ExpandableObject(
       service = JournalpostService.class,
       groups = {Insert.class, Update.class})
-  @Valid
-  protected List<ExpandableField<JournalpostDTO>> journalpost;
+  protected List<@Valid ExpandableField<JournalpostDTO>> journalpost;
 
   /** A code for the administrative Enhet associated with this Saksmappe. */
   @NoSSN

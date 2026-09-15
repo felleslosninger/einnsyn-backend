@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
-import no.einnsyn.backend.common.search.models.SearchParameters;
+import no.einnsyn.backend.common.search.models.SavedSearchParameters;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.bruker.BrukerService;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
@@ -43,7 +43,7 @@ public class LagretSoekDTO extends BaseDTO {
   protected Boolean subscribe;
 
   /** The parameters of the saved search. */
-  protected SearchParameters searchParameters;
+  protected SavedSearchParameters searchParameters;
 
   /** A legacy field for storing the raw query string. */
   @NoSSN

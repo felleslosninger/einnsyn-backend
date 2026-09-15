@@ -11,6 +11,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -38,7 +39,8 @@ public class InnsynskravBestilling extends Base {
 
   private String verificationSecret;
 
-  private boolean verified;
+  @Column(name = "verified_at")
+  private Instant verifiedAt;
 
   private boolean locked = false;
 
@@ -66,6 +68,10 @@ public class InnsynskravBestilling extends Base {
     }
   }
 
+  public boolean isVerified() {
+    return verifiedAt != null;
+  }
+
   @PrePersist
   @Override
   protected void prePersist() {
@@ -76,7 +82,7 @@ public class InnsynskravBestilling extends Base {
     }
 
     if (opprettetDato == null) {
-      setOpprettetDato(new Date());
+      setOpprettetDato(verifiedAt != null ? Date.from(verifiedAt) : new Date());
     }
 
     if (legacyBrukerIri == null && bruker != null) {

@@ -3,7 +3,6 @@ package no.einnsyn.backend.entities.lagretsoek;
 import co.elastic.clients.json.JsonpUtils;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.reflect.TypeToken;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +16,7 @@ import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.search.SearchQueryService;
+import no.einnsyn.backend.common.search.models.SavedSearchParameters;
 import no.einnsyn.backend.common.search.models.SearchParameters;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
@@ -37,6 +37,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 @Slf4j
@@ -157,7 +158,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
     try {
       var searchParametersString = lagretSoek.getSearchParameters();
-      var searchParameters = gson.fromJson(searchParametersString, SearchParameters.class);
+      var searchParameters = gson.fromJson(searchParametersString, SavedSearchParameters.class);
       dto.setSearchParameters(searchParameters);
     } catch (Exception e) {
       log.error("Failed to parse search query for LagretSoek {}", lagretSoek.getId(), e);
@@ -415,8 +416,10 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     var searchParameters = legacyQueryConverter.convertLegacyQuery(legacyQuery);
     var searchParametersString =
         objectMapper
-            .copy()
-            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .rebuild()
+            .changeDefaultPropertyInclusion(
+                incl -> incl.withValueInclusion(JsonInclude.Include.NON_NULL))
+            .build()
             .writeValueAsString(searchParameters);
 
     if (dryRun) {

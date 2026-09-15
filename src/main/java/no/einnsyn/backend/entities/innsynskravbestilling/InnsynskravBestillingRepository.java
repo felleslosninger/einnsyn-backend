@@ -17,7 +17,7 @@ public interface InnsynskravBestillingRepository extends BaseRepository<Innsynsk
         SELECT DISTINCT ib
         FROM InnsynskravBestilling ib
         INNER JOIN ib.innsynskrav id
-        WHERE ib.verified = true
+        WHERE ib.verifiedAt IS NOT NULL
         AND id.sent IS NULL
         AND id.journalpost IS NOT NULL
         AND id.retryCount < 6
@@ -61,7 +61,7 @@ public interface InnsynskravBestillingRepository extends BaseRepository<Innsynsk
       SELECT COUNT(ib) FROM InnsynskravBestilling ib
       WHERE epost = :epost
       AND created > :createdAfter
-      AND verified IS FALSE
+      AND verifiedAt IS NULL
       """)
   Integer countUnverifiedForUser(String epost, Instant createdAfter);
 }

@@ -11,6 +11,8 @@ import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
+import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerService;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.moetedokument.MoetedokumentService;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetemappe.models.ListByMoetemappeParameters;
@@ -89,6 +91,37 @@ public class MoetemappeController {
       throws EInnsynException {
     var responseBody = service.update(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
+  }
+
+  @GetMapping("/moetemappe/{id}/matrikkelnummer")
+  public ResponseEntity<PaginatedList<MatrikkelnummerDTO>> listMatrikkelnummer(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetemappeService.class, mustExist = true)
+          ExpandableField<MoetemappeDTO> id,
+      @Valid ListByMoetemappeParameters query)
+      throws EInnsynException {
+    var responseBody = service.listMatrikkelnummer(id.getId(), query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/moetemappe/{id}/matrikkelnummer")
+  public ResponseEntity<MatrikkelnummerDTO> addMatrikkelnummer(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetemappeService.class, mustExist = true)
+          ExpandableField<MoetemappeDTO> id,
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = MatrikkelnummerService.class, mustNotExist = true)
+          @NotNull
+          MatrikkelnummerDTO body)
+      throws EInnsynException {
+    var responseBody = service.addMatrikkelnummer(id.getId(), body);
+    var location = URI.create("/matrikkelnummer/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
   }
 
   @GetMapping("/moetemappe/{id}/moetedokument")

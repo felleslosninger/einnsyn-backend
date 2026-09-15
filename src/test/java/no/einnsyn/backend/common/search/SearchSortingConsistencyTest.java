@@ -4,12 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.search.models.SearchParameters;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
@@ -194,6 +197,45 @@ class SearchSortingConsistencyTest {
       assertNull(searchRequest.preference());
       assertEquals("publisertDato", searchRequest.sort().get(0).field().field());
     }
+  }
+
+  /** An unmappable cursor value is a bad request, both for startingAfter and endingBefore. */
+  @Test
+  void testUnmappableCursorValueIsRejected() throws Exception {
+    var startingAfterParams = new SearchParameters();
+    startingAfterParams.setSortBy("id");
+    startingAfterParams.setStartingAfter(List.of("value", "jp_id"));
+    when(searchQueryService.getQueryBuilder(startingAfterParams))
+        .thenReturn(new BoolQuery.Builder().must(Query.of(q -> q.matchAll(m -> m))));
+
+    var endingBeforeParams = new SearchParameters();
+    endingBeforeParams.setSortBy("id");
+    endingBeforeParams.setEndingBefore(List.of("value", "jp_id"));
+    when(searchQueryService.getQueryBuilder(endingBeforeParams))
+        .thenReturn(new BoolQuery.Builder().must(Query.of(q -> q.matchAll(m -> m))));
+
+    // Make SortByMapper.toFieldValue() return null for all values
+    try (var sortByMapperMock = mockStatic(SortByMapper.class)) {
+      assertThrows(
+          BadRequestException.class, () -> searchService.getSearchRequest(startingAfterParams));
+      assertThrows(
+          BadRequestException.class, () -> searchService.getSearchRequest(endingBeforeParams));
+    }
+  }
+
+  /** A well-formed cursor is still accepted. */
+  @Test
+  void testWellFormedCursorIsAccepted() throws Exception {
+    var searchParams = new SearchParameters();
+    searchParams.setSortBy("id");
+    searchParams.setStartingAfter(List.of("jp_sortvalue", "jp_id"));
+    when(searchQueryService.getQueryBuilder(searchParams))
+        .thenReturn(new BoolQuery.Builder().must(Query.of(q -> q.matchAll(m -> m))));
+
+    var searchRequest = searchService.getSearchRequest(searchParams);
+    assertEquals(2, searchRequest.searchAfter().size());
+    assertEquals("jp_sortvalue", searchRequest.searchAfter().get(0).stringValue());
+    assertEquals("jp_id", searchRequest.searchAfter().get(1).stringValue());
   }
 
   @Test

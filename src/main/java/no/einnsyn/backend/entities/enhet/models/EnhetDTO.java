@@ -122,8 +122,7 @@ public class EnhetDTO extends BaseDTO {
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
-  @Valid
-  protected List<ExpandableField<EnhetDTO>> underenhet;
+  protected List<@Valid ExpandableField<EnhetDTO>> underenhet;
 
   /** The unit that is responsible for handling tasks on behalf of this unit. */
   @ExpandableObject(

@@ -48,7 +48,7 @@ public class BrukerAuthenticationController {
         throw new AuthenticationException("Invalid refresh token");
       }
 
-      username = jwt.getSubject();
+      username = tokenService.getBrukerId(jwt);
       if (username == null) {
         throw new AuthenticationException("Invalid refresh token");
       }
@@ -63,6 +63,13 @@ public class BrukerAuthenticationController {
       } else if (bruker == null || !brukerService.authenticate(bruker, password)) {
         throw new AuthenticationException("Invalid username or password");
       }
+    }
+
+    // Deactivated accounts must never be issued tokens, no matter which path authenticated them.
+    // Refresh tokens are long-lived and every refresh mints a new one, so without this check a
+    // deactivated account could keep renewing its access indefinitely.
+    if (!bruker.isActive()) {
+      throw new AuthenticationException("User account is not activated");
     }
 
     var tokenResponse =

@@ -13,7 +13,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.json.JsonpUtils;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.StringReader;
@@ -61,6 +60,7 @@ public class SearchService {
   private int defaultSearchLimit;
 
   private static final String SORT_BY_SCORE = "score";
+
   private static final String RECENT_DOCUMENT_BOOST_STRING =
       """
       {
@@ -112,7 +112,7 @@ public class SearchService {
     var esSearchRequest = getSearchRequest(searchParams);
     try {
       log.debug("search() request: {}", esSearchRequest.toString());
-      var esResponse = esClient.search(esSearchRequest, ObjectNode.class);
+      var esResponse = esClient.search(esSearchRequest, Void.class);
       log.debug("search() response: {}", esResponse.toString());
 
       var responseList = esResponse.hits().hits();
@@ -267,24 +267,19 @@ public class SearchService {
     // Add searchAfter for pagination
     var startingAfter = searchParams.getStartingAfter();
     var endingBefore = searchParams.getEndingBefore();
-    if (startingAfter != null && !startingAfter.isEmpty()) {
-      var fieldValue = SortByMapper.toFieldValue(sortBy, startingAfter.get(0));
-      if (fieldValue == null) {
-        throw new BadRequestException("Invalid startingAfter value: " + startingAfter.get(0));
-      }
-      var fieldValueList = List.of(fieldValue, FieldValue.of(startingAfter.get(1)));
+    if (startingAfter != null) {
+      var fieldValueList = toCursorFieldValues("startingAfter", sortBy, startingAfter);
       searchRequestBuilder.searchAfter(fieldValueList);
     }
 
     // We need to reverse the list in order to get endingBefore. Elasticsearch only supports
     // searchAfter
-    else if (endingBefore != null && !endingBefore.isEmpty()) {
-      var fieldValueList =
-          List.of(
-              SortByMapper.toFieldValue(sortBy, endingBefore.get(0)),
-              FieldValue.of(endingBefore.get(1)));
+    var reversed = false;
+    if (endingBefore != null && startingAfter == null) {
+      var fieldValueList = toCursorFieldValues("endingBefore", sortBy, endingBefore);
       searchRequestBuilder.searchAfter(fieldValueList);
       // Reverse sort order (the reverse it again when returning the result)
+      reversed = true;
       if ("desc".equalsIgnoreCase(sortOrder)) {
         sortOrder = "asc";
       } else {
@@ -292,8 +287,11 @@ public class SearchService {
       }
     }
 
-    searchRequestBuilder.sort(getSortOptions(sortBy, sortOrder));
-    searchRequestBuilder.sort(getSortOptions("id", sortOrder));
+    // Documents without the sort field go last in the requested order. The reversed query used for
+    // endingBefore must be the exact inverse, so there they go first.
+    var missing = reversed ? "_first" : "_last";
+    searchRequestBuilder.sort(getSortOptions(sortBy, sortOrder, missing));
+    searchRequestBuilder.sort(getSortOptions("id", sortOrder, missing));
 
     // We only need the ID of each match, so don't fetch sources
     searchRequestBuilder.source(b -> b.fetch(false));
@@ -304,6 +302,26 @@ public class SearchService {
     return searchRequestBuilder.build();
   }
 
+  /**
+   * Convert a pagination cursor to a list of Elasticsearch field values. A cursor is a list of
+   * exactly two values, the value of the sortBy property and the unique id. The size is enforced by
+   * bean validation on {@link SearchParameters}.
+   *
+   * @param name the name of the query parameter, used in the error message
+   * @param sortBy the property the result set is sorted by
+   * @param cursor the cursor to convert
+   * @return the field values to use in searchAfter
+   * @throws BadRequestException if the cursor value can't be converted to a field value
+   */
+  private List<FieldValue> toCursorFieldValues(String name, String sortBy, List<String> cursor)
+      throws BadRequestException {
+    var fieldValue = SortByMapper.toFieldValue(sortBy, cursor.get(0));
+    if (fieldValue == null) {
+      throw new BadRequestException("Invalid " + name + " value: " + cursor.get(0));
+    }
+    return List.of(fieldValue, FieldValue.of(cursor.get(1)));
+  }
+
   private boolean isSortByScore(SearchParameters searchParams) {
     return SORT_BY_SCORE.equals(searchParams.getSortBy())
         && (StringUtils.hasText(searchParams.getQuery())
@@ -312,7 +330,7 @@ public class SearchService {
             || !CollectionUtils.isEmpty(searchParams.getSkjermingshjemmel()));
   }
 
-  SortOptions getSortOptions(String sortBy, String sortOrder) {
+  SortOptions getSortOptions(String sortBy, String sortOrder, String missing) {
     var sort = SortByMapper.resolve(sortBy);
     var order = "desc".equalsIgnoreCase(sortOrder) ? SortOrder.Desc : SortOrder.Asc;
     return SortOptions.of(
@@ -323,7 +341,7 @@ public class SearchService {
                   f.order(order);
                   // .missing can't be added to built-in fields like _score
                   if (sort != null && !sort.startsWith("_")) {
-                    f.missing("_last");
+                    f.missing(missing);
                   }
                   return f;
                 }));

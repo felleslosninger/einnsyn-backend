@@ -998,6 +998,45 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/enhet/" + enhet4DTO.getId()).getStatusCode());
   }
 
+  // Test /enhet?ids=... with orgnummer and slug instead of eInnsyn IDs
+  @Test
+  void testListEnhetByAlternativeIds() throws Exception {
+    var resultListType = new TypeToken<PaginatedList<EnhetDTO>>() {}.getType();
+
+    var enhet1JSON = getEnhetJSON();
+    enhet1JSON.put("navn", "AlternativeIds" + System.nanoTime());
+    var response = post("/enhet/" + journalenhetId + "/underenhet", enhet1JSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhet1DTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+    assertNotNull(enhet1DTO.getSlug());
+
+    var enhet2JSON = getEnhetJSON();
+    response = post("/enhet/" + journalenhetId + "/underenhet", enhet2JSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhet2DTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    // Orgnummer and slug both resolve to the canonical ID
+    for (var identifier : List.of(enhet1DTO.getOrgnummer(), enhet1DTO.getSlug())) {
+      response = get("/enhet?ids=" + identifier);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      PaginatedList<EnhetDTO> list = gson.fromJson(response.getBody(), resultListType);
+      assertEquals(1, list.getItems().size(), "Should resolve " + identifier);
+      assertEquals(enhet1DTO.getId(), list.getItems().getFirst().getId());
+    }
+
+    // Mixed with an eInnsyn ID, keeping the order of the query parameters
+    response = get("/enhet?ids=" + enhet2DTO.getId() + "&ids=" + enhet1DTO.getOrgnummer());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<EnhetDTO> list = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(2, list.getItems().size());
+    assertEquals(enhet2DTO.getId(), list.getItems().get(0).getId());
+    assertEquals(enhet1DTO.getId(), list.getItems().get(1).getId());
+
+    // Cleanup
+    assertEquals(HttpStatus.OK, delete("/enhet/" + enhet1DTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/enhet/" + enhet2DTO.getId()).getStatusCode());
+  }
+
   // Test sort order, limit, and pagination cursors with /enhet?query=...
   @Test
   @SuppressWarnings("java:S5961") // Allow many asserts

@@ -10,6 +10,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -52,6 +53,7 @@ import no.einnsyn.backend.entities.klassifikasjonssystem.KlassifikasjonssystemSe
 import no.einnsyn.backend.entities.korrespondansepart.KorrespondansepartService;
 import no.einnsyn.backend.entities.lagretsak.LagretSakService;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
+import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerService;
 import no.einnsyn.backend.entities.moetedeltaker.MoetedeltakerService;
 import no.einnsyn.backend.entities.moetedokument.MoetedokumentService;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
@@ -114,6 +116,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Lazy @Autowired protected KorrespondansepartService korrespondansepartService;
   @Lazy @Autowired protected LagretSakService lagretSakService;
   @Lazy @Autowired protected LagretSoekService lagretSoekService;
+  @Lazy @Autowired protected MatrikkelnummerService matrikkelnummerService;
   @Lazy @Autowired protected MoetedeltakerService moetedeltakerService;
   @Lazy @Autowired protected MoetedokumentService moetedokumentService;
   @Lazy @Autowired protected MoetemappeService moetemappeService;
@@ -223,6 +226,29 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
+   * Resolve a list of unique identifiers (systemId, slug, orgnummer, email, externalId, ...) to
+   * entity IDs, preserving the order of the input list.
+   *
+   * <p>Identifiers that already are IDs of this entity type are passed through without a lookup, so
+   * a list of plain IDs costs no queries. Identifiers that cannot be resolved are also passed
+   * through unchanged, and will simply not match anything. Resolution never fails: callers such as
+   * {@link #listEntity(ListParameters, int)} are expected to silently skip identifiers with no
+   * match, the same way they skip IDs of objects the caller cannot access.
+   *
+   * @param identifiers the unique identifiers to resolve
+   * @return the resolved entity IDs, in the order of the input list
+   */
+  @Transactional(readOnly = true)
+  public List<String> resolveIds(List<String> identifiers) {
+    var resolvedIds = new ArrayList<String>(identifiers.size());
+    for (var identifier : identifiers) {
+      var resolvedId = getProxy().resolveId(identifier);
+      resolvedIds.add(resolvedId != null ? resolvedId : identifier);
+    }
+    return resolvedIds;
+  }
+
+  /**
    * Finds an entity by its unique identifier. If the ID does not start with the current entity's ID
    * prefix, it is treated as an external ID or a system ID. Subclasses may extend this method to
    * provide additional lookup logic, for instance lookup by email address.
@@ -308,12 +334,29 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @Transactional(readOnly = true)
   public <E extends Exception> O findOrThrow(String identifier, Class<E> exceptionClass) throws E {
+    return getProxy()
+        .findOrThrow(
+            identifier, exceptionClass, "No " + objectClassName + " found with id " + identifier);
+  }
+
+  /**
+   * Wrapper for find() that throws the given exception type, with the given message, if the object
+   * is not found. Use this where the default message says too much: it names the object type and
+   * echoes the identifier back to the caller.
+   *
+   * @param identifier The identifier of the object to find
+   * @param exceptionClass The class of the exception to throw
+   * @param message The message of the thrown exception
+   * @return The object with the given identifier
+   * @throws E if the object is not found
+   */
+  @Transactional(readOnly = true)
+  public <E extends Exception> O findOrThrow(
+      String identifier, Class<E> exceptionClass, String message) throws E {
     var obj = getProxy().find(identifier);
     if (obj == null) {
       try {
-        throw exceptionClass
-            .getDeclaredConstructor(String.class)
-            .newInstance("No " + objectClassName + " found with id " + identifier);
+        throw exceptionClass.getDeclaredConstructor(String.class).newInstance(message);
       } catch (ReflectiveOperationException e) {
         throw new RuntimeException(
             "Failed to instantiate exception of type " + exceptionClass.getName(), e);
@@ -895,12 +938,14 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         try {
           esClient.delete(d -> d.index(elasticsearchIndex).id(id).routing(esParent));
         } catch (Exception e) {
+          // Leave lastIndexed untouched, so the next reindex run retries the removal
           log.error(
               "Could not delete {} : {} from ElasticSearch: {}",
               objectClassName,
               id,
               e.getMessage(),
               e);
+          return;
         }
         var repository = getRepository();
         if (repository instanceof IndexableRepository<?> indexableRepository) {
@@ -1244,6 +1289,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * <p>The method fetches enough rows for {@link #list(ListParameters)} to determine whether there
    * are more pages available.
    *
+   * <p>The {@code ids} parameter accepts any unique identifier accepted by {@link #find(String)},
+   * not only entity IDs, see {@link #resolveIds(List)}.
+   *
    * @param params The query parameters for pagination
    * @param limit The maximum number of entities to fetch
    * @return a list of matching entities
@@ -1262,14 +1310,18 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     var ids = params.getIds();
     if (ids != null) {
-      var entityList = getRepository().findByIdIn(ids);
-      Collections.sort(entityList, Comparator.comparingInt(entity -> ids.indexOf(entity.getId())));
+      var resolvedIds = getProxy().resolveIds(ids);
+      var entityList = getRepository().findByIdIn(resolvedIds);
+      entityList.removeIf(entity -> !isAuthorizedToGet(entity.getId()));
+      Collections.sort(
+          entityList, Comparator.comparingInt(entity -> resolvedIds.indexOf(entity.getId())));
       return entityList;
     }
 
     var externalIds = params.getExternalIds();
     if (externalIds != null) {
       var entityList = getRepository().findByExternalIdIn(externalIds);
+      entityList.removeIf(entity -> !isAuthorizedToGet(entity.getId()));
       Collections.sort(
           entityList,
           Comparator.comparingInt(entity -> externalIds.indexOf(entity.getExternalId())));
@@ -1312,10 +1364,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     if (obj == null) {
       return null;
     }
-    if (currentPath == null) {
-      currentPath = "";
-    }
-    var updatedPath = currentPath.isEmpty() ? propertyName : currentPath + "." + propertyName;
+    var updatedPath = ExpandPathResolver.getPath(currentPath, propertyName);
     var shouldExpand = expandPaths != null && expandPaths.contains(updatedPath);
     log.trace("maybeExpand {}:{}, {}", objectClassName, obj.getId(), shouldExpand);
     var expandedObject = shouldExpand ? toDTO(obj, newDTO(), expandPaths, updatedPath) : null;
@@ -1323,17 +1372,40 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Wrapper around maybeExpand for lists. This method will expand all objects in the list, and
-   * return a list of ExpandableFields.
+   * Variant of {@link #maybeExpand(Base, String, Set, String)} for relations to private objects.
+   * Being allowed to get the object under conversion does not imply being allowed to get the
+   * related object, so it is only expanded if the current caller could also get it directly.
+   * Otherwise only the ID is returned.
    *
-   * @param objList The list of entity objects to expand
+   * @param obj The entity object to expand
+   * @param propertyName The property name to check for expansion
+   * @param expandPaths A set of paths indicating properties to expand
+   * @param currentPath The current path in the object tree, used for nested expansions
+   * @return an ExpandableField containing either a full DTO or just the ID
+   */
+  public ExpandableField<D> maybeExpandAuthorized(
+      O obj, String propertyName, Set<String> expandPaths, String currentPath) {
+    if (obj != null
+        && expandPaths != null
+        && expandPaths.contains(ExpandPathResolver.getPath(currentPath, propertyName))
+        && !isAuthorizedToGet(obj.getId())) {
+      return new ExpandableField<>(obj.getId());
+    }
+    return maybeExpand(obj, propertyName, expandPaths, currentPath);
+  }
+
+  /**
+   * Wrapper around maybeExpand for collections. This method will expand all objects in the
+   * collection, and return a list of ExpandableFields.
+   *
+   * @param objList The collection of entity objects to expand
    * @param propertyName The property name to check for expansion
    * @param expandPaths A set of paths indicating properties to expand
    * @param currentPath The current path in the object tree, used for nested expansions
    * @return a list of ExpandableFields containing either full DTOs or just the IDs
    */
   public List<ExpandableField<D>> maybeExpand(
-      List<O> objList, String propertyName, Set<String> expandPaths, String currentPath) {
+      Collection<O> objList, String propertyName, Set<String> expandPaths, String currentPath) {
     if (objList == null) {
       return List.of();
     }
@@ -1388,6 +1460,35 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   protected void authorizeGet(String id) throws EInnsynException {
     throw new AuthorizationException("Not authorized to get " + objectClassName + " with id " + id);
+  }
+
+  /**
+   * Checks whether the current caller may get the given object, using the same rules as {@link
+   * #authorizeGet(String)}. Use this where objects are reached without going through the scoped
+   * paginators, so that callers only ever see what they could fetch directly.
+   *
+   * <p>A denied authorization or a hidden object is the expected "no". Any other checked failure
+   * from the authorization hook is a bug in that hook, so it is logged and treated as a denial:
+   * failing closed keeps the response valid while keeping the fault visible.
+   *
+   * @param id The ID of the object to check
+   * @return true if the caller is authorized to get the object
+   */
+  public boolean isAuthorizedToGet(String id) {
+    try {
+      authorizeGet(id);
+      return true;
+    } catch (AuthorizationException | NotFoundException e) {
+      return false;
+    } catch (EInnsynException e) {
+      log.error(
+          "Unexpected {} authorizing get of {}:{}, denying access",
+          e.getClass().getSimpleName(),
+          objectClassName,
+          id,
+          e);
+      return false;
+    }
   }
 
   /**

@@ -56,13 +56,28 @@
             "\" =>",
             "‘ =>",
             "’ =>",
-            "“ =>",
-            "” =>",
+            "\u201c =>",
+            "\u201d =>",
             "« =>",
             "» =>",
             ", => \\u0020",
             ". => \\u0020"
           ]
+        },
+        "gnr_bnr_fnr_snr_filter": {
+          "type": "pattern_replace",
+          "pattern": "(?i)gnr\\.?\\s+(\\d+)\\s+bnr\\.?\\s+(\\d+)\\s+fnr\\.?\\s+(\\d+)\\s+snr\\.?\\s+(\\d+)",
+          "replacement": "$1/$2/$3/$4"
+        },
+        "gnr_bnr_fnr_filter": {
+          "type": "pattern_replace",
+          "pattern": "(?i)gnr\\.?\\s+(\\d+)\\s+bnr\\.?\\s+(\\d+)\\s+fnr\\.?\\s+(\\d+)",
+          "replacement": "$1/$2/$3"
+        },
+        "gnr_bnr_filter": {
+          "type": "pattern_replace",
+          "pattern": "(?i)gnr\\.?\\s+(\\d+)\\s+bnr\\.?\\s+(\\d+)",
+          "replacement": "$1/$2"
         }
       },
       "normalizer": {
@@ -82,6 +97,11 @@
           "tokenizer": "whitespace"
         },
         "id_search_analyzer": {
+          "char_filter": [
+            "gnr_bnr_fnr_snr_filter",
+            "gnr_bnr_fnr_filter",
+            "gnr_bnr_filter"
+          ],
           "filter": [
             "remove_leading_zeros_filter",
             "normalize_two_components_id_filter",

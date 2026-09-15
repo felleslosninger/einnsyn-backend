@@ -15,13 +15,17 @@ import jakarta.persistence.PreUpdate;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.indexable.Indexable;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.korrespondansepart.models.Korrespondansepart;
+import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import no.einnsyn.backend.entities.registrering.models.Registrering;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.entities.skjerming.models.Skjerming;
@@ -99,6 +103,27 @@ public class Journalpost extends Registrering implements Indexable {
   @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
 
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "journalpost")
+  @OrderBy("id ASC")
+  @Getter(AccessLevel.NONE)
+  private List<Matrikkelnummer> matrikkelnummer;
+
+  @Override
+  public List<Matrikkelnummer> getMatrikkelnummer() {
+    return matrikkelnummer;
+  }
+
+  @Override
+  public void addMatrikkelnummer(Matrikkelnummer matrikkelnummer) {
+    if (this.matrikkelnummer == null) {
+      this.matrikkelnummer = new ArrayList<>();
+    }
+    if (!this.matrikkelnummer.contains(matrikkelnummer)) {
+      matrikkelnummer.setJournalpost(this);
+      this.matrikkelnummer.add(matrikkelnummer);
+    }
+  }
+
   // TODO: The concept følgsakenReferanse should be revised
   @ElementCollection(fetch = FetchType.EAGER)
   @JoinTable(
@@ -126,7 +151,7 @@ public class Journalpost extends Registrering implements Indexable {
       })
   @ManyToMany(fetch = FetchType.LAZY)
   @OrderBy("id ASC")
-  private List<Dokumentbeskrivelse> dokumentbeskrivelse;
+  private Set<Dokumentbeskrivelse> dokumentbeskrivelse;
 
   @ManyToOne
   @JoinColumn(name = "saksmappe_id", referencedColumnName = "saksmappe_id")
@@ -164,7 +189,7 @@ public class Journalpost extends Registrering implements Indexable {
    */
   public void addDokumentbeskrivelse(Dokumentbeskrivelse db) {
     if (dokumentbeskrivelse == null) {
-      dokumentbeskrivelse = new ArrayList<>();
+      dokumentbeskrivelse = new LinkedHashSet<>();
     }
     if (!dokumentbeskrivelse.contains(db)) {
       dokumentbeskrivelse.add(db);
