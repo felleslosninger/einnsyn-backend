@@ -1,10 +1,13 @@
 package no.einnsyn.backend.entities.arkivbase;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseDTO;
@@ -13,6 +16,7 @@ import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.UniqueFieldMatch;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.base.models.BaseES;
+import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
@@ -168,6 +172,37 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
       }
     }
     return es;
+  }
+
+  /**
+   * Paginators for a list filtered by journalenhet. Entities whose IRI / systemId is not unique
+   * across journalenhets are listed per journalenhet, so that the filter can be applied without
+   * losing pagination.
+   *
+   * @param journalenhet The journalenhet to list objects for
+   * @return paginators over the objects belonging to the given journalenhet
+   */
+  protected Paginators<O> getJournalenhetPaginators(Enhet journalenhet) {
+    var repository = getRepository();
+    return new Paginators<>(
+        (pivot, pageRequest) ->
+            repository.paginateByJournalenhetAsc(journalenhet, pivot, pageRequest),
+        (pivot, pageRequest) ->
+            repository.paginateByJournalenhetDesc(journalenhet, pivot, pageRequest));
+  }
+
+  /**
+   * Sort a lookup by externalIds into the order the ids were requested in, the way the generic
+   * lookup in {@link BaseService#listEntity} does. Used by the entities whose externalId is only
+   * unique per journalenhet, which resolve externalIds within the journalenhet filter.
+   *
+   * @param entityList The objects matching the requested external ids
+   * @param externalIds The requested external ids
+   * @return the same list, sorted in the order of the requested external ids
+   */
+  protected List<O> sortByExternalIds(List<O> entityList, List<String> externalIds) {
+    entityList.sort(Comparator.comparingInt(entity -> externalIds.indexOf(entity.getExternalId())));
+    return entityList;
   }
 
   /**
