@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.entities.downloadcount.models.DownloadCount;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -49,12 +50,16 @@ public class DownloadCountTestService {
   /**
    * All hourly buckets recorded for a Dokumentobjekt. Production code never looks buckets up by
    * Dokumentobjekt, so rather than keep a query for tests alone, filter the (small) test table.
+   *
+   * <p>The returned entities are detached, and open-in-view is off, so the lazy Enhet is loaded
+   * here while the transaction is open. Callers may navigate {@code getEnhet()} freely.
    */
   @Transactional(readOnly = true)
   public List<DownloadCount> findBuckets(String dokumentobjektId) {
     var buckets = new ArrayList<DownloadCount>();
     for (var bucket : downloadCountRepository.findAll()) {
       if (dokumentobjektId.equals(bucket.getDokumentobjektId())) {
+        Hibernate.initialize(bucket.getEnhet());
         buckets.add(bucket);
       }
     }
