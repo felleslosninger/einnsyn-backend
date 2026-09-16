@@ -2,9 +2,6 @@ package no.einnsyn.backend.entities.downloadcount.models;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
@@ -12,7 +9,6 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.indexable.Indexable;
 import no.einnsyn.backend.entities.base.models.Base;
-import no.einnsyn.backend.entities.enhet.models.Enhet;
 
 /**
  * Hourly download bucket for a Dokumentobjekt.
@@ -37,15 +33,15 @@ public class DownloadCount extends Base implements Indexable {
   @Column(name = "download_count")
   private int count;
 
-  // The Journalpost, Moetesak or Moetemappe the downloads are attributed to in Elasticsearch. Kept
-  // as a plain id since the parent may be deleted after the bucket is created.
+  // The Journalpost, Moetesak or Moetemappe the downloads are attributed to in Elasticsearch, and
+  // the Enhet that parent was attributed to. Both are kept as plain ids rather than relations: the
+  // parent or the Enhet may be deleted after the bucket is created, and the bucket must keep
+  // recording what the attribution was at the time.
   @Column(name = "parent__id")
   private String parentId;
 
-  // The Enhet the parent was attributed to when the bucket was created
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "enhet__id")
-  private Enhet enhet;
+  @Column(name = "enhet__id")
+  private String enhetId;
 
   // lastIndexed should not be updated through JPA
   @Column(insertable = false, updatable = false)

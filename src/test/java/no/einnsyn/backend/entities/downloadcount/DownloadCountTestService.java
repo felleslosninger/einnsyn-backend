@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.entities.downloadcount.models.DownloadCount;
-import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -50,34 +49,26 @@ public class DownloadCountTestService {
   /**
    * All hourly buckets recorded for a Dokumentobjekt. Production code never looks buckets up by
    * Dokumentobjekt, so rather than keep a query for tests alone, filter the (small) test table.
-   *
-   * <p>The returned entities are detached, and open-in-view is off, so the lazy Enhet is loaded
-   * here while the transaction is open. Callers may navigate {@code getEnhet()} freely.
    */
   @Transactional(readOnly = true)
   public List<DownloadCount> findBuckets(String dokumentobjektId) {
     var buckets = new ArrayList<DownloadCount>();
     for (var bucket : downloadCountRepository.findAll()) {
       if (dokumentobjektId.equals(bucket.getDokumentobjektId())) {
-        Hibernate.initialize(bucket.getEnhet());
         buckets.add(bucket);
       }
     }
     return buckets;
   }
 
-  /**
-   * The id of the Enhet a Dokumentobjekt's single bucket is attributed to, or null if none. The
-   * relation is lazy, so it is read here, inside the transaction, rather than by the test.
-   */
+  /** The id of the Enhet a Dokumentobjekt's single bucket is attributed to, or null if none. */
   @Transactional(readOnly = true)
   public String getEnhetId(String dokumentobjektId) {
     var buckets = findBuckets(dokumentobjektId);
     if (buckets.size() != 1) {
       throw new IllegalStateException("Expected one bucket, found " + buckets.size());
     }
-    var enhet = buckets.getFirst().getEnhet();
-    return enhet != null ? enhet.getId() : null;
+    return buckets.getFirst().getEnhetId();
   }
 
   /** Total number of downloads recorded for a Dokumentobjekt, across all hourly buckets. */

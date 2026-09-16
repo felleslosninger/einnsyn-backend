@@ -8,13 +8,14 @@ CREATE TABLE IF NOT EXISTS dokumentobjekt_download_stat (
   dokumentobjekt__id TEXT NOT NULL,
   bucket_start TIMESTAMPTZ NOT NULL,
   download_count INT NOT NULL DEFAULT 0,
-  -- Attribution captured when the bucket is created; buckets outlive the Dokumentobjekt
+  -- Attribution captured when the bucket is created. Plain ids, deliberately without foreign keys:
+  -- buckets outlive the Dokumentobjekt, its parent and even the Enhet, and must keep recording what
+  -- the attribution was at the time.
   parent__id TEXT,
   enhet__id TEXT,
   last_indexed TIMESTAMPTZ
 );
 
-SELECT add_foreign_key_if_not_exists('dokumentobjekt_download_stat', 'enhet__id', 'enhet', '_id');
 CREATE INDEX IF NOT EXISTS dokumentobjekt_download_stat_enhet_idx
   ON dokumentobjekt_download_stat (enhet__id);
 

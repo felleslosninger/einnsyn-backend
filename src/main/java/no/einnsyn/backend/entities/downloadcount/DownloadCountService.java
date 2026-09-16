@@ -192,14 +192,21 @@ public class DownloadCountService extends BaseService<DownloadCount, DownloadCou
     if (es instanceof DownloadCountES downloadCountES) {
       downloadCountES.setCount(downloadCount.getCount());
 
-      // Attribute the bucket the same way ArkivBaseService attributes its parent
-      var enhet = downloadCount.getEnhet();
-      if (enhet != null) {
+      // Attribute the bucket the same way ArkivBaseService attributes its parent. The Enhet is kept
+      // as a plain id on the row; if it has since been deleted, the id itself is all that is left
+      // to attribute to.
+      var enhetId = downloadCount.getEnhetId();
+      if (enhetId != null) {
         var administrativEnhetTransitive = new ArrayList<String>();
-        for (var transitiveEnhet : enhetService.getTransitiveEnhets(enhet)) {
-          administrativEnhetTransitive.add(transitiveEnhet.getId());
+        var enhet = enhetService.find(enhetId);
+        if (enhet != null) {
+          for (var transitiveEnhet : enhetService.getTransitiveEnhets(enhet)) {
+            administrativEnhetTransitive.add(transitiveEnhet.getId());
+          }
+        } else {
+          administrativEnhetTransitive.add(enhetId);
         }
-        downloadCountES.setAdministrativEnhet(enhet.getId());
+        downloadCountES.setAdministrativEnhet(enhetId);
         downloadCountES.setAdministrativEnhetTransitive(administrativEnhetTransitive);
       }
     }

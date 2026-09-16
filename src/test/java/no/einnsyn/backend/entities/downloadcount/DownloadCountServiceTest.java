@@ -185,7 +185,8 @@ class DownloadCountServiceTest {
     downloadCount.setCreated(now);
     downloadCount.setUpdated(now);
     downloadCount.setParentId(esParentId);
-    downloadCount.setEnhet(enhet);
+    downloadCount.setEnhetId(enhet.getId());
+    when(enhetService.find(enhet.getId())).thenReturn(enhet);
     when(enhetService.getTransitiveEnhets(enhet)).thenReturn(List.of(enhet, parentEnhet));
 
     var es = (DownloadCountES) downloadCountService.toLegacyES(downloadCount);
@@ -195,5 +196,24 @@ class DownloadCountServiceTest {
     assertEquals("download", es.getStatRelation().getName());
     assertEquals(enhet.getId(), es.getAdministrativEnhet());
     assertEquals(List.of(enhet.getId(), parentEnhet.getId()), es.getAdministrativEnhetTransitive());
+  }
+
+  @Test
+  void toLegacyESShouldKeepAttributionWhenEnhetIsDeleted() {
+    var enhetId = "enh_01jxyz123456789deleted00";
+    var downloadCount = new DownloadCount();
+    downloadCount.setId("dc_01jxyz123456789abcdefghij");
+    downloadCount.setDokumentobjektId(DOKUMENTOBJEKT_ID);
+    downloadCount.setCount(1);
+    downloadCount.setCreated(Instant.now());
+    downloadCount.setUpdated(Instant.now());
+    downloadCount.setEnhetId(enhetId);
+    when(enhetService.find(enhetId)).thenReturn(null);
+
+    var es = (DownloadCountES) downloadCountService.toLegacyES(downloadCount);
+
+    // The bucket records what the attribution was; a deleted Enhet must not erase it.
+    assertEquals(enhetId, es.getAdministrativEnhet());
+    assertEquals(List.of(enhetId), es.getAdministrativEnhetTransitive());
   }
 }
