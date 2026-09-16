@@ -12,6 +12,7 @@ import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -99,6 +100,44 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
     // DELETE
     assertEquals(HttpStatus.OK, delete("/moetedokument/" + moetedokumentId).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/moetedokument/" + moetedokumentId).getStatusCode());
+  }
+
+  /**
+   * A Korrespondansepart on a Moetedokument points back to its parent Moetedokument, and contact
+   * details are only visible to the owner.
+   */
+  @Test
+  void testKorrespondansepartOnMoetedokument() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+    var moetedokumentId = moetemappeDTO.getMoetedokument().get(0).getId();
+
+    response = get("/moetedokument/" + moetedokumentId + "?expand=korrespondansepart");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var moetedokumentDTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
+    var korrespondansepartDTO = moetedokumentDTO.getKorrespondansepart().get(0).getExpandedObject();
+    assertNotNull(korrespondansepartDTO);
+    assertEquals(moetedokumentId, korrespondansepartDTO.getMoetedokument().getId());
+
+    // Contact details can be added, and are only visible to the owner
+    var updateJSON = new JSONObject();
+    updateJSON.put("epostadresse", "epost@example.com");
+    updateJSON.put("postnummer", "0101");
+    response = patch("/korrespondansepart/" + korrespondansepartDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertEquals(moetedokumentId, korrespondansepartDTO.getMoetedokument().getId());
+    assertEquals("epost@example.com", korrespondansepartDTO.getEpostadresse());
+    assertEquals("0101", korrespondansepartDTO.getPostnummer());
+
+    response = getAnon("/korrespondansepart/" + korrespondansepartDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertNull(korrespondansepartDTO.getEpostadresse());
+    assertNull(korrespondansepartDTO.getPostnummer());
+
+    // cleanup
+    assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappeDTO.getId()).getStatusCode());
   }
 
   @Test

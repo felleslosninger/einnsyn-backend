@@ -120,6 +120,36 @@ class LagretSakControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
   }
 
+  // Only the owner can update a LagretSak
+  @Test
+  void testLagretSakUpdateAuthorization() throws Exception {
+    var lagretSakJSON = getLagretSakJSON();
+    lagretSakJSON.put("saksmappe", saksmappeDTO.getId());
+    var response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretSakJSON, accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSakDTO = gson.fromJson(response.getBody(), LagretSakDTO.class);
+
+    // Unauthorized update, not logged in
+    response = patchAnon("/lagretSak/" + lagretSakDTO.getId(), new JSONObject());
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // An Enhet cannot update
+    response = patch("/lagretSak/" + lagretSakDTO.getId(), new JSONObject());
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // Admin cannot update, only the owner can
+    response = patchAdmin("/lagretSak/" + lagretSakDTO.getId(), new JSONObject());
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // The owner can update
+    response = patch("/lagretSak/" + lagretSakDTO.getId(), new JSONObject(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Clean up
+    response = delete("/lagretSak/" + lagretSakDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
   @Test
   void testLagretSakPagination() throws Exception {
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());

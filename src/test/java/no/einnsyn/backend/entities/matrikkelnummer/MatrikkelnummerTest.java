@@ -6,9 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.gson.reflect.TypeToken;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
@@ -666,5 +668,59 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
     assertEquals(bruksnummer, matrikkelnummerDTO.getBruksnummer());
     assertEquals(0, matrikkelnummerDTO.getFestenummer());
     assertEquals(0, matrikkelnummerDTO.getSeksjonsnummer());
+  }
+
+  private String assertListsOneMatrikkelnummer(String parentPath, String matrikkelnummerId)
+      throws Exception {
+    var response = get(parentPath + "/matrikkelnummer");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var listType = new TypeToken<PaginatedList<MatrikkelnummerDTO>>() {}.getType();
+    PaginatedList<MatrikkelnummerDTO> list = gson.fromJson(response.getBody(), listType);
+    assertEquals(1, list.getItems().size(), parentPath);
+    assertEquals(matrikkelnummerId, list.getItems().get(0).getId(), parentPath);
+    return matrikkelnummerId;
+  }
+
+  /** Matrikkelnummer can be listed by every parent type. */
+  @Test
+  void testListMatrikkelnummerByParents() throws Exception {
+    // Saksmappe with a Journalpost
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Moetemappe with a Moetesak and a Moetedokument
+    var response2 = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, response2.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response2.getBody(), MoetemappeDTO.class);
+    var moetesakId = moetemappeDTO.getMoetesak().getFirst().getId();
+    response2 =
+        post("/moetemappe/" + moetemappeDTO.getId() + "/moetedokument", getMoetedokumentJSON());
+    assertEquals(HttpStatus.CREATED, response2.getStatusCode());
+    var moetedokumentDTO = gson.fromJson(response2.getBody(), MoetedokumentDTO.class);
+
+    // Add one Matrikkelnummer to each parent, and list it back through the parent
+    var parents =
+        List.of(
+            "/saksmappe/" + saksmappeDTO.getId(),
+            "/journalpost/" + journalpostDTO.getId(),
+            "/moetemappe/" + moetemappeDTO.getId(),
+            "/moetesak/" + moetesakId,
+            "/moetedokument/" + moetedokumentDTO.getId());
+    var bruksnummer = 50;
+    for (var parent : parents) {
+      response =
+          post(parent + "/matrikkelnummer", getMatrikkelnummerJSON("0301", 3, bruksnummer++));
+      assertEquals(HttpStatus.CREATED, response.getStatusCode(), parent);
+      var matrikkelnummerDTO = gson.fromJson(response.getBody(), MatrikkelnummerDTO.class);
+      assertListsOneMatrikkelnummer(parent, matrikkelnummerDTO.getId());
+    }
+
+    // Cleanup
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappeDTO.getId()).getStatusCode());
   }
 }

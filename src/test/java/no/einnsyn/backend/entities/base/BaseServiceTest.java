@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 
 import java.util.List;
@@ -11,9 +12,12 @@ import no.einnsyn.backend.EinnsynServiceTestBase;
 import no.einnsyn.backend.authentication.AuthenticationService;
 import no.einnsyn.backend.authentication.EInnsynAuthentication;
 import no.einnsyn.backend.authentication.EInnsynPrincipalEnhet;
+import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
+import no.einnsyn.backend.common.exceptions.models.ConflictException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.junit.jupiter.api.AfterEach;
@@ -21,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -157,5 +162,153 @@ public class BaseServiceTest extends EinnsynServiceTestBase {
 
     // Cleanup
     saksmappeService.delete(entity.getId());
+  }
+
+  @Test
+  @Transactional
+  void testFindOrThrowByDtoAndExpandableField() throws Exception {
+    var dto = getSaksmappeDTO();
+    dto.setExternalId("findOrThrowByDto");
+    var created = saksmappeService.createOrThrow(dto);
+
+    // Lookup by a DTO matching on unique fields
+    var lookupDTO = new SaksmappeDTO();
+    lookupDTO.setExternalId("findOrThrowByDto");
+    assertEquals(created.getId(), saksmappeService.findOrThrow(lookupDTO).getId());
+
+    // Lookup by an expandable field without an ID matches on the expanded object
+    assertEquals(
+        created.getId(), saksmappeService.findOrThrow(new ExpandableField<>(lookupDTO)).getId());
+
+    // A DTO matching nothing throws
+    var unknownDTO = new SaksmappeDTO();
+    unknownDTO.setExternalId("noSuchExternalId");
+    assertThrowsExactly(BadRequestException.class, () -> saksmappeService.findOrThrow(unknownDTO));
+    assertThrowsExactly(
+        NotFoundException.class,
+        () -> saksmappeService.findOrThrow(unknownDTO, NotFoundException.class));
+
+    // A null expandable field throws
+    assertThrowsExactly(
+        BadRequestException.class,
+        () -> saksmappeService.findOrThrow((ExpandableField<SaksmappeDTO>) null));
+
+    // Cleanup
+    saksmappeService.delete(created.getId());
+  }
+
+  @Test
+  @Transactional
+  void testFindForUpdateOrThrow() throws Exception {
+    var dto = getSaksmappeDTO();
+    dto.setExternalId("findForUpdate");
+    var created = saksmappeService.createOrThrow(dto);
+
+    // Lookup by ID
+    assertEquals(created.getId(), saksmappeService.findForUpdateOrThrow(created.getId()).getId());
+
+    // Lookup by an expandable field with an ID, and by one with only an expanded object
+    var lookupDTO = new SaksmappeDTO();
+    lookupDTO.setExternalId("findForUpdate");
+    assertEquals(
+        created.getId(),
+        saksmappeService.findForUpdateOrThrow(new ExpandableField<>(created.getId())).getId());
+    assertEquals(
+        created.getId(),
+        saksmappeService.findForUpdateOrThrow(new ExpandableField<>(lookupDTO)).getId());
+
+    // A null expandable field throws
+    assertThrowsExactly(
+        BadRequestException.class,
+        () -> saksmappeService.findForUpdateOrThrow((ExpandableField<SaksmappeDTO>) null));
+
+    // An unauthenticated caller does not have update rights
+    var adminContext = SecurityContextHolder.getContext();
+    SecurityContextHolder.clearContext();
+    assertThrowsExactly(
+        AuthorizationException.class, () -> saksmappeService.findForUpdateOrThrow(created.getId()));
+
+    // An Enhet that does not own the Saksmappe does not have update rights
+    var journalenhet2ApiKey = apiKeyService.findBySecretKey(journalenhet2Key);
+    var journalenhet2Principal =
+        new EInnsynPrincipalEnhet(
+            "ApiKey",
+            journalenhet2ApiKey.getId(),
+            journalenhet2ApiKey.getEnhet().getId(),
+            journalenhet2ApiKey.getEnhet().getOrgnummer(),
+            false);
+    var journalenhet2Authentication = Mockito.mock(EInnsynAuthentication.class);
+    doReturn(journalenhet2Principal).when(journalenhet2Authentication).getPrincipal();
+    var journalenhet2Context = SecurityContextHolder.createEmptyContext();
+    journalenhet2Context.setAuthentication(journalenhet2Authentication);
+    SecurityContextHolder.setContext(journalenhet2Context);
+    assertThrowsExactly(
+        AuthorizationException.class, () -> saksmappeService.findForUpdateOrThrow(created.getId()));
+
+    // Cleanup, as the owner
+    SecurityContextHolder.setContext(adminContext);
+    saksmappeService.delete(created.getId());
+  }
+
+  @Test
+  @Transactional
+  void testCreateOrThrowRejectsExistingId() throws Exception {
+    var created = saksmappeService.createOrThrow(getSaksmappeDTO());
+
+    // A DTO with an ID cannot be created again
+    var dtoWithId = getSaksmappeDTO();
+    dtoWithId.setId(created.getId());
+    assertThrowsExactly(BadRequestException.class, () -> saksmappeService.createOrThrow(dtoWithId));
+
+    // Neither can an expandable field carrying an ID
+    assertThrowsExactly(
+        BadRequestException.class,
+        () -> saksmappeService.createOrThrow(new ExpandableField<>(created.getId(), dtoWithId)));
+
+    // Cleanup
+    saksmappeService.delete(created.getId());
+  }
+
+  @Test
+  @Transactional
+  void testCreateOrThrowConflict() throws Exception {
+    var dto = getSaksmappeDTO();
+    dto.setExternalId("duplicateExternalId");
+    var created = saksmappeService.createOrThrow(dto);
+
+    // Creating another Saksmappe with the same unique externalId conflicts
+    var duplicateDTO = getSaksmappeDTO();
+    duplicateDTO.setExternalId("duplicateExternalId");
+    assertThrowsExactly(
+        ConflictException.class, () -> saksmappeService.createOrThrow(duplicateDTO));
+
+    // Cleanup
+    saksmappeService.delete(created.getId());
+  }
+
+  @Test
+  void testListWithPaginationPivots() throws Exception {
+    var first = saksmappeService.add(getSaksmappeDTO());
+    var second = saksmappeService.add(getSaksmappeDTO());
+
+    // startingAfter returns only entities after the pivot
+    var params = new ListParameters();
+    params.setStartingAfter(first.getId());
+    params.setSortOrder("asc");
+    var page = saksmappeService.list(params);
+    assertTrue(page.getItems().stream().anyMatch(s -> s.getId().equals(second.getId())));
+    assertTrue(page.getItems().stream().noneMatch(s -> s.getId().equals(first.getId())));
+
+    // endingBefore returns only entities before the pivot
+    params = new ListParameters();
+    params.setEndingBefore(second.getId());
+    params.setSortOrder("asc");
+    page = saksmappeService.list(params);
+    assertTrue(page.getItems().stream().anyMatch(s -> s.getId().equals(first.getId())));
+    assertTrue(page.getItems().stream().noneMatch(s -> s.getId().equals(second.getId())));
+
+    // Cleanup
+    saksmappeService.delete(first.getId());
+    saksmappeService.delete(second.getId());
   }
 }

@@ -236,6 +236,31 @@ class InnsynskravBestillingApiKeyAuthTest extends EinnsynControllerTestBase {
             innsynskravBestillingJSON);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
+    // Unlock the bruker-owned InnsynskravBestilling to test the unlocked authorization branches
+    var innsynskravBestilling =
+        innsynskravBestillingRepository.findById(innsynskravBestillingDTO.getId()).orElseThrow();
+    innsynskravBestilling.setLocked(false);
+    innsynskravBestillingRepository.save(innsynskravBestilling);
+
+    // Update unlocked InnsynskravBestilling as anonymous (fails)
+    var updateJSON = new JSONObject().put("email", "updated@example.com");
+    response = patchAnon("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // Update unlocked InnsynskravBestilling as another Enhet (fails)
+    response = patch("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // Update unlocked InnsynskravBestilling as the owner
+    response =
+        patch(
+            "/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), updateJSON, brukerToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Update unlocked InnsynskravBestilling as admin
+    response = patchAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
     // Delete InnsynskravBestilling as anonymous (fails)
     response = deleteAnon("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
