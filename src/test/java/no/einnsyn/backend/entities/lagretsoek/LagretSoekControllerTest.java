@@ -384,12 +384,17 @@ class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
     // Moetemappe hits are also cached
     lagretSoekService.incrementHitCount(legacyId.toString(), moetemappeDTO.getId());
     assertEquals(2, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
+    assertEquals(2, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
 
-    // An unknown legacy id is logged and ignored
+    // An unknown legacy id is logged and ignored, neither counted nor cached
     lagretSoekService.incrementHitCount(UUID.randomUUID().toString(), saksmappeDTO.getId());
+    assertEquals(2, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
+    assertEquals(2, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
 
-    // A document with an unknown entity type is ignored
+    // A document with an unknown entity type is counted, but not cached
     lagretSoekService.incrementHitCount(lagretSoekDTO.getId(), "unknown-document-id");
+    assertEquals(3, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
+    assertEquals(2, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
 
     // Clean up
     response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
