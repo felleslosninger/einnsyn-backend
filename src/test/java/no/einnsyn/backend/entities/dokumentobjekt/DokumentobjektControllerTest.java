@@ -31,6 +31,8 @@ import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.backend.entities.downloadcount.DownloadCountService;
 import no.einnsyn.backend.entities.downloadcount.DownloadCountTestService;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
+import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
@@ -59,6 +61,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   @Autowired private DownloadCountTestService downloadCountTestService;
 
   private ArkivDTO arkivDTO;
+  private ArkivdelDTO arkivdelDTO;
   private SaksmappeDTO saksmappeDTO;
   private DokumentbeskrivelseDTO dokumentbeskrivelseDTO;
   private DokumentobjektDTO dokumentobjektDTO;
@@ -73,7 +76,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -206,6 +209,47 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
     var statisticsResponse = getJournalpostStatistics();
     assertEquals(1, statisticsResponse.getSummary().getDownloadCount());
+  }
+
+  @Test
+  void statisticsShouldCountMoetedokumentDownloadsOnMoetemappe() throws Exception {
+    // A Moetedokument file has no Registrering above it, so its downloads attach to the Moetemappe.
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    response =
+        post("/moetemappe/" + moetemappeDTO.getId() + "/moetedokument", getMoetedokumentJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetedokumentDTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
+
+    response =
+        post(
+            "/moetedokument/" + moetedokumentDTO.getId() + "/dokumentbeskrivelse",
+            getDokumentbeskrivelseJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetedokumentDokbeskDTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+
+    var dokumentobjektJSON = getDokumentobjektJSON();
+    dokumentobjektJSON.put("referanseDokumentfil", SOURCE_URL);
+    response =
+        post(
+            "/dokumentbeskrivelse/" + moetedokumentDokbeskDTO.getId() + "/dokumentobjekt",
+            dokumentobjektJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetedokumentDokobjDTO = gson.fromJson(response.getBody(), DokumentobjektDTO.class);
+
+    try (var _ = startPdfProxy()) {
+      response = get("/dokumentobjekt/" + moetedokumentDokobjDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    var statisticsResponse = getStatistics("Moetemappe");
+    assertEquals(1, statisticsResponse.getSummary().getDownloadCount());
+    assertEquals(1, sumDownloadCount(statisticsResponse));
+
+    // The Journalpost in this test's fixture has no downloads, so the count is not leaking across.
+    assertEquals(0, getJournalpostStatistics().getSummary().getDownloadCount());
   }
 
   @Test
@@ -573,13 +617,17 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   private StatisticsResponse getJournalpostStatistics() throws Exception {
+    return getStatistics("Journalpost");
+  }
+
+  private StatisticsResponse getStatistics(String entity) throws Exception {
     esClient.indices().refresh(r -> r.index(elasticsearchIndex));
     // The statistics endpoint interprets the dates as UTC, while the buckets were created just now
     // in local time. Pad the range by a day on each side so this does not fail around midnight.
     var from = LocalDate.now().minusDays(1).toString();
     var to = LocalDate.now().plusDays(1).toString();
     var response =
-        get("/statistics?aggregateFrom=" + from + "&aggregateTo=" + to + "&entity=Journalpost");
+        get("/statistics?aggregateFrom=" + from + "&aggregateTo=" + to + "&entity=" + entity);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     return gson.fromJson(response.getBody(), StatisticsResponse.class);
   }

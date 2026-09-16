@@ -19,6 +19,10 @@ public class MappeES extends ArkivBaseES {
 
   private List<RegistreringES> child;
 
+  // Files attached to a Moetedokument have no Registrering above them, so their download
+  // statistics attach to the Moetemappe. See STAT_PARENT_RELATION for why the name is reused.
+  private String statRelation = STAT_PARENT_RELATION;
+
   private String sorteringstype = "";
 
   private List<MatrikkelnummerES> matrikkelnummer;
