@@ -1,8 +1,7 @@
 package no.einnsyn.backend.entities.downloadcount;
 
 import java.io.IOException;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Stream;
@@ -28,8 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 public class DownloadCountService extends BaseService<DownloadCount, DownloadCountDTO> {
-
-  private static final ZoneId NORWEGIAN_ZONE = ZoneId.of("Europe/Oslo");
 
   @Getter(onMethod_ = @Override)
   private final DownloadCountRepository repository;
@@ -93,7 +90,8 @@ public class DownloadCountService extends BaseService<DownloadCount, DownloadCou
    */
   @Transactional
   public void recordDownload(String dokumentobjektId) {
-    var bucketStart = ZonedDateTime.now(NORWEGIAN_ZONE).truncatedTo(ChronoUnit.HOURS).toInstant();
+    // Hour boundaries are the same in every whole-hour time zone, so no zone is needed here.
+    var bucketStart = Instant.now().truncatedTo(ChronoUnit.HOURS);
     repository.incrementCount(
         IdGenerator.generateId(DownloadCount.class), dokumentobjektId, bucketStart);
   }
@@ -182,11 +180,7 @@ public class DownloadCountService extends BaseService<DownloadCount, DownloadCou
 
   private static String findFirst(Stream<String> stream) {
     try (stream) {
-      var iterator = stream.iterator();
-      if (iterator.hasNext()) {
-        return iterator.next();
-      }
-      return null;
+      return stream.findFirst().orElse(null);
     }
   }
 

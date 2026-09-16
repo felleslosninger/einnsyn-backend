@@ -4,6 +4,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
+import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermQuery;
@@ -18,6 +19,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.ObjIntConsumer;
+import java.util.function.ToIntFunction;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
@@ -150,48 +152,44 @@ public class StatisticsService {
       summary.setCreatedWithFulltextCount(0);
     }
 
+    // Child aggregations (innsynskrav, download) wrap their results in a "filtered" aggregation
+    var innsynskravFiltered = childrenFiltered(innsynskravAggregations);
+    var downloadFiltered = childrenFiltered(downloadAggregations);
+
     // Set total innsynskrav children count
-    if (innsynskravAggregations != null && innsynskravAggregations.isChildren()) {
-      var filteredAgg = innsynskravAggregations.children().aggregations().get("filtered");
-      if (filteredAgg != null && filteredAgg.isFilter()) {
-        summary.setCreatedInnsynskravCount((int) filteredAgg.filter().docCount());
-      }
-    }
-    if (summary.getCreatedInnsynskravCount() == null) {
+    if (innsynskravFiltered != null && innsynskravFiltered.isFilter()) {
+      summary.setCreatedInnsynskravCount((int) innsynskravFiltered.filter().docCount());
+    } else {
       summary.setCreatedInnsynskravCount(0);
     }
 
-    if (downloadAggregations != null && downloadAggregations.isChildren()) {
-      var filteredAgg = downloadAggregations.children().aggregations().get("filtered");
-      summary.setDownloadCount(extractSumAggregationValue(filteredAgg, "countSum"));
-    }
-    if (summary.getDownloadCount() == null) {
-      summary.setDownloadCount(0);
-    }
+    // Set total download count. Download children carry a count each, so sum them.
+    summary.setDownloadCount(extractSumAggregationValue(downloadFiltered, "countSum"));
 
     // Build timeSeries - collect all unique time buckets from all aggregations
     var timeSeriesMap = new LinkedHashMap<String, StatisticsResponse.TimeSeries>();
 
     // Collect buckets from all aggregations
     collectTimeSeriesBuckets(
-        createdCountAggregations, timeSeriesMap, StatisticsResponse.TimeSeries::setCreatedCount);
+        createdCountAggregations,
+        timeSeriesMap,
+        StatisticsService::bucketDocCount,
+        StatisticsResponse.TimeSeries::setCreatedCount);
     collectTimeSeriesBuckets(
         fulltextCountAggregations,
         timeSeriesMap,
+        StatisticsService::bucketDocCount,
         StatisticsResponse.TimeSeries::setCreatedWithFulltextCount);
-
-    // Handle innsynskrav aggregation (needs to extract filtered child aggregation first)
-    if (innsynskravAggregations != null && innsynskravAggregations.isChildren()) {
-      var filteredAgg = innsynskravAggregations.children().aggregations().get("filtered");
-      collectTimeSeriesBuckets(
-          filteredAgg, timeSeriesMap, StatisticsResponse.TimeSeries::setCreatedInnsynskravCount);
-    }
-
-    if (downloadAggregations != null && downloadAggregations.isChildren()) {
-      var filteredAgg = downloadAggregations.children().aggregations().get("filtered");
-      collectTimeSeriesSumBuckets(
-          filteredAgg, timeSeriesMap, "countSum", StatisticsResponse.TimeSeries::setDownloadCount);
-    }
+    collectTimeSeriesBuckets(
+        innsynskravFiltered,
+        timeSeriesMap,
+        StatisticsService::bucketDocCount,
+        StatisticsResponse.TimeSeries::setCreatedInnsynskravCount);
+    collectTimeSeriesBuckets(
+        downloadFiltered,
+        timeSeriesMap,
+        bucket -> sumValue(bucket.aggregations(), "countSum"),
+        StatisticsResponse.TimeSeries::setDownloadCount);
 
     // Sort merged buckets chronologically. The different aggregations can have disjoint bucket
     // sets, so insertion order alone does not guarantee a time-ordered response.
@@ -432,75 +430,65 @@ public class StatisticsService {
    *
    * @param aggregation the aggregation result to extract buckets from
    * @param timeSeriesMap the map to populate with time series data points
-   * @param setter the consumer to set the count on each data point
+   * @param valueOf how to read the value of a bucket, e.g. its doc count or a sub-aggregation
+   * @param setter the consumer to set the value on each data point
    */
   private void collectTimeSeriesBuckets(
       Aggregate aggregation,
       Map<String, StatisticsResponse.TimeSeries> timeSeriesMap,
+      ToIntFunction<DateHistogramBucket> valueOf,
       ObjIntConsumer<StatisticsResponse.TimeSeries> setter) {
     if (aggregation != null && aggregation.isFilter()) {
       var buckets = aggregation.filter().aggregations().get("buckets");
       if (buckets != null && buckets.isDateHistogram()) {
         var dateHistogram = buckets.dateHistogram();
         for (var bucket : dateHistogram.buckets().array()) {
-          var time = bucket.keyAsString();
           var dataPoint =
               timeSeriesMap.computeIfAbsent(
-                  time,
-                  k -> {
-                    var point = new StatisticsResponse.TimeSeries();
-                    point.setTime(k);
-                    point.setCreatedCount(0);
-                    point.setCreatedWithFulltextCount(0);
-                    point.setCreatedInnsynskravCount(0);
-                    point.setDownloadCount(0);
-                    return point;
-                  });
-          setter.accept(dataPoint, (int) bucket.docCount());
+                  bucket.keyAsString(), StatisticsService::newTimeSeriesPoint);
+          setter.accept(dataPoint, valueOf.applyAsInt(bucket));
         }
       }
     }
   }
 
-  private void collectTimeSeriesSumBuckets(
-      Aggregate aggregation,
-      Map<String, StatisticsResponse.TimeSeries> timeSeriesMap,
-      String sumAggregationName,
-      ObjIntConsumer<StatisticsResponse.TimeSeries> setter) {
-    if (aggregation != null && aggregation.isFilter()) {
-      var buckets = aggregation.filter().aggregations().get("buckets");
-      if (buckets != null && buckets.isDateHistogram()) {
-        var dateHistogram = buckets.dateHistogram();
-        for (var bucket : dateHistogram.buckets().array()) {
-          var time = bucket.keyAsString();
-          var dataPoint =
-              timeSeriesMap.computeIfAbsent(
-                  time,
-                  k -> {
-                    var point = new StatisticsResponse.TimeSeries();
-                    point.setTime(k);
-                    point.setCreatedCount(0);
-                    point.setCreatedWithFulltextCount(0);
-                    point.setCreatedInnsynskravCount(0);
-                    point.setDownloadCount(0);
-                    return point;
-                  });
-
-          var metric = bucket.aggregations().get(sumAggregationName);
-          var value = metric != null && metric.isSum() ? metric.sum().value() : 0d;
-          setter.accept(dataPoint, (int) Math.round(value));
-        }
-      }
-    }
+  private static StatisticsResponse.TimeSeries newTimeSeriesPoint(String time) {
+    var point = new StatisticsResponse.TimeSeries();
+    point.setTime(time);
+    point.setCreatedCount(0);
+    point.setCreatedWithFulltextCount(0);
+    point.setCreatedInnsynskravCount(0);
+    point.setDownloadCount(0);
+    return point;
   }
 
-  private Integer extractSumAggregationValue(Aggregate aggregation, String sumAggregationName) {
+  private static int bucketDocCount(DateHistogramBucket bucket) {
+    return (int) bucket.docCount();
+  }
+
+  /**
+   * Unwrap the "filtered" sub-aggregation of a children aggregation.
+   *
+   * @param aggregation a children aggregation, or null
+   * @return the filtered sub-aggregation, or null if there is none
+   */
+  private static Aggregate childrenFiltered(Aggregate aggregation) {
+    if (aggregation != null && aggregation.isChildren()) {
+      return aggregation.children().aggregations().get("filtered");
+    }
+    return null;
+  }
+
+  private static int extractSumAggregationValue(Aggregate aggregation, String sumAggregationName) {
     if (aggregation != null && aggregation.isFilter()) {
-      var metric = aggregation.filter().aggregations().get(sumAggregationName);
-      if (metric != null && metric.isSum()) {
-        return (int) Math.round(metric.sum().value());
-      }
+      return sumValue(aggregation.filter().aggregations(), sumAggregationName);
     }
     return 0;
+  }
+
+  /** Read a sum metric from a set of sub-aggregations. Sums of integer fields are exact. */
+  private static int sumValue(Map<String, Aggregate> aggregations, String sumAggregationName) {
+    var metric = aggregations.get(sumAggregationName);
+    return metric != null && metric.isSum() ? (int) Math.round(metric.sum().value()) : 0;
   }
 }
