@@ -1,6 +1,8 @@
 package no.einnsyn.backend.tasks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.never;
@@ -8,6 +10,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
 import java.time.ZonedDateTime;
 import java.util.function.Function;
 import no.einnsyn.backend.EinnsynControllerTestBase;
@@ -15,6 +18,7 @@ import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
+import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -24,6 +28,7 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -314,5 +319,278 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     // Delete saksmappe
     response = delete("/saksmappe/" + saksmappeId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void testWithdrawnOnlyHitSendsNoMail() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    // A public Saksmappe matching "foo" registers a hit
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("offentligTittel", "foo");
+    saksmappeJSON.put("offentligTittelSensitiv", "foo");
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+
+    // Publication is withdrawn before the notification is sent
+    var updateJSON = new JSONObject();
+    updateJSON.put("accessibleAfter", ZonedDateTime.now().plusDays(1).toString());
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+
+    // No mail is sent, and the withdrawn hit is cleared so it does not linger
+    taskTestService.notifyLagretSoek();
+    verify(javaMailSender, never()).send(any(MimeMessage.class));
+    assertEquals(0, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    assertEquals(0, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
+
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void testWithdrawnHitIsLeftOutOfMail() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    // Two public Saksmapper matching "foo" register two hits
+    var keptJSON = getSaksmappeJSON();
+    keptJSON.put("offentligTittel", "foo kept");
+    keptJSON.put("offentligTittelSensitiv", "foo kept");
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", keptJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var keptDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+
+    var withdrawnJSON = getSaksmappeJSON();
+    withdrawnJSON.put("offentligTittel", "foo withdrawn");
+    withdrawnJSON.put("offentligTittelSensitiv", "foo withdrawn");
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", withdrawnJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var withdrawnDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    assertEquals(2, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+
+    // One of them is withdrawn before the notification is sent
+    var updateJSON = new JSONObject();
+    updateJSON.put("accessibleAfter", ZonedDateTime.now().plusDays(1).toString());
+    response = patch("/saksmappe/" + withdrawnDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+
+    // The mail lists only the accessible hit
+    taskTestService.notifyLagretSoek();
+    var messageCaptor = ArgumentCaptor.forClass(MimeMessage.class);
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(messageCaptor.capture()));
+    var txt = getTxtContent(messageCaptor.getValue());
+    assertTrue(txt.contains("foo kept"), txt);
+    assertFalse(txt.contains("foo withdrawn"), txt);
+    assertFalse(txt.contains(lagretSoekDTO.getLegacyQuery()), txt);
+    assertEquals(0, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+
+    response = delete("/saksmappe/" + keptDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/saksmappe/" + withdrawnDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void testSearchIsAnnouncedWhenOnlyUncachedMatchesRemain() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    // A Saksmappe that does not match "foo" itself, holding one more matching Journalpost than the
+    // hit cache keeps
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+
+    var matches = 11;
+    for (var i = 0; i < matches; i++) {
+      var journalpostJSON = getJournalpostJSON();
+      journalpostJSON.put("offentligTittel", "foo " + i);
+      journalpostJSON.put("offentligTittelSensitiv", "foo " + i);
+      response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    }
+    // Each Journalpost reindexes its Saksmappe too
+    Awaitility.await()
+        .untilAsserted(() -> verify(esClient, atLeast(2 * matches)).index(any(Function.class)));
+    resetEs();
+    assertEquals(matches, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    assertEquals(10, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
+
+    // The parent Saksmappe is withdrawn, which withdraws every cached hit. The service cannot tell
+    // whether the uncached match is still public.
+    var updateJSON = new JSONObject();
+    updateJSON.put("accessibleAfter", ZonedDateTime.now().plusDays(1).toString());
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+
+    // The search is still announced, with the remaining count and a link to the live search, but
+    // without any of the withdrawn titles
+    taskTestService.notifyLagretSoek();
+    var messageCaptor = ArgumentCaptor.forClass(MimeMessage.class);
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(messageCaptor.capture()));
+    var txt = getTxtContent(messageCaptor.getValue());
+    assertTrue(txt.contains(lagretSoekDTO.getLabel()), txt);
+    // The text template escapes "=" in the link, so match the path and the count separately
+    assertTrue(txt.contains("/sok?f"), txt);
+    assertTrue(txt.contains("(1 "), txt);
+    assertFalse(txt.contains("foo "), txt);
+    assertFalse(txt.contains("/saksmappe?id="), txt);
+    assertEquals(0, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    assertEquals(0, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
+
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void testJournalpostHitIsWithdrawnWithParentSaksmappe() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    // A Saksmappe that does not match "foo" itself
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    assertEquals(0, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+
+    // A public Journalpost in it matches, and registers a hit
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("offentligTittel", "foo");
+    journalpostJSON.put("offentligTittelSensitiv", "foo");
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(2)).index(any(Function.class)));
+    resetEs();
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+
+    // The parent Saksmappe is withdrawn before the notification is sent. The Journalpost keeps its
+    // own accessibleAfter, but is no longer public.
+    var updateJSON = new JSONObject();
+    updateJSON.put("accessibleAfter", ZonedDateTime.now().plusDays(1).toString());
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+
+    // No mail is sent, and the hit is cleared
+    taskTestService.notifyLagretSoek();
+    verify(javaMailSender, never()).send(any(MimeMessage.class));
+    assertEquals(0, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    assertEquals(0, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
+
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void testHitIsDroppedWhenEnhetIsHidden() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    // A child Enhet that the Saksmappe is filed under
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("enhetskode", "LAGRETSOEK_SKJULT");
+    response = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    // A public Saksmappe matching "foo" registers a hit
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("offentligTittel", "foo");
+    saksmappeJSON.put("offentligTittelSensitiv", "foo");
+    saksmappeJSON.put("administrativEnhet", "LAGRETSOEK_SKJULT");
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals(enhetDTO.getId(), saksmappeDTO.getAdministrativEnhetObjekt().getId());
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+
+    // The Enhet is hidden before the notification is sent
+    var enhetUpdateJSON = new JSONObject();
+    enhetUpdateJSON.put("skjult", true);
+    response = patch("/enhet/" + enhetDTO.getId(), enhetUpdateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // No mail is sent, and the hit is cleared
+    taskTestService.notifyLagretSoek();
+    verify(javaMailSender, never()).send(any(MimeMessage.class));
+    assertEquals(0, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    assertEquals(0, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
+
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/enhet/" + enhetDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  /** The mail is multipart/alternative with the text part first */
+  private String getTxtContent(MimeMessage mimeMessage) throws Exception {
+    var multipart = (MimeMultipart) mimeMessage.getContent();
+    return multipart.getBodyPart(0).getContent().toString();
   }
 }

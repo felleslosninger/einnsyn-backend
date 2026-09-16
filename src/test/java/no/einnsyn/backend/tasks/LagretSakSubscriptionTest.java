@@ -9,12 +9,14 @@ import static org.mockito.Mockito.verify;
 import com.google.gson.reflect.TypeToken;
 import jakarta.mail.internet.MimeMessage;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
+import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
@@ -144,6 +146,105 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     response = delete("/saksmappe/" + saksmappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     captureDeletedDocuments(2);
+  }
+
+  @Test
+  void testLagretSakSubscriptionIgnoresUpdatesWhileNotAccessible() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    captureIndexedDocuments(1);
+    resetEs();
+
+    var lagretSakJSON = getLagretSakJSON();
+    lagretSakJSON.put("saksmappe", saksmappeDTO.getId());
+    response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretSakJSON, accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSakDTO = gson.fromJson(response.getBody(), LagretSakDTO.class);
+
+    // Change the title and postpone publication in the same update
+    var updateJSON = new JSONObject();
+    updateJSON.put("offentligTittel", "Postponed tittel");
+    updateJSON.put("accessibleAfter", ZonedDateTime.now().plusSeconds(2).toString());
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    captureIndexedDocuments(1);
+    resetEs();
+
+    // An update that is not public must not register a hit
+    assertEquals(0, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
+    taskTestService.notifyLagretSak();
+    verify(javaMailSender, never()).send(any(MimeMessage.class));
+
+    // Once the Saksmappe is public again, the reindex reports it as newly accessible, and the
+    // subscriber is told about the update
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertEquals(
+                    HttpStatus.OK, getAnon("/saksmappe/" + saksmappeDTO.getId()).getStatusCode()));
+    taskTestService.updateOutdatedDocuments();
+    captureIndexedDocuments(1);
+    resetEs();
+    assertEquals(1, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
+    taskTestService.notifyLagretSak();
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+    assertEquals(0, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
+
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    captureDeletedDocuments(1);
+  }
+
+  @Test
+  void testLagretSakNotificationIsHeldWhileNotAccessible() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    captureIndexedDocuments(1);
+    resetEs();
+
+    var lagretSakJSON = getLagretSakJSON();
+    lagretSakJSON.put("saksmappe", saksmappeDTO.getId());
+    response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretSakJSON, accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSakDTO = gson.fromJson(response.getBody(), LagretSakDTO.class);
+
+    // A public update registers a hit
+    var updateJSON = new JSONObject();
+    updateJSON.put("offentligTittel", "Updated tittel");
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    captureIndexedDocuments(1);
+    resetEs();
+    assertEquals(1, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
+
+    // Publication is postponed before the notification is sent
+    updateJSON = new JSONObject();
+    updateJSON.put("accessibleAfter", ZonedDateTime.now().plusSeconds(2).toString());
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    captureIndexedDocuments(1);
+    resetEs();
+
+    // The notification is held, not discarded
+    taskTestService.notifyLagretSak();
+    verify(javaMailSender, never()).send(any(MimeMessage.class));
+    assertEquals(1, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
+
+    // It is delivered once the Saksmappe is public again
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              taskTestService.notifyLagretSak();
+              verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+            });
+    assertEquals(0, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
+
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    captureDeletedDocuments(1);
   }
 
   @Test
@@ -448,5 +549,56 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     captureDeletedDocuments(2);
     resetEs();
+  }
+
+  @Test
+  void testLagretSakNotificationIsDroppedWhenEnhetIsHidden() throws Exception {
+    // A child Enhet that the Saksmappe is filed under
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("enhetskode", "LAGRETSAK_SKJULT");
+    var response = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("administrativEnhet", "LAGRETSAK_SKJULT");
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals(enhetDTO.getId(), saksmappeDTO.getAdministrativEnhetObjekt().getId());
+    captureIndexedDocuments(1);
+    resetEs();
+
+    var lagretSakJSON = getLagretSakJSON();
+    lagretSakJSON.put("saksmappe", saksmappeDTO.getId());
+    response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretSakJSON, accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSakDTO = gson.fromJson(response.getBody(), LagretSakDTO.class);
+
+    // A public update registers a hit
+    var updateJSON = new JSONObject();
+    updateJSON.put("offentligTittel", "Updated tittel");
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    captureIndexedDocuments(1);
+    resetEs();
+    assertEquals(1, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
+
+    // The Enhet is hidden before the notification is sent
+    var enhetUpdateJSON = new JSONObject();
+    enhetUpdateJSON.put("skjult", true);
+    response = patch("/enhet/" + enhetDTO.getId(), enhetUpdateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // The hit is dropped, not held
+    taskTestService.notifyLagretSak();
+    verify(javaMailSender, never()).send(any(MimeMessage.class));
+    assertEquals(0, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
+
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    captureDeletedDocuments(1);
+    response = delete("/enhet/" + enhetDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 }

@@ -20,6 +20,8 @@ import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.ApiKeyRepository;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.UniqueFieldMatch;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
@@ -332,6 +334,19 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
   @Transactional(readOnly = true)
   public boolean isSkjult(String enhetId) {
     return repository.isSkjult(enhetId);
+  }
+
+  /**
+   * Check if an object belongs to a hidden Enhet, using the same Enhet as the search index and the
+   * subscription matcher.
+   *
+   * @param object The object to check
+   * @return True if the object's Enhet, or any of its ancestors, is hidden
+   */
+  @Transactional(readOnly = true)
+  public boolean isSkjult(ArkivBase object) {
+    var enhet = ArkivBaseService.getAdministrativEnhet(object);
+    return enhet != null && isSkjult(enhet.getId());
   }
 
   /** Find hidden Enhet objects. */
