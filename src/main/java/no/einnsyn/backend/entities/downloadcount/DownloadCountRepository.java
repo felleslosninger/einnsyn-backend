@@ -14,13 +14,42 @@ public interface DownloadCountRepository
     extends BaseRepository<DownloadCount>, IndexableRepository<DownloadCount> {
 
   /**
-   * Atomically create or increment the hourly download bucket for a Dokumentobjekt.
+   * Atomically increment an existing hourly download bucket for a Dokumentobjekt.
    *
    * <p>This runs on the download hot path, where concurrent downloads of the same Dokumentobjekt
    * within the same hour are expected. A read-modify-write through JPA would let those requests
    * read the same count and write the same incremented value, losing downloads and failing requests
-   * on optimistic lock conflicts. The unique index on (dokumentobjekt__id, bucket_start) instead
-   * turns the conflict into a single atomic increment, so no retry is needed.
+   * on optimistic lock conflicts. A single atomic increment needs no retry.
+   *
+   * <p>See {@link #insertOrIncrementCount} for why {@code _updated} uses {@code clock_timestamp()}.
+   *
+   * @param dokumentobjektId the dokumentobjekt being downloaded
+   * @param bucketStart start of the hourly bucket
+   * @return the number of buckets incremented: 1 if the bucket exists, 0 if it must be created
+   */
+  @Modifying
+  @Query(
+      value =
+          """
+          UPDATE dokumentobjekt_download_stat
+          SET download_count = download_count + 1,
+              _updated = clock_timestamp(),
+              lock_version = lock_version + 1
+          WHERE dokumentobjekt__id = :dokumentobjektId AND bucket_start = :bucketStart
+          """,
+      nativeQuery = true)
+  @Transactional
+  int incrementCount(String dokumentobjektId, Instant bucketStart);
+
+  /**
+   * Atomically create the hourly download bucket for a Dokumentobjekt, or increment it if another
+   * request created it first.
+   *
+   * <p>Callers try {@link #incrementCount} first and only come here when no bucket exists yet,
+   * since the parent and Enhet to attribute the bucket to have to be resolved before the insert.
+   * Two requests can still both miss and both insert; the unique index on (dokumentobjekt__id,
+   * bucket_start) turns the second insert into an increment, so no download is lost and the first
+   * request's attribution stands.
    *
    * <p>A native insert bypasses JPA's lifecycle callbacks, so this query fills in by hand what
    * {@link no.einnsyn.backend.entities.base.models.Base}'s {@code @PrePersist} used to set: {@code
@@ -41,15 +70,17 @@ public interface DownloadCountRepository
    * @param id id to use if a new bucket is created
    * @param dokumentobjektId the dokumentobjekt being downloaded
    * @param bucketStart start of the hourly bucket
+   * @param parentId the Journalpost, Moetesak or Moetemappe to attribute the bucket to, may be null
+   * @param enhetId the Enhet to attribute the bucket to, may be null
    */
   @Modifying
   @Query(
       value =
           """
           INSERT INTO dokumentobjekt_download_stat
-            (_id, dokumentobjekt__id, bucket_start, download_count,
+            (_id, dokumentobjekt__id, bucket_start, download_count, parent__id, enhet__id,
              _created, _updated, _accessible_after, lock_version)
-          VALUES (:id, :dokumentobjektId, :bucketStart, 1,
+          VALUES (:id, :dokumentobjektId, :bucketStart, 1, :parentId, :enhetId,
                   now(), clock_timestamp(), now(), 0)
           ON CONFLICT (dokumentobjekt__id, bucket_start) DO UPDATE
           SET download_count = dokumentobjekt_download_stat.download_count + 1,
@@ -58,7 +89,8 @@ public interface DownloadCountRepository
           """,
       nativeQuery = true)
   @Transactional
-  void incrementCount(String id, String dokumentobjektId, Instant bucketStart);
+  void insertOrIncrementCount(
+      String id, String dokumentobjektId, Instant bucketStart, String parentId, String enhetId);
 
   @Query("SELECT id FROM DownloadCount WHERE dokumentobjektId = :dokumentobjektId")
   Stream<String> streamIdByDokumentobjektId(String dokumentobjektId);

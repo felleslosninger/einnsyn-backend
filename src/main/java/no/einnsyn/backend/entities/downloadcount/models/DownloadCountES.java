@@ -1,5 +1,6 @@
 package no.einnsyn.backend.entities.downloadcount.models;
 
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.entities.base.models.BaseES;
@@ -8,6 +9,8 @@ import no.einnsyn.backend.entities.base.models.BaseES;
 @Setter
 public class DownloadCountES extends BaseES {
   private Integer count;
+  private String administrativEnhet;
+  private List<String> administrativEnhetTransitive;
   private DownloadCountRelation statRelation;
 
   @Getter

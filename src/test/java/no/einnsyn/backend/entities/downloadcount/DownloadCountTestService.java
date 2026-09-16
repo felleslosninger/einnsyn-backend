@@ -1,5 +1,7 @@
 package no.einnsyn.backend.entities.downloadcount;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -7,6 +9,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.entities.downloadcount.models.DownloadCount;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +23,27 @@ public class DownloadCountTestService {
 
   @Autowired private DownloadCountRepository downloadCountRepository;
   @Autowired private DownloadCountService downloadCountService;
+  @Autowired private ElasticsearchClient esClient;
+
+  @Value("${application.elasticsearch.index}")
+  private String elasticsearchIndex;
+
+  /**
+   * Remove every download bucket from the database and the index.
+   *
+   * <p>Buckets are standalone statistics and deliberately survive the deletion of the fixtures a
+   * test creates, so tests that download something must clean them up themselves to satisfy the row
+   * and document count checks in EinnsynTestBase.
+   */
+  @Transactional
+  public void deleteAll() throws IOException {
+    esClient.deleteByQuery(
+        d ->
+            d.index(elasticsearchIndex)
+                .query(q -> q.term(t -> t.field("type").value("DownloadCount")))
+                .refresh(true));
+    downloadCountRepository.deleteAll();
+  }
 
   /** All hourly buckets recorded for a Dokumentobjekt. */
   @Transactional(readOnly = true)

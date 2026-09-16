@@ -73,6 +73,7 @@ class DownloadCountRepositoryTest extends EinnsynControllerTestBase {
 
   @AfterEach
   void cleanup() throws Exception {
+    downloadCountTestService.deleteAll();
     if (saksmappeDTO != null) {
       assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
     }

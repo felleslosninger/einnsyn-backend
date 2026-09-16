@@ -2,36 +2,39 @@ package no.einnsyn.backend.entities.downloadcount;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
-import co.elastic.clients.util.ObjectBuilder;
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Function;
+import java.util.Optional;
 import java.util.stream.Stream;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.backend.entities.downloadcount.models.DownloadCount;
 import no.einnsyn.backend.entities.downloadcount.models.DownloadCountES;
+import no.einnsyn.backend.entities.enhet.EnhetService;
+import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.journalpost.JournalpostRepository;
+import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.moetedokument.MoetedokumentRepository;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
+import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
 import org.springframework.test.util.ReflectionTestUtils;
 
 class DownloadCountServiceTest {
+
+  private static final String DOKUMENTOBJEKT_ID = "do_01jxyz123456789abcdefghij";
+  private static final String DOKUMENTBESKRIVELSE_ID = "db_01jxyz123456789abcdefghij";
 
   private DownloadCountRepository repository;
   private DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
@@ -39,7 +42,7 @@ class DownloadCountServiceTest {
   private MoetedokumentRepository moetedokumentRepository;
   private MoetemappeRepository moetemappeRepository;
   private MoetesakRepository moetesakRepository;
-  private ElasticsearchClient esClient;
+  private EnhetService enhetService;
   private DownloadCountService downloadCountService;
 
   @BeforeEach
@@ -50,7 +53,7 @@ class DownloadCountServiceTest {
     moetedokumentRepository = mock(MoetedokumentRepository.class);
     moetemappeRepository = mock(MoetemappeRepository.class);
     moetesakRepository = mock(MoetesakRepository.class);
-    esClient = mock(ElasticsearchClient.class);
+    enhetService = mock(EnhetService.class);
     downloadCountService =
         new DownloadCountService(
             repository,
@@ -59,99 +62,24 @@ class DownloadCountServiceTest {
             moetedokumentRepository,
             moetemappeRepository,
             moetesakRepository);
-    ReflectionTestUtils.setField(downloadCountService, "esClient", esClient);
-    ReflectionTestUtils.setField(downloadCountService, "elasticsearchIndex", "test-index");
+    ReflectionTestUtils.setField(downloadCountService, "enhetService", enhetService);
+  }
+
+  private static Enhet enhet(String id) {
+    var enhet = new Enhet();
+    enhet.setId(id);
+    return enhet;
   }
 
   @Test
-  void shouldReturnJournalpostWhenDokumentbeskrivelseBelongsToJournalpost() {
-    var dokumentobjektId = "do_01jxyz123456789abcdefghij";
-    var dokumentbeskrivelseId = "db_01jxyz123456789abcdefghij";
-    var journalpostId = "jp_01jxyz123456789abcdefghij";
-    var downloadCount = new DownloadCount();
-    downloadCount.setDokumentobjektId(dokumentobjektId);
+  void recordDownloadShouldOnlyIncrementWhenBucketExists() {
+    when(repository.incrementCount(eq(DOKUMENTOBJEKT_ID), any())).thenReturn(1);
 
-    when(dokumentbeskrivelseRepository.findIdByDokumentobjektId(dokumentobjektId))
-        .thenReturn(dokumentbeskrivelseId);
-    when(journalpostRepository.streamIdByDokumentbeskrivelseId(dokumentbeskrivelseId))
-        .thenReturn(Stream.of(journalpostId));
+    downloadCountService.recordDownload(DOKUMENTOBJEKT_ID);
 
-    assertEquals(journalpostId, downloadCountService.getESParent(downloadCount, "dc_1"));
-  }
-
-  @Test
-  void shouldReturnMoetemappeWhenDokumentbeskrivelseBelongsToMoetedokument() {
-    var dokumentobjektId = "do_01jxyz123456789abcdefghij";
-    var dokumentbeskrivelseId = "db_01jxyz123456789abcdefghij";
-    var moetedokumentId = "md_01jxyz123456789abcdefghij";
-    var moetemappeId = "mm_01jxyz123456789abcdefghij";
-    var downloadCount = new DownloadCount();
-    downloadCount.setDokumentobjektId(dokumentobjektId);
-
-    when(dokumentbeskrivelseRepository.findIdByDokumentobjektId(dokumentobjektId))
-        .thenReturn(dokumentbeskrivelseId);
-    when(journalpostRepository.streamIdByDokumentbeskrivelseId(dokumentbeskrivelseId))
-        .thenReturn(Stream.empty());
-    when(moetesakRepository.streamIdByDokumentbeskrivelseId(dokumentbeskrivelseId))
-        .thenReturn(Stream.empty());
-    when(moetesakRepository.streamIdByUtredningsdokumentId(dokumentbeskrivelseId))
-        .thenReturn(Stream.empty());
-    when(moetesakRepository.streamIdByVedtaksdokumentId(dokumentbeskrivelseId))
-        .thenReturn(Stream.empty());
-    when(moetedokumentRepository.streamIdByDokumentbeskrivelseId(dokumentbeskrivelseId))
-        .thenReturn(Stream.of(moetedokumentId));
-    when(moetemappeRepository.findIdByMoetedokumentId(moetedokumentId)).thenReturn(moetemappeId);
-
-    assertEquals(moetemappeId, downloadCountService.getESParent(downloadCount, "dc_1"));
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  void shouldReturnParentFromElasticsearchWhenDatabaseLookupReturnsNull() throws Exception {
-    var dokumentobjektId = "do_01jxyz123456789abcdefghij";
-    var downloadCountId = "dc_01jxyz123456789abcdefghij";
-    var esParentId = "jp_01jxyz123456789fallback123";
-    var downloadCount = new DownloadCount();
-    var searchResponse = (SearchResponse<Void>) mock(SearchResponse.class);
-    var hitsMetadata = (HitsMetadata<Void>) mock(HitsMetadata.class);
-    var hit = (Hit<Void>) mock(Hit.class);
-
-    downloadCount.setDokumentobjektId(dokumentobjektId);
-
-    when(dokumentbeskrivelseRepository.findIdByDokumentobjektId(dokumentobjektId)).thenReturn(null);
-    when(esClient.search(
-            ArgumentMatchers.<Function<SearchRequest.Builder, ObjectBuilder<SearchRequest>>>any(),
-            eq(Void.class)))
-        .thenReturn(searchResponse);
-    when(searchResponse.hits()).thenReturn(hitsMetadata);
-    when(hitsMetadata.hits()).thenReturn(List.of(hit));
-    when(hit.routing()).thenReturn(esParentId);
-
-    assertEquals(esParentId, downloadCountService.getESParent(downloadCount, downloadCountId));
-
-    // Refreshing the whole shared index per document is what made deletes expensive.
-    verify(esClient, never()).indices();
-  }
-
-  @Test
-  void toLegacyESShouldUseResolvedParentWithoutResolvingAgain() {
-    var now = Instant.now();
-    var esParentId = "jp_01jxyz123456789abcdefghij";
-    var downloadCount = new DownloadCount();
-    downloadCount.setId("dc_01jxyz123456789abcdefghij");
-    downloadCount.setDokumentobjektId("do_01jxyz123456789abcdefghij");
-    downloadCount.setCount(7);
-    downloadCount.setCreated(now);
-    downloadCount.setUpdated(now);
-
-    var es = (DownloadCountES) downloadCountService.toLegacyES(downloadCount, esParentId);
-
-    assertEquals(7, es.getCount());
-    assertEquals(esParentId, es.getStatRelation().getParent());
-    assertEquals("download", es.getStatRelation().getName());
-
-    // index() has already resolved the parent. Resolving it again here is what doubled the
-    // repository round trips for every indexed download.
+    // The common case must stay a single statement, without resolving the parent again.
+    verify(repository, never())
+        .insertOrIncrementCount(anyString(), anyString(), any(), any(), any());
     verifyNoInteractions(
         dokumentbeskrivelseRepository,
         journalpostRepository,
@@ -161,22 +89,111 @@ class DownloadCountServiceTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
-  void shouldReturnNullWithoutThrowingWhenNoEsDocumentExists() throws Exception {
-    var downloadCountId = "dc_01jxyz123456789abcdefghij";
-    var emptyResponse = (SearchResponse<Void>) mock(SearchResponse.class);
-    var emptyHits = (HitsMetadata<Void>) mock(HitsMetadata.class);
+  void recordDownloadShouldAttributeNewBucketToJournalpostAndItsEnhet() {
+    var journalpostId = "jp_01jxyz123456789abcdefghij";
+    var enhetId = "enh_01jxyz123456789abcdefghij";
+    var journalpost = new Journalpost();
+    journalpost.setId(journalpostId);
+    journalpost.setAdministrativEnhetObjekt(enhet(enhetId));
 
-    when(esClient.search(
-            ArgumentMatchers.<Function<SearchRequest.Builder, ObjectBuilder<SearchRequest>>>any(),
-            eq(Void.class)))
-        .thenReturn(emptyResponse);
-    when(emptyResponse.hits()).thenReturn(emptyHits);
-    when(emptyHits.hits()).thenReturn(List.of());
+    when(repository.incrementCount(eq(DOKUMENTOBJEKT_ID), any())).thenReturn(0);
+    when(dokumentbeskrivelseRepository.findIdByDokumentobjektId(DOKUMENTOBJEKT_ID))
+        .thenReturn(DOKUMENTBESKRIVELSE_ID);
+    when(journalpostRepository.streamIdByDokumentbeskrivelseId(DOKUMENTBESKRIVELSE_ID))
+        .thenReturn(Stream.of(journalpostId));
+    when(journalpostRepository.findById(journalpostId)).thenReturn(Optional.of(journalpost));
 
-    // A count deleted before the hourly reindex ran has no document and no parent. This must not
-    // raise, and must not fall back to refreshing the index.
-    assertNull(downloadCountService.getESParent(null, downloadCountId));
-    verify(esClient, never()).indices();
+    downloadCountService.recordDownload(DOKUMENTOBJEKT_ID);
+
+    verify(repository)
+        .insertOrIncrementCount(
+            anyString(), eq(DOKUMENTOBJEKT_ID), any(), eq(journalpostId), eq(enhetId));
+  }
+
+  @Test
+  void recordDownloadShouldAttributeMoetedokumentFileToMoetemappeAndItsUtvalg() {
+    var moetedokumentId = "md_01jxyz123456789abcdefghij";
+    var moetemappeId = "mm_01jxyz123456789abcdefghij";
+    var utvalgId = "enh_01jxyz123456789utvalg000";
+    var moetemappe = new Moetemappe();
+    moetemappe.setId(moetemappeId);
+    moetemappe.setUtvalgObjekt(enhet(utvalgId));
+
+    when(repository.incrementCount(eq(DOKUMENTOBJEKT_ID), any())).thenReturn(0);
+    when(dokumentbeskrivelseRepository.findIdByDokumentobjektId(DOKUMENTOBJEKT_ID))
+        .thenReturn(DOKUMENTBESKRIVELSE_ID);
+    when(journalpostRepository.streamIdByDokumentbeskrivelseId(DOKUMENTBESKRIVELSE_ID))
+        .thenReturn(Stream.empty());
+    when(moetesakRepository.streamIdByDokumentbeskrivelseId(DOKUMENTBESKRIVELSE_ID))
+        .thenReturn(Stream.empty());
+    when(moetesakRepository.streamIdByUtredningsdokumentId(DOKUMENTBESKRIVELSE_ID))
+        .thenReturn(Stream.empty());
+    when(moetesakRepository.streamIdByVedtaksdokumentId(DOKUMENTBESKRIVELSE_ID))
+        .thenReturn(Stream.empty());
+    when(moetedokumentRepository.streamIdByDokumentbeskrivelseId(DOKUMENTBESKRIVELSE_ID))
+        .thenReturn(Stream.of(moetedokumentId));
+    when(moetemappeRepository.findIdByMoetedokumentId(moetedokumentId)).thenReturn(moetemappeId);
+    when(moetemappeRepository.findById(moetemappeId)).thenReturn(Optional.of(moetemappe));
+
+    downloadCountService.recordDownload(DOKUMENTOBJEKT_ID);
+
+    verify(repository)
+        .insertOrIncrementCount(
+            anyString(), eq(DOKUMENTOBJEKT_ID), any(), eq(moetemappeId), eq(utvalgId));
+  }
+
+  @Test
+  void recordDownloadShouldStillCountWhenNoParentCanBeResolved() {
+    when(repository.incrementCount(eq(DOKUMENTOBJEKT_ID), any())).thenReturn(0);
+    when(dokumentbeskrivelseRepository.findIdByDokumentobjektId(DOKUMENTOBJEKT_ID))
+        .thenReturn(null);
+
+    downloadCountService.recordDownload(DOKUMENTOBJEKT_ID);
+
+    verify(repository)
+        .insertOrIncrementCount(anyString(), eq(DOKUMENTOBJEKT_ID), any(), isNull(), isNull());
+  }
+
+  @Test
+  void getESParentShouldUseTheStoredParent() {
+    var downloadCount = new DownloadCount();
+    downloadCount.setParentId("jp_01jxyz123456789abcdefghij");
+
+    assertEquals(
+        "jp_01jxyz123456789abcdefghij", downloadCountService.getESParent(downloadCount, "dc_1"));
+    // No stored parent, or no row at all, means no routing. Nothing is looked up.
+    assertNull(downloadCountService.getESParent(new DownloadCount(), "dc_1"));
+    assertNull(downloadCountService.getESParent(null, "dc_1"));
+    verifyNoInteractions(
+        dokumentbeskrivelseRepository,
+        journalpostRepository,
+        moetesakRepository,
+        moetedokumentRepository,
+        moetemappeRepository);
+  }
+
+  @Test
+  void toLegacyESShouldCarryParentAndEnhet() {
+    var now = Instant.now();
+    var esParentId = "jp_01jxyz123456789abcdefghij";
+    var enhet = enhet("enh_01jxyz123456789abcdefghij");
+    var parentEnhet = enhet("enh_01jxyz123456789parent000");
+    var downloadCount = new DownloadCount();
+    downloadCount.setId("dc_01jxyz123456789abcdefghij");
+    downloadCount.setDokumentobjektId(DOKUMENTOBJEKT_ID);
+    downloadCount.setCount(7);
+    downloadCount.setCreated(now);
+    downloadCount.setUpdated(now);
+    downloadCount.setParentId(esParentId);
+    downloadCount.setEnhet(enhet);
+    when(enhetService.getTransitiveEnhets(enhet)).thenReturn(List.of(enhet, parentEnhet));
+
+    var es = (DownloadCountES) downloadCountService.toLegacyES(downloadCount);
+
+    assertEquals(7, es.getCount());
+    assertEquals(esParentId, es.getStatRelation().getParent());
+    assertEquals("download", es.getStatRelation().getName());
+    assertEquals(enhet.getId(), es.getAdministrativEnhet());
+    assertEquals(List.of(enhet.getId(), parentEnhet.getId()), es.getAdministrativEnhetTransitive());
   }
 }

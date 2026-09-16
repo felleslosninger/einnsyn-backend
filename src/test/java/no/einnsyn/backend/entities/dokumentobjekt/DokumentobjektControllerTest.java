@@ -65,6 +65,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   private ArkivDTO arkivDTO;
   private ArkivdelDTO arkivdelDTO;
   private SaksmappeDTO saksmappeDTO;
+  private JournalpostDTO journalpostDTO;
   private DokumentbeskrivelseDTO dokumentbeskrivelseDTO;
   private DokumentobjektDTO dokumentobjektDTO;
 
@@ -86,7 +87,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
     response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
     response =
         post(
@@ -108,6 +109,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
   @AfterEach
   void cleanup() throws Exception {
+    // Download buckets outlive the fixtures below, so they are removed explicitly
+    downloadCountTestService.deleteAll();
     if (saksmappeDTO != null) {
       var response = delete("/saksmappe/" + saksmappeDTO.getId());
       assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -246,12 +249,46 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
+    var bucket = downloadCountTestService.findBuckets(moetedokumentDokobjDTO.getId()).getFirst();
+    assertEquals(moetemappeDTO.getId(), bucket.getParentId());
+    assertNotNull(bucket.getEnhet());
+
     var statisticsResponse = getStatistics("Moetemappe");
     assertEquals(1, statisticsResponse.getSummary().getDownloadCount());
     assertEquals(1, sumDownloadCount(statisticsResponse));
 
     // The Journalpost in this test's fixture has no downloads, so the count is not leaking across.
     assertEquals(0, getJournalpostStatistics().getSummary().getDownloadCount());
+  }
+
+  @Test
+  void downloadStatisticsShouldSurviveDeletingTheDokumentobjekt() throws Exception {
+    try (var _ = startPdfProxy()) {
+      var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    // The download happened; deleting the file afterwards must not erase that.
+    assertEquals(
+        HttpStatus.OK, delete("/dokumentobjekt/" + dokumentobjektDTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/dokumentobjekt/" + dokumentobjektDTO.getId()).getStatusCode());
+
+    var buckets = downloadCountTestService.findBuckets(dokumentobjektDTO.getId());
+    assertEquals(1, buckets.size());
+    var bucket = buckets.getFirst();
+    assertEquals(1, bucket.getCount());
+
+    // The bucket carries its own attribution, captured while the file still existed
+    var journalpost = journalpostRepository.findById(journalpostDTO.getId()).orElseThrow();
+    assertEquals(journalpostDTO.getId(), bucket.getParentId());
+    assertNotNull(bucket.getEnhet());
+    assertEquals(journalpost.getAdministrativEnhetObjekt().getId(), bucket.getEnhet().getId());
+
+    // ...so it still counts for the Journalpost it belonged to
+    var statisticsResponse = getJournalpostStatistics();
+    assertEquals(1, statisticsResponse.getSummary().getDownloadCount());
+    assertEquals(1, sumDownloadCount(statisticsResponse));
   }
 
   @Test

@@ -13,6 +13,7 @@ import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.UniqueFieldMatch;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.base.models.BaseES;
+import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
@@ -129,22 +130,33 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
     return super.toDTO(object, dto, expandPaths, currentPath);
   }
 
+  /**
+   * The Enhet an object is attributed to in Elasticsearch, i.e. what the administrativEnhet filters
+   * match against. Anything that should be attributed the same way as the object it belongs to,
+   * such as download statistics, must use this rule.
+   *
+   * @param object the object to resolve the Enhet for
+   * @return the Enhet, or null if none is set
+   */
+  public static Enhet getAdministrativEnhet(ArkivBase object) {
+    return switch (object) {
+      case Saksmappe saksmappe -> saksmappe.getAdministrativEnhetObjekt();
+      case Moetemappe moetemappe -> moetemappe.getUtvalgObjekt();
+      case Journalpost journalpost -> journalpost.getAdministrativEnhetObjekt();
+      case Moetesak moetesak ->
+          moetesak.getMoetemappe() != null
+              ? moetesak.getMoetemappe().getUtvalgObjekt()
+              : moetesak.getUtvalgObjekt();
+      case Moetedokument moetedokument -> moetedokument.getMoetemappe().getUtvalgObjekt();
+      default -> object.getJournalenhet();
+    };
+  }
+
   @Override
   protected BaseES toLegacyES(O object, BaseES es) {
     super.toLegacyES(object, es);
     if (es instanceof ArkivBaseES arkivBaseES) {
-      var enhet =
-          switch (object) {
-            case Saksmappe saksmappe -> saksmappe.getAdministrativEnhetObjekt();
-            case Moetemappe moetemappe -> moetemappe.getUtvalgObjekt();
-            case Journalpost journalpost -> journalpost.getAdministrativEnhetObjekt();
-            case Moetesak moetesak ->
-                moetesak.getMoetemappe() != null
-                    ? moetesak.getMoetemappe().getUtvalgObjekt()
-                    : moetesak.getUtvalgObjekt();
-            case Moetedokument moetedokument -> moetedokument.getMoetemappe().getUtvalgObjekt();
-            default -> object.getJournalenhet();
-          };
+      var enhet = getAdministrativEnhet(object);
       if (enhet == null) {
         log.error("No enhet found for {}:{}", objectClassName, object.getId());
       } else {
