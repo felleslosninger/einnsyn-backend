@@ -103,6 +103,21 @@ class ElasticsearchIndexCreatorTest extends EinnsynTestBase {
   }
 
   @Test
+  void updateMappingsShouldKeepFieldsTheFileNoLongerDeclares() throws Exception {
+    var current = ElasticsearchIndexCreator.readMappings();
+    var properties = new HashMap<>(current.properties());
+    properties.put("legacyField", Property.of(p -> p.keyword(k -> k)));
+    createIndex(TypeMapping.of(m -> m.dynamic(current.dynamic()).properties(properties)));
+
+    // A mapping update is additive: it neither removes the field nor fails. This is why the update
+    // path is documented as additive-only, and why such drift is only warned about.
+    ElasticsearchIndexCreator.updateMappings(esClient, aliasName);
+
+    assertTrue(indexedProperties().containsKey("legacyField"));
+    assertTrue(indexedProperties().containsKey("count"));
+  }
+
+  @Test
   void updateMappingsShouldFailOnIncompatibleChanges() throws Exception {
     createIndex(mappingsWithCount(Property.of(p -> p.keyword(k -> k))));
 

@@ -9,6 +9,7 @@ import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.TreeSet;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 
@@ -63,15 +64,21 @@ public class ElasticsearchIndexCreator {
    * <p>{@link #maybeCreateIndex} only reads the mappings when it creates a new index, and the
    * mappings are {@code dynamic: false}, so a field added to the mappings file would otherwise be
    * silently ignored by every existing index: the value ends up in {@code _source} but is neither
-   * searchable nor aggregatable. Putting the mappings on startup closes that gap for additive
-   * changes, which Elasticsearch accepts on an open index: new fields, new children of a join
-   * field, and re-stating existing fields unchanged.
+   * searchable nor aggregatable. Putting the mappings on startup closes that gap.
    *
-   * <p>Anything else — changing a field's type or analyzer, removing a field, renaming a join
-   * parent, or referencing an analyzer the index settings lack — is rejected by Elasticsearch and
-   * fails startup. That is deliberate: such a change needs a new index and a reindex (see
-   * scripts/elasticsearch/updateIndices.sh for settings changes), and code assuming a mapping the
-   * index does not have is exactly the silent failure this method exists to prevent.
+   * <p>This is an additive-only update path, because that is all a mapping update can be:
+   *
+   * <ul>
+   *   <li>New fields, new children of a join field, and unchanged existing fields are applied.
+   *   <li>Changing a field's type or analyzer, or referencing an analyzer the index settings lack,
+   *       is rejected by Elasticsearch and fails startup. That is deliberate: such a change needs a
+   *       new index and a reindex (see scripts/elasticsearch/updateIndices.sh for settings
+   *       changes), and code assuming a mapping the index does not have is exactly the silent
+   *       failure this method exists to prevent.
+   *   <li>Fields removed from or renamed in the mappings file are <em>not</em> removed from the
+   *       index; a mapping update never drops fields. The index keeps the old field and startup
+   *       succeeds, so such drift is logged as a warning instead.
+   * </ul>
    *
    * @param esClient the Elasticsearch client
    * @param aliasName the index or alias to update
@@ -85,8 +92,29 @@ public class ElasticsearchIndexCreator {
           .putMapping(
               b ->
                   b.index(aliasName).dynamic(mappings.dynamic()).properties(mappings.properties()));
+      warnAboutUndeclaredFields(esClient, aliasName, mappings);
     } catch (IOException e) {
       throw new RuntimeException("Failed to update mappings for: " + aliasName, e);
+    }
+  }
+
+  /**
+   * Log the fields an index has that the mappings file no longer declares. A mapping update cannot
+   * remove them, so this is the only visibility a removed or renamed field gets.
+   */
+  private static void warnAboutUndeclaredFields(
+      ElasticsearchClient esClient, String aliasName, TypeMapping mappings) throws IOException {
+    var response = esClient.indices().getMapping(g -> g.index(aliasName));
+    for (var entry : response.mappings().entrySet()) {
+      var undeclared = new TreeSet<>(entry.getValue().mappings().properties().keySet());
+      undeclared.removeAll(mappings.properties().keySet());
+      if (!undeclared.isEmpty()) {
+        log.warn(
+            "Index {} has fields not declared in indexMappings.json, which a mapping update cannot"
+                + " remove: {}",
+            entry.getKey(),
+            undeclared);
+      }
     }
   }
 
