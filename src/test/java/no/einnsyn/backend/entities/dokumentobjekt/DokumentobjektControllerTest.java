@@ -176,9 +176,36 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
-    var statisticsResponse = getTodayJournalpostStatistics();
+    var statisticsResponse = getJournalpostStatistics();
     assertEquals(1, statisticsResponse.getSummary().getDownloadCount());
     assertEquals(1, sumDownloadCount(statisticsResponse));
+  }
+
+  @Test
+  void downloadByExternalIdShouldRecordStatisticsOnInternalId() throws Exception {
+    var externalId = "external-download-id";
+    var dokumentobjektJSON = getDokumentobjektJSON();
+    dokumentobjektJSON.put("referanseDokumentfil", SOURCE_URL);
+    dokumentobjektJSON.put("externalId", externalId);
+    var response =
+        post(
+            "/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId() + "/dokumentobjekt",
+            dokumentobjektJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var externalDokumentobjektDTO = gson.fromJson(response.getBody(), DokumentobjektDTO.class);
+
+    try (var _ = startPdfProxy()) {
+      response = get("/dokumentobjekt/" + externalId + "/download");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    // The path variable is resolved to the internal id before it reaches the service. The bucket
+    // must be keyed by that id, otherwise parent resolution and cleanup on delete never find it.
+    assertEquals(1, downloadCountTestService.getDownloadCount(externalDokumentobjektDTO.getId()));
+    assertEquals(0, downloadCountTestService.getDownloadCount(externalId));
+
+    var statisticsResponse = getJournalpostStatistics();
+    assertEquals(1, statisticsResponse.getSummary().getDownloadCount());
   }
 
   @Test
@@ -193,7 +220,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       assertEquals(2, proxy.requests().size());
     }
 
-    var statisticsResponse = getTodayJournalpostStatistics();
+    var statisticsResponse = getJournalpostStatistics();
     assertEquals(2, statisticsResponse.getSummary().getDownloadCount());
     assertEquals(2, sumDownloadCount(statisticsResponse));
   }
@@ -244,7 +271,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
-    var statisticsResponse = getTodayJournalpostStatistics();
+    var statisticsResponse = getJournalpostStatistics();
     assertEquals(expectedDownloads + 1, statisticsResponse.getSummary().getDownloadCount());
     assertEquals(expectedDownloads + 1, sumDownloadCount(statisticsResponse));
   }
@@ -339,7 +366,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       assertEquals(1, proxyRequests.size());
     }
 
-    var statisticsResponse = getTodayJournalpostStatistics();
+    var statisticsResponse = getJournalpostStatistics();
     assertEquals(1, statisticsResponse.getSummary().getDownloadCount());
     assertEquals(1, sumDownloadCount(statisticsResponse));
   }
@@ -545,11 +572,14 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     ReflectionTestUtils.setField(target, "downloadProxyPort", port);
   }
 
-  private StatisticsResponse getTodayJournalpostStatistics() throws Exception {
+  private StatisticsResponse getJournalpostStatistics() throws Exception {
     esClient.indices().refresh(r -> r.index(elasticsearchIndex));
-    var today = LocalDate.now().toString();
+    // The statistics endpoint interprets the dates as UTC, while the buckets were created just now
+    // in local time. Pad the range by a day on each side so this does not fail around midnight.
+    var from = LocalDate.now().minusDays(1).toString();
+    var to = LocalDate.now().plusDays(1).toString();
     var response =
-        get("/statistics?aggregateFrom=" + today + "&aggregateTo=" + today + "&entity=Journalpost");
+        get("/statistics?aggregateFrom=" + from + "&aggregateTo=" + to + "&entity=Journalpost");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     return gson.fromJson(response.getBody(), StatisticsResponse.class);
   }
