@@ -34,6 +34,7 @@ import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.tasks.TaskTestService;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,6 +60,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   private String baseUrl;
 
   @Autowired private DownloadCountTestService downloadCountTestService;
+  @Autowired private TaskTestService taskTestService;
 
   private ArkivDTO arkivDTO;
   private ArkivdelDTO arkivdelDTO;
@@ -300,24 +302,15 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       assertEquals(expectedDownloads, proxy.requests().size());
     }
 
-    // Let every index task from the concurrent downloads finish before adding another one below.
-    awaitSideEffects();
-
     // A read-modify-write would lose downloads here, and would also fail requests outright once
     // the optimistic locking retries were exhausted.
     assertEquals(expectedDownloads, downloadCountTestService.getDownloadCount(dokumentobjektId));
 
-    // The concurrent requests index the same bucket in parallel, so whichever one finishes last
-    // decides what Elasticsearch holds. One more download, indexed on its own, brings the indexed
-    // count back in step with the database.
-    try (var _ = startPdfProxy()) {
-      var response = get("/dokumentobjekt/" + dokumentobjektId + "/download");
-      assertEquals(HttpStatus.OK, response.getStatusCode());
-    }
-
+    // The bucket is indexed once by the reindex scheduler, after all increments, so Elasticsearch
+    // holds the final count rather than whichever concurrent index run happened to finish last.
     var statisticsResponse = getJournalpostStatistics();
-    assertEquals(expectedDownloads + 1, statisticsResponse.getSummary().getDownloadCount());
-    assertEquals(expectedDownloads + 1, sumDownloadCount(statisticsResponse));
+    assertEquals(expectedDownloads, statisticsResponse.getSummary().getDownloadCount());
+    assertEquals(expectedDownloads, sumDownloadCount(statisticsResponse));
   }
 
   @Test
@@ -621,6 +614,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   private StatisticsResponse getStatistics(String entity) throws Exception {
+    // Downloads are not indexed per request; the hourly reindex scheduler picks up the buckets.
+    taskTestService.updateOutdatedDocuments();
     esClient.indices().refresh(r -> r.index(elasticsearchIndex));
     // The statistics endpoint interprets the dates as UTC, while the buckets were created just now
     // in local time. Pad the range by a day on each side so this does not fail around midnight.

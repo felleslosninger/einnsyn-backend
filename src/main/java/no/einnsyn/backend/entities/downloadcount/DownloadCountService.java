@@ -79,20 +79,23 @@ public class DownloadCountService extends BaseService<DownloadCount, DownloadCou
 
   /**
    * Record a download for a Dokumentobjekt. Atomically creates or increments an hourly bucket in
-   * the database and schedules it for ES indexing. The parent Journalpost/Moetesak/Moetemappe is
-   * resolved later at indexing time.
+   * the database.
    *
    * <p>The increment is a single atomic upsert rather than a read-modify-write, since concurrent
    * downloads of the same Dokumentobjekt within the same hour are expected on this path. See {@link
    * DownloadCountRepository#incrementCount}.
+   *
+   * <p>The bucket is deliberately not scheduled for indexing here. Each download would otherwise
+   * trigger a full index cycle of the same row, and concurrent cycles race with each other, so the
+   * last writer, not the latest count, decides what Elasticsearch holds. The upsert bumps {@code
+   * _updated}, which makes the hourly reindex scheduler pick the bucket up once and index its final
+   * count. The parent Journalpost/Moetesak/Moetemappe is resolved at that point.
    */
   @Transactional
   public void recordDownload(String dokumentobjektId) {
     var bucketStart = ZonedDateTime.now(NORWEGIAN_ZONE).truncatedTo(ChronoUnit.HOURS).toInstant();
-    var id =
-        repository.incrementCount(
-            IdGenerator.generateId(DownloadCount.class), dokumentobjektId, bucketStart);
-    scheduleIndex(id);
+    repository.incrementCount(
+        IdGenerator.generateId(DownloadCount.class), dokumentobjektId, bucketStart);
   }
 
   @Override
@@ -106,17 +109,12 @@ public class DownloadCountService extends BaseService<DownloadCount, DownloadCou
     }
     // Read the routing off the existing ES document. This is needed when the Dokumentobjekt is
     // deleted before its download counts, leaving the parent unresolvable from the database.
+    //
+    // Buckets are only indexed by the reindex scheduler, so a bucket deleted before that has no ES
+    // document at all. There is nothing to refresh into view in that case, and refreshing the whole
+    // shared index per bucket would make deletes expensive, so a miss simply means no parent.
     try {
       var routing = findRoutingInIndex(id);
-      if (routing != null) {
-        return routing;
-      }
-
-      // Only a document indexed within this same request is not searchable yet. Download counts
-      // are indexed by earlier download requests, so this refresh is the rare path rather than the
-      // normal one — refreshing first would mean a full index refresh per document.
-      esClient.indices().refresh(r -> r.index(elasticsearchIndex));
-      routing = findRoutingInIndex(id);
       if (routing == null) {
         log.debug("No ES document found for DownloadCount {}, it has no parent to resolve", id);
       }

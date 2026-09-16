@@ -6,6 +6,7 @@ import java.util.stream.Stream;
 import no.einnsyn.backend.common.indexable.IndexableRepository;
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.downloadcount.models.DownloadCount;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,8 +14,7 @@ public interface DownloadCountRepository
     extends BaseRepository<DownloadCount>, IndexableRepository<DownloadCount> {
 
   /**
-   * Atomically create or increment the hourly download bucket for a Dokumentobjekt, and return the
-   * id of the affected row.
+   * Atomically create or increment the hourly download bucket for a Dokumentobjekt.
    *
    * <p>This runs on the download hot path, where concurrent downloads of the same Dokumentobjekt
    * within the same hour are expected. A read-modify-write through JPA would let those requests
@@ -41,8 +41,8 @@ public interface DownloadCountRepository
    * @param id id to use if a new bucket is created
    * @param dokumentobjektId the dokumentobjekt being downloaded
    * @param bucketStart start of the hourly bucket
-   * @return the id of the created or incremented bucket
    */
+  @Modifying
   @Query(
       value =
           """
@@ -55,11 +55,10 @@ public interface DownloadCountRepository
           SET download_count = dokumentobjekt_download_stat.download_count + 1,
               _updated = clock_timestamp(),
               lock_version = dokumentobjekt_download_stat.lock_version + 1
-          RETURNING _id
           """,
       nativeQuery = true)
   @Transactional
-  String incrementCount(String id, String dokumentobjektId, Instant bucketStart);
+  void incrementCount(String id, String dokumentobjektId, Instant bucketStart);
 
   @Query("SELECT id FROM DownloadCount WHERE dokumentobjektId = :dokumentobjektId")
   Stream<String> streamIdByDokumentobjektId(String dokumentobjektId);
