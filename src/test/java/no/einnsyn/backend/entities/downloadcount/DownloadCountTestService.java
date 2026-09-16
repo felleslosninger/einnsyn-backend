@@ -61,6 +61,20 @@ public class DownloadCountTestService {
     return buckets;
   }
 
+  /**
+   * The id of the Enhet a Dokumentobjekt's single bucket is attributed to, or null if none. The
+   * relation is lazy, so it is read here, inside the transaction, rather than by the test.
+   */
+  @Transactional(readOnly = true)
+  public String getEnhetId(String dokumentobjektId) {
+    var buckets = findBuckets(dokumentobjektId);
+    if (buckets.size() != 1) {
+      throw new IllegalStateException("Expected one bucket, found " + buckets.size());
+    }
+    var enhet = buckets.getFirst().getEnhet();
+    return enhet != null ? enhet.getId() : null;
+  }
+
   /** Total number of downloads recorded for a Dokumentobjekt, across all hourly buckets. */
   @Transactional(readOnly = true)
   public int getDownloadCount(String dokumentobjektId) {

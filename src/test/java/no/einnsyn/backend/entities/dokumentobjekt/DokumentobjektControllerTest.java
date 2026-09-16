@@ -251,7 +251,9 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
     var bucket = downloadCountTestService.findBuckets(moetedokumentDokobjDTO.getId()).getFirst();
     assertEquals(moetemappeDTO.getId(), bucket.getParentId());
-    assertNotNull(bucket.getEnhet());
+    assertEquals(
+        moetemappeDTO.getUtvalgObjekt().getId(),
+        downloadCountTestService.getEnhetId(moetedokumentDokobjDTO.getId()));
 
     var statisticsResponse = getStatistics("Moetemappe");
     assertEquals(1, statisticsResponse.getSummary().getDownloadCount());
@@ -280,10 +282,10 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     assertEquals(1, bucket.getCount());
 
     // The bucket carries its own attribution, captured while the file still existed
-    var journalpost = journalpostRepository.findById(journalpostDTO.getId()).orElseThrow();
     assertEquals(journalpostDTO.getId(), bucket.getParentId());
-    assertNotNull(bucket.getEnhet());
-    assertEquals(journalpost.getAdministrativEnhetObjekt().getId(), bucket.getEnhet().getId());
+    assertEquals(
+        journalpostDTO.getAdministrativEnhetObjekt().getId(),
+        downloadCountTestService.getEnhetId(dokumentobjektDTO.getId()));
 
     // ...so it still counts for the Journalpost it belonged to
     var statisticsResponse = getJournalpostStatistics();
