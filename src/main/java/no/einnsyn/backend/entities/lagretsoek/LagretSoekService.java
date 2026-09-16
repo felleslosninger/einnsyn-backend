@@ -313,25 +313,39 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
       return;
     }
 
-    var lagretSoekIds = lagretSoekList.stream().map(LagretSoek::getId).toList();
-
-    log.debug("Resetting LagretSoek hit count for {}", lagretSoekIds);
-    repository.resetHitCount(lagretSoekIds);
-
-    log.debug("Deleting LagretSoek hits for {}", lagretSoekIds);
-    repository.deleteHits(lagretSoekIds);
+    // Acknowledge exactly what was sent. Matches that arrived while the mail was being built are
+    // left for the next notification. The hit rows are loaded after the count, so a match landing
+    // in between is rendered but not counted; the larger of the two is what the mail covered.
+    for (var lagretSoek : lagretSoekList) {
+      var notifiedCount = Math.max(lagretSoek.getHitCount(), lagretSoek.getHitList().size());
+      log.debug("Acknowledging {} hits for LagretSoek {}", notifiedCount, lagretSoek.getId());
+      repository.acknowledgeHits(lagretSoek.getId(), notifiedCount);
+    }
+    var hitIds =
+        lagretSoekList.stream()
+            .flatMap(lagretSoek -> lagretSoek.getHitList().stream())
+            .map(LagretSoekHit::getId)
+            .toList();
+    if (!hitIds.isEmpty()) {
+      log.debug("Deleting notified LagretSoek hits {}", hitIds);
+      repository.deleteHitsById(hitIds);
+    }
   }
 
-  /** Generate template context for a LagretSoek */
+  /**
+   * Generate template context for a LagretSoek. Only the first hits are cached as rows, so the
+   * count may exceed the list. The link to the live search is shown whenever the list does not
+   * cover the count, including when a late match left a count with no cached rows behind it.
+   */
   Map<String, Object> getLagretSoekContext(LagretSoek lagretSoek) {
+    var hitList = lagretSoek.getHitList();
     var lagretSoekMap = new HashMap<String, Object>();
     lagretSoekMap.put("label", lagretSoek.getLabel());
     lagretSoekMap.put(
         "hitCount", lagretSoek.getHitCount() > 100 ? "100+" : lagretSoek.getHitCount());
-    lagretSoekMap.put("hasMoreHits", lagretSoek.getHitCount() > maxResults);
+    lagretSoekMap.put("hasMoreHits", lagretSoek.getHitCount() > hitList.size());
     lagretSoekMap.put("filterId", lagretSoek.getLegacyQuery());
-    lagretSoekMap.put(
-        "hitList", lagretSoek.getHitList().stream().map(this::getHitContext).toList());
+    lagretSoekMap.put("hitList", hitList.stream().map(this::getHitContext).toList());
     return lagretSoekMap;
   }
 
