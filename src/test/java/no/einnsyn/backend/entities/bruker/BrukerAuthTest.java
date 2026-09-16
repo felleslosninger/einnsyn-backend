@@ -25,11 +25,12 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     // answered as if it did not exist, so that {id} cannot be used to look up e-mail addresses.
     var updateJSON = getBrukerJSON();
     updateJSON.remove("password");
-    updateJSON.put("email", "updated@example.com");
+    updateJSON.remove("email");
     response = patch("/bruker/" + responseDTO.getId(), updateJSON);
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
     // Check that admin can update Bruker
+    updateJSON.put("email", "updated@example.com");
     response = patchAdmin("/bruker/" + responseDTO.getId(), updateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
@@ -86,7 +87,7 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     // Check that anonymous cannot update Bruker
     var updateJSON = getBrukerJSON();
     updateJSON.remove("password");
-    updateJSON.put("email", "updated@example.com");
+    updateJSON.remove("email");
     response = patchAnon("/bruker/" + bruker1DTO.getId(), updateJSON);
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
