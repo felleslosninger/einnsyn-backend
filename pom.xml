@@ -296,6 +296,12 @@
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>${jacoco.version}</version>
+        <configuration>
+          <excludes>
+            <!-- @Profile("!test"): never loaded when running the test suite -->
+            <exclude>no/einnsyn/backend/configuration/SchedulingConfiguration*</exclude>
+          </excludes>
+        </configuration>
         <executions>
           <execution>
             <id>prepare-agent</id>

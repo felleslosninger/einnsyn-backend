@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.gson.reflect.TypeToken;
+import java.time.Instant;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -12,6 +13,7 @@ import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
+import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.utils.SlugGenerator;
@@ -694,5 +696,19 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
 
     assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappeDTO.getId()).getStatusCode());
+  }
+
+  /** The slug base includes the meeting year and moetenummer when they are set. */
+  @Test
+  void testGetSlugBase() {
+    var moetemappe = new Moetemappe();
+    moetemappe.setOffentligTittel("tittel");
+    assertEquals("tittel", moetemappeService.getSlugBase(moetemappe));
+
+    moetemappe.setMoetedato(Instant.parse("2024-06-15T10:00:00Z"));
+    assertEquals("2024-tittel", moetemappeService.getSlugBase(moetemappe));
+
+    moetemappe.setMoetenummer("3");
+    assertEquals("2024-3-tittel", moetemappeService.getSlugBase(moetemappe));
   }
 }

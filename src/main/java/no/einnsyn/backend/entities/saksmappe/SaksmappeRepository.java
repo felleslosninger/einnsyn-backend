@@ -48,8 +48,8 @@ public interface SaksmappeRepository
       """
       SELECT o FROM Saksmappe o
       WHERE parentKlasse = :klasse
-      AND id >= COALESCE(:pivot, id)
-      ORDER BY id ASC
+      AND id <= COALESCE(:pivot, id)
+      ORDER BY id DESC
       """)
   Slice<Saksmappe> paginateDesc(Klasse klasse, String pivot, Pageable pageable);
 
@@ -66,8 +66,8 @@ public interface SaksmappeRepository
       """
       SELECT o FROM Saksmappe o
       WHERE administrativEnhetObjekt = :administrativEnhetObjekt
-      AND id >= COALESCE(:pivot, id)
-      ORDER BY id ASC
+      AND id <= COALESCE(:pivot, id)
+      ORDER BY id DESC
       """)
   Slice<Saksmappe> paginateDesc(Enhet administrativEnhetObjekt, String pivot, Pageable pageable);
 

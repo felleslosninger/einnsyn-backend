@@ -2,12 +2,14 @@ package no.einnsyn.backend.entities.lagretsoek;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 
 import java.io.IOException;
+import java.util.UUID;
 import java.util.function.Function;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
@@ -346,5 +348,90 @@ class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
     assertTrue(deletedIds.contains(lagretSoekDTO.getId()));
 
     delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+  }
+
+  // Imported legacy LagretSoek objects can also be looked up by their legacy UUID
+  @Test
+  void testFindByLegacyId() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    // Assign a legacy id directly, like imported legacy data would have
+    var legacyId = UUID.randomUUID();
+    var lagretSoek = lagretSoekRepository.findById(lagretSoekDTO.getId()).orElseThrow();
+    lagretSoek.setLegacyId(legacyId);
+    lagretSoekRepository.save(lagretSoek);
+
+    // Lookup by legacy id
+    var found = lagretSoekService.find(legacyId.toString());
+    assertNotNull(found);
+    assertEquals(lagretSoekDTO.getId(), found.getId());
+
+    // Lookup by an unknown legacy id finds nothing
+    assertNull(lagretSoekService.find(UUID.randomUUID().toString()));
+
+    // Lookup by the eInnsyn id still works
+    found = lagretSoekService.find(lagretSoekDTO.getId());
+    assertNotNull(found);
+    assertEquals(lagretSoekDTO.getId(), found.getId());
+
+    // Hits can also be registered on the legacy id
+    lagretSoekService.incrementHitCount(legacyId.toString(), saksmappeDTO.getId());
+    assertEquals(1, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
+
+    // Moetemappe hits are also cached
+    lagretSoekService.incrementHitCount(legacyId.toString(), moetemappeDTO.getId());
+    assertEquals(2, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
+    assertEquals(2, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
+
+    // An unknown legacy id is logged and ignored, neither counted nor cached
+    lagretSoekService.incrementHitCount(UUID.randomUUID().toString(), saksmappeDTO.getId());
+    assertEquals(2, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
+    assertEquals(2, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
+
+    // A document with an unknown entity type is counted, but not cached
+    lagretSoekService.incrementHitCount(lagretSoekDTO.getId(), "unknown-document-id");
+    assertEquals(3, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
+    assertEquals(2, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
+
+    // Clean up
+    response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  /** Corrupt legacy searchParameters must not break the API responses for a LagretSoek. */
+  @Test
+  void testCorruptSearchParameters() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    var lagretSoek = lagretSoekRepository.findById(lagretSoekDTO.getId()).orElseThrow();
+    lagretSoek.setSearchParameters("this is not JSON {");
+    lagretSoekRepository.save(lagretSoek);
+
+    // The LagretSoek is still readable, with searchParameters left out
+    response = get("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var refreshedDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    assertNull(refreshedDTO.getSearchParameters());
+
+    // Clean up
+    response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  /** Titles in hit notifications are truncated to 60 characters. */
+  @Test
+  void testTruncate() {
+    assertNull(lagretSoekService.truncate(null));
+    assertEquals("short title", lagretSoekService.truncate("short title"));
+
+    var longTitle = "x".repeat(80);
+    var truncated = lagretSoekService.truncate(longTitle);
+    assertEquals("x".repeat(60) + "...", truncated);
   }
 }
