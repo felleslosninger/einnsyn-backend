@@ -29,7 +29,7 @@ This application serves as the core back-end for eInnsyn. The main functionaliti
 
 ## Installation
 
-The application requires an elasticsearch index with mappings defined in [scripts/elasticsearch](scripts/elasticsearch/). The PostgreSQL schema is defined in Flyway migrations under [src/main/resources/db/migration](src/main/resources/db/migration).
+The application requires an Elasticsearch index with the settings and mappings defined in [src/main/resources/elasticsearch](src/main/resources/elasticsearch/). The index is created on startup if it does not exist, and fields added to the mappings are applied to an existing index on startup. Settings changes, such as new analyzers, must be applied with [scripts/elasticsearch/updateIndices.sh](scripts/elasticsearch/updateIndices.sh). The PostgreSQL schema is defined in Flyway migrations under [src/main/resources/db/migration](src/main/resources/db/migration).
 
 ### Requirements
 
