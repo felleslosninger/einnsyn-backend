@@ -3,6 +3,7 @@ package no.einnsyn.backend.entities.downloadcount;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -45,14 +46,19 @@ public class DownloadCountTestService {
     downloadCountRepository.deleteAll();
   }
 
-  /** All hourly buckets recorded for a Dokumentobjekt. */
+  /**
+   * All hourly buckets recorded for a Dokumentobjekt. Production code never looks buckets up by
+   * Dokumentobjekt, so rather than keep a query for tests alone, filter the (small) test table.
+   */
   @Transactional(readOnly = true)
   public List<DownloadCount> findBuckets(String dokumentobjektId) {
-    List<String> ids;
-    try (var idStream = downloadCountRepository.streamIdByDokumentobjektId(dokumentobjektId)) {
-      ids = idStream.toList();
+    var buckets = new ArrayList<DownloadCount>();
+    for (var bucket : downloadCountRepository.findAll()) {
+      if (dokumentobjektId.equals(bucket.getDokumentobjektId())) {
+        buckets.add(bucket);
+      }
     }
-    return downloadCountRepository.findByIdIn(ids);
+    return buckets;
   }
 
   /** Total number of downloads recorded for a Dokumentobjekt, across all hourly buckets. */

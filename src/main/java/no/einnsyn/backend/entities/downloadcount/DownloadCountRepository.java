@@ -92,9 +92,6 @@ public interface DownloadCountRepository
   void insertOrIncrementCount(
       String id, String dokumentobjektId, Instant bucketStart, String parentId, String enhetId);
 
-  @Query("SELECT id FROM DownloadCount WHERE dokumentobjektId = :dokumentobjektId")
-  Stream<String> streamIdByDokumentobjektId(String dokumentobjektId);
-
   @Query(
       value =
           """
