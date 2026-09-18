@@ -121,8 +121,9 @@ public class DownloadCountService extends BaseService<DownloadCount, DownloadCou
 
   /**
    * Find the Journalpost, Moetesak or Moetemappe that download statistics for a Dokumentobjekt are
-   * attributed to. Files attached to a Moetedokument have no Registrering above them, so they are
-   * attributed to the Moetemappe.
+   * attributed to. Files attached to a Moetedokument are attributed to the Moetemappe: Moetedokument
+   * is a Registrering, but it is not indexed in Elasticsearch on its own, its metadata is added to
+   * the Moetemappe document instead.
    *
    * @param dokumentobjektId the Dokumentobjekt
    * @return the parent, or null if the Dokumentobjekt is not attached to any

@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -703,7 +704,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   private int sumDownloadCount(StatisticsResponse statisticsResponse) {
     return statisticsResponse.getTimeSeries().stream()
         .map(StatisticsResponse.TimeSeries::getDownloadCount)
-        .filter(count -> count != null)
+        .filter(Objects::nonNull)
         .mapToInt(Integer::intValue)
         .sum();
   }
