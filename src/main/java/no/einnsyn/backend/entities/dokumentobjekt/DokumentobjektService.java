@@ -9,6 +9,7 @@ import java.net.URLConnection;
 import java.util.Locale;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.exceptions.models.NetworkException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
@@ -21,6 +22,7 @@ import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseReposi
 import no.einnsyn.backend.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektES;
+import no.einnsyn.backend.entities.downloadcount.DownloadCountService;
 import no.einnsyn.backend.utils.SlugGenerator;
 import org.hibernate.validator.constraints.URL;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +37,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
+@Slf4j
 public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, DokumentobjektDTO> {
   private static final String DEFAULT_DOWNLOAD_FILE_NAME = "einnsyn-download";
   private static final int DOWNLOAD_CONNECT_TIMEOUT_MS = 10_000;
@@ -47,6 +50,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   private final DokumentobjektRepository repository;
 
   private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
+  private final DownloadCountService downloadCountService;
 
   @Value("${application.dokumentobjekt.download.proxy.host}")
   private String downloadProxyHost;
@@ -66,9 +70,11 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
 
   public DokumentobjektService(
       DokumentobjektRepository dokumentobjektRepository,
-      DokumentbeskrivelseRepository dokumentbeskrivelseRepository) {
+      DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
+      DownloadCountService downloadCountService) {
     this.repository = dokumentobjektRepository;
     this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
+    this.downloadCountService = downloadCountService;
   }
 
   @Override
@@ -205,9 +211,14 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
 
   @Override
   protected void deleteEntity(Dokumentobjekt dokobj) throws EInnsynException {
+    // Download statistics are deliberately kept: the downloads happened, and the buckets carry
+    // their own attribution. See DownloadCountService.
+
+    // Remove association to Dokumentbeskrivelse
     if (dokobj.getDokumentbeskrivelse() != null) {
       dokobj.getDokumentbeskrivelse().removeDokumentobjekt(dokobj);
     }
+
     super.deleteEntity(dokobj);
   }
 
@@ -225,6 +236,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     var sourceUri = getProxy().getSourceUri(id);
     var fileName = getProxy().generateDownloadFileName(id, sourceUri);
     HttpURLConnection connection = null;
+    DownloadResponseBase downloadResponse;
 
     try {
       connection = openDownloadConnection(sourceUri);
@@ -235,20 +247,43 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
         connection.disconnect();
         var response = new DownloadRedirectResponse();
         response.setLocation(sourceUri.toString());
-        return response;
+        downloadResponse = response;
+      } else {
+        var response = new DownloadFileResponse();
+        response.setContentType(contentType);
+        response.setContentDisposition("attachment; filename=\"" + fileName + "\"");
+        response.setBody(new InputStreamResource(connection.getInputStream()));
+        downloadResponse = response;
       }
-
-      var response = new DownloadFileResponse();
-      response.setContentType(contentType);
-      response.setContentDisposition("attachment; filename=\"" + fileName + "\"");
-      response.setBody(new InputStreamResource(connection.getInputStream()));
-      return response;
     } catch (Exception e) {
       if (connection != null) {
         connection.disconnect();
       }
       // Don't expose source URL in the message, as it will be sent to the client.
       throw new NetworkException("Could not prepare download from source", e, null);
+    }
+
+    // Recorded outside the try block: the download has already succeeded at this point, and a
+    // failure to record statistics must not be reported to the client as a download failure.
+    recordDownload(id);
+
+    return downloadResponse;
+  }
+
+  /**
+   * Record a download for statistics, suppressing any failure.
+   *
+   * <p>Download statistics are a best-effort side effect of a download that has already succeeded.
+   * Letting an exception escape here would turn a working download into an error response, so
+   * failures are logged and swallowed.
+   *
+   * @param id dokumentobjekt id
+   */
+  private void recordDownload(String id) {
+    try {
+      downloadCountService.recordDownload(id);
+    } catch (Exception e) {
+      log.error("Could not record download statistics for Dokumentobjekt {}", id, e);
     }
   }
 

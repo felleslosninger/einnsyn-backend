@@ -4,6 +4,10 @@
 # Script to update Elasticsearch index settings and mappings with minimal downtime.
 # Usage: ES_USERNAME=username ES_PASSWORD=password ES_URL=http://localhost:9200 ./updateIndices.sh
 #
+# Additive mapping changes (new fields) are applied by the application on startup, see
+# ElasticsearchIndexCreator.updateMappings. This script is needed for settings changes, such as new
+# analyzers, which require the index to be closed and reopened.
+#
 
 set -eu
 

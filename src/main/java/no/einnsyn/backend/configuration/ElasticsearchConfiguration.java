@@ -64,6 +64,11 @@ public class ElasticsearchConfiguration implements WebMvcConfigurer {
     // Initialize indices with mappings and settings
     ElasticsearchIndexCreator.maybeCreateIndex(elasticsearchClient, elasticsearchIndex);
     ElasticsearchIndexCreator.maybeCreateIndex(elasticsearchClient, percolatorIndex);
+
+    // Existing indices are created once and never updated by the step above, so apply any fields
+    // added to the mappings since. Fails startup on changes that need a new index instead.
+    ElasticsearchIndexCreator.updateMappings(elasticsearchClient, elasticsearchIndex);
+    ElasticsearchIndexCreator.updateMappings(elasticsearchClient, percolatorIndex);
   }
 
   @Override

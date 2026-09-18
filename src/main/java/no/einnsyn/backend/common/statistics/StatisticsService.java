@@ -4,6 +4,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
+import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermQuery;
@@ -18,6 +19,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.ObjIntConsumer;
+import java.util.function.ToIntFunction;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
@@ -86,6 +88,8 @@ public class StatisticsService {
         buildCreatedCountAggregation(aggregateFrom, aggregateTo, calendarInterval);
     var innsynskravCountAggregation =
         buildInnsynskravCountAggregation(aggregateFrom, aggregateTo, calendarInterval);
+    var downloadCountAggregation =
+        buildDownloadCountAggregation(aggregateFrom, aggregateTo, calendarInterval);
     var fulltextCountAggregation =
         buildFulltextCountAggregation(aggregateFrom, aggregateTo, calendarInterval);
 
@@ -94,9 +98,9 @@ public class StatisticsService {
     searchRequestBuilder.query(q -> q.bool(query));
     searchRequestBuilder.size(0); // Don't fetch results
     searchRequestBuilder.aggregations("innsynskravCount", innsynskravCountAggregation);
+    searchRequestBuilder.aggregations("downloadCount", downloadCountAggregation);
     searchRequestBuilder.aggregations("fulltextCount", fulltextCountAggregation);
     searchRequestBuilder.aggregations("createdCount", createdCountAggregation);
-    // TODO: Add "downloads" when we collect this
     var searchRequest = searchRequestBuilder.build();
 
     try {
@@ -125,6 +129,7 @@ public class StatisticsService {
       LocalDateTime aggregateTo,
       CalendarInterval calendarInterval) {
     var innsynskravAggregations = response.aggregations().get("innsynskravCount");
+    var downloadAggregations = response.aggregations().get("downloadCount");
     var fulltextCountAggregations = response.aggregations().get("fulltextCount");
     var createdCountAggregations = response.aggregations().get("createdCount");
     var statisticsResponse = new StatisticsResponse();
@@ -147,34 +152,44 @@ public class StatisticsService {
       summary.setCreatedWithFulltextCount(0);
     }
 
+    // Child aggregations (innsynskrav, download) wrap their results in a "filtered" aggregation
+    var innsynskravFiltered = childrenFiltered(innsynskravAggregations);
+    var downloadFiltered = childrenFiltered(downloadAggregations);
+
     // Set total innsynskrav children count
-    if (innsynskravAggregations != null && innsynskravAggregations.isChildren()) {
-      var filteredAgg = innsynskravAggregations.children().aggregations().get("filtered");
-      if (filteredAgg != null && filteredAgg.isFilter()) {
-        summary.setCreatedInnsynskravCount((int) filteredAgg.filter().docCount());
-      }
-    }
-    if (summary.getCreatedInnsynskravCount() == null) {
+    if (innsynskravFiltered != null && innsynskravFiltered.isFilter()) {
+      summary.setCreatedInnsynskravCount((int) innsynskravFiltered.filter().docCount());
+    } else {
       summary.setCreatedInnsynskravCount(0);
     }
+
+    // Set total download count. Download children carry a count each, so sum them.
+    summary.setDownloadCount(extractSumAggregationValue(downloadFiltered, "countSum"));
 
     // Build timeSeries - collect all unique time buckets from all aggregations
     var timeSeriesMap = new LinkedHashMap<String, StatisticsResponse.TimeSeries>();
 
     // Collect buckets from all aggregations
     collectTimeSeriesBuckets(
-        createdCountAggregations, timeSeriesMap, StatisticsResponse.TimeSeries::setCreatedCount);
+        createdCountAggregations,
+        timeSeriesMap,
+        StatisticsService::bucketDocCount,
+        StatisticsResponse.TimeSeries::setCreatedCount);
     collectTimeSeriesBuckets(
         fulltextCountAggregations,
         timeSeriesMap,
+        StatisticsService::bucketDocCount,
         StatisticsResponse.TimeSeries::setCreatedWithFulltextCount);
-
-    // Handle innsynskrav aggregation (needs to extract filtered child aggregation first)
-    if (innsynskravAggregations != null && innsynskravAggregations.isChildren()) {
-      var filteredAgg = innsynskravAggregations.children().aggregations().get("filtered");
-      collectTimeSeriesBuckets(
-          filteredAgg, timeSeriesMap, StatisticsResponse.TimeSeries::setCreatedInnsynskravCount);
-    }
+    collectTimeSeriesBuckets(
+        innsynskravFiltered,
+        timeSeriesMap,
+        StatisticsService::bucketDocCount,
+        StatisticsResponse.TimeSeries::setCreatedInnsynskravCount);
+    collectTimeSeriesBuckets(
+        downloadFiltered,
+        timeSeriesMap,
+        bucket -> sumValue(bucket.aggregations(), "countSum"),
+        StatisticsResponse.TimeSeries::setDownloadCount);
 
     // Sort merged buckets chronologically. The different aggregations can have disjoint bucket
     // sets, so insertion order alone does not guarantee a time-ordered response.
@@ -230,6 +245,41 @@ public class StatisticsService {
                     Aggregation.of(
                         f ->
                             f.filter(q -> q.bool(childrenFilterQueryBuilder.build()))
+                                .aggregations("buckets", histogramAgg))));
+  }
+
+  /**
+   * Build aggregation for counting document downloads over time. Download documents are stored as
+   * hourly child buckets with a numeric count field, so this uses a sum aggregation instead of
+   * child doc_count.
+   */
+  Aggregation buildDownloadCountAggregation(
+      LocalDateTime aggregateFrom, LocalDateTime aggregateTo, CalendarInterval calendarInterval) {
+
+    var childrenFilterQueryBuilder = new BoolQuery.Builder();
+    var aggregationDateRangeQuery = getCreatedDateRangeQuery(aggregateFrom, aggregateTo);
+    if (aggregationDateRangeQuery != null) {
+      childrenFilterQueryBuilder.filter(f -> f.range(aggregationDateRangeQuery));
+    }
+
+    // "count" field comes from DownloadCountES.count in the download child documents
+    var sumAgg = Aggregation.of(a -> a.sum(s -> s.field("count")));
+    var histogramAgg =
+        Aggregation.of(
+            a ->
+                a.dateHistogram(
+                        h -> h.field("created").calendarInterval(calendarInterval).minDocCount(1))
+                    .aggregations("countSum", sumAgg));
+
+    return Aggregation.of(
+        a ->
+            a.children(c -> c.type("download"))
+                .aggregations(
+                    "filtered",
+                    Aggregation.of(
+                        f ->
+                            f.filter(q -> q.bool(childrenFilterQueryBuilder.build()))
+                                .aggregations("countSum", sumAgg)
                                 .aggregations("buckets", histogramAgg))));
   }
 
@@ -380,32 +430,65 @@ public class StatisticsService {
    *
    * @param aggregation the aggregation result to extract buckets from
    * @param timeSeriesMap the map to populate with time series data points
-   * @param setter the consumer to set the count on each data point
+   * @param valueOf how to read the value of a bucket, e.g. its doc count or a sub-aggregation
+   * @param setter the consumer to set the value on each data point
    */
   private void collectTimeSeriesBuckets(
       Aggregate aggregation,
       Map<String, StatisticsResponse.TimeSeries> timeSeriesMap,
+      ToIntFunction<DateHistogramBucket> valueOf,
       ObjIntConsumer<StatisticsResponse.TimeSeries> setter) {
     if (aggregation != null && aggregation.isFilter()) {
       var buckets = aggregation.filter().aggregations().get("buckets");
       if (buckets != null && buckets.isDateHistogram()) {
         var dateHistogram = buckets.dateHistogram();
         for (var bucket : dateHistogram.buckets().array()) {
-          var time = bucket.keyAsString();
           var dataPoint =
               timeSeriesMap.computeIfAbsent(
-                  time,
-                  k -> {
-                    var point = new StatisticsResponse.TimeSeries();
-                    point.setTime(k);
-                    point.setCreatedCount(0);
-                    point.setCreatedWithFulltextCount(0);
-                    point.setCreatedInnsynskravCount(0);
-                    return point;
-                  });
-          setter.accept(dataPoint, (int) bucket.docCount());
+                  bucket.keyAsString(), StatisticsService::newTimeSeriesPoint);
+          setter.accept(dataPoint, valueOf.applyAsInt(bucket));
         }
       }
     }
+  }
+
+  private static StatisticsResponse.TimeSeries newTimeSeriesPoint(String time) {
+    var point = new StatisticsResponse.TimeSeries();
+    point.setTime(time);
+    point.setCreatedCount(0);
+    point.setCreatedWithFulltextCount(0);
+    point.setCreatedInnsynskravCount(0);
+    point.setDownloadCount(0);
+    return point;
+  }
+
+  private static int bucketDocCount(DateHistogramBucket bucket) {
+    return (int) bucket.docCount();
+  }
+
+  /**
+   * Unwrap the "filtered" sub-aggregation of a children aggregation.
+   *
+   * @param aggregation a children aggregation, or null
+   * @return the filtered sub-aggregation, or null if there is none
+   */
+  private static Aggregate childrenFiltered(Aggregate aggregation) {
+    if (aggregation != null && aggregation.isChildren()) {
+      return aggregation.children().aggregations().get("filtered");
+    }
+    return null;
+  }
+
+  private static int extractSumAggregationValue(Aggregate aggregation, String sumAggregationName) {
+    if (aggregation != null && aggregation.isFilter()) {
+      return sumValue(aggregation.filter().aggregations(), sumAggregationName);
+    }
+    return 0;
+  }
+
+  /** Read a sum metric from a set of sub-aggregations. Sums of integer fields are exact. */
+  private static int sumValue(Map<String, Aggregate> aggregations, String sumAggregationName) {
+    var metric = aggregations.get(sumAggregationName);
+    return metric != null && metric.isSum() ? (int) Math.round(metric.sum().value()) : 0;
   }
 }

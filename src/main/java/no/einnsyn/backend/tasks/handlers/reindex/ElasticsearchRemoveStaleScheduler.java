@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import no.einnsyn.backend.common.indexable.IndexableRepository;
+import no.einnsyn.backend.entities.downloadcount.DownloadCountService;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
@@ -47,6 +48,7 @@ public class ElasticsearchRemoveStaleScheduler {
   private final MoetemappeService moetemappeService;
   private final MoetesakService moetesakService;
   private final InnsynskravService innsynskravService;
+  private final DownloadCountService downloadCountService;
   private final LagretSoekService lagretSoekService;
 
   private final ApplicationShutdownListenerService applicationShutdownListenerService;
@@ -69,6 +71,7 @@ public class ElasticsearchRemoveStaleScheduler {
       MoetemappeService moetemappeService,
       MoetesakService moetesakService,
       InnsynskravService innsynskravService,
+      DownloadCountService downloadCountService,
       LagretSoekService lagretSoekService,
       ApplicationShutdownListenerService applicationShutdownListenerService) {
     this.esClient = esClient;
@@ -77,6 +80,7 @@ public class ElasticsearchRemoveStaleScheduler {
     this.moetemappeService = moetemappeService;
     this.moetesakService = moetesakService;
     this.innsynskravService = innsynskravService;
+    this.downloadCountService = downloadCountService;
     this.lagretSoekService = lagretSoekService;
     this.applicationShutdownListenerService = applicationShutdownListenerService;
     this.parallelRunner = new ParallelRunner(10);
@@ -261,6 +265,12 @@ public class ElasticsearchRemoveStaleScheduler {
         List.of("id", "created"),
         innsynskravService.getRepository(),
         innsynskravService.getElasticsearchIndex());
+
+    removeForEntity(
+        "DownloadCount",
+        List.of("id", "created"),
+        downloadCountService.getRepository(),
+        downloadCountService.getElasticsearchIndex());
 
     removeForEntity(
         "LagretSoek",

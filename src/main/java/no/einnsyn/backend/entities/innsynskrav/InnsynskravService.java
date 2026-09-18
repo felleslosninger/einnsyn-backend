@@ -159,7 +159,25 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
 
   @Override
   public BaseES toLegacyES(Innsynskrav innsynskrav) {
-    return toLegacyES(innsynskrav, new InnsynskravES());
+    // No parent has been resolved for us, so resolve it before building the document. Indexing goes
+    // through the overload below instead, reusing the parent it already resolved.
+    return toLegacyES(innsynskrav, getProxy().getESParent(innsynskrav, innsynskrav.getId()));
+  }
+
+  /**
+   * Build the ES document using an already resolved parent. When the Journalpost is gone, resolving
+   * the parent means refreshing and searching the index, so indexing must not trigger it twice.
+   */
+  @Override
+  public BaseES toLegacyES(Innsynskrav innsynskrav, String esParent) {
+    var innsynskravES = new InnsynskravES();
+    toLegacyES(innsynskrav, innsynskravES);
+    if (esParent != null) {
+      var statistics = new InnsynskravES.InnsynskravStat();
+      statistics.setParent(esParent);
+      innsynskravES.setStatRelation(statistics);
+    }
+    return innsynskravES;
   }
 
   @Override
@@ -168,13 +186,6 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     if (es instanceof InnsynskravES innsynskravES) {
       if (innsynskrav.getSent() != null) {
         innsynskravES.setSent(TimeConverter.instantToTimestamp(innsynskrav.getSent()));
-      }
-
-      var parentId = getProxy().getESParent(innsynskrav, innsynskrav.getId());
-      if (parentId != null) {
-        var statistics = new InnsynskravES.InnsynskravStat();
-        statistics.setParent(parentId);
-        innsynskravES.setStatRelation(statistics);
       }
 
       var journalenhet = innsynskrav.getEnhet();

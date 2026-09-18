@@ -65,6 +65,9 @@
         }
       }
     },
+    "count": {
+      "type": "integer"
+    },
     "created": {
       "type": "date"
     },

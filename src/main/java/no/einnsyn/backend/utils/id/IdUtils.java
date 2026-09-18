@@ -1,16 +1,46 @@
 package no.einnsyn.backend.utils.id;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class IdUtils {
 
+  // entity name -> prefix map, spanning both API-spec entities and internal ones
+  private static final Map<String, String> entityMap = mergePrefixMaps();
+
   // prefix -> entity name map
   private static final Map<String, String> prefixMap =
-      IdPrefix.map.entrySet().stream()
+      entityMap.entrySet().stream()
           .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
 
   private IdUtils() {}
+
+  /**
+   * Merge the generated {@link IdPrefix} map with the hand-written {@link IdPrefixInternal} map.
+   * Both an entity registered twice and a prefix shared by two entities would make {@link
+   * #resolveEntity} ambiguous, so either is rejected at class-load time.
+   */
+  private static Map<String, String> mergePrefixMaps() {
+    var merged = new HashMap<String, String>();
+    Stream.concat(IdPrefix.map.entrySet().stream(), IdPrefixInternal.map.entrySet().stream())
+        .forEach(
+            entry -> {
+              var previous = merged.putIfAbsent(entry.getKey(), entry.getValue());
+              if (previous != null) {
+                throw new IllegalStateException(
+                    "Entity " + entry.getKey() + " is registered in both IdPrefix maps");
+              }
+            });
+
+    // Make sure no entities share the same prefix.
+    var prefixes = merged.values().stream().distinct().count();
+    if (prefixes != merged.size()) {
+      throw new IllegalStateException("Duplicate ID prefix across IdPrefix maps: " + merged);
+    }
+    return Map.copyOf(merged);
+  }
 
   /**
    * Get the prefix for an entity, given an entity name.
@@ -19,7 +49,7 @@ public class IdUtils {
    * @return the prefix for the entity
    */
   public static String getPrefix(String entity) {
-    return IdPrefix.map.get(entity);
+    return entityMap.get(entity);
   }
 
   /**
@@ -31,7 +61,7 @@ public class IdUtils {
    * @return the prefix for the entity or the default prefix
    */
   public static String getPrefixOrDefault(String entity, String defaultPrefix) {
-    return IdPrefix.map.getOrDefault(entity, defaultPrefix);
+    return entityMap.getOrDefault(entity, defaultPrefix);
   }
 
   /**

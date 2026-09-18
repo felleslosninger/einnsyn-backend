@@ -4,28 +4,47 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.exceptions.models.NetworkException;
+import no.einnsyn.backend.common.statistics.models.StatisticsResponse;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektDTO;
+import no.einnsyn.backend.entities.downloadcount.DownloadCountService;
+import no.einnsyn.backend.entities.downloadcount.DownloadCountTestService;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
+import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.tasks.TaskTestService;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.AopTestUtils;
@@ -41,8 +60,13 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   @Value("${application.baseUrl}")
   private String baseUrl;
 
+  @Autowired private DownloadCountTestService downloadCountTestService;
+  @Autowired private TaskTestService taskTestService;
+
   private ArkivDTO arkivDTO;
+  private ArkivdelDTO arkivdelDTO;
   private SaksmappeDTO saksmappeDTO;
+  private JournalpostDTO journalpostDTO;
   private DokumentbeskrivelseDTO dokumentbeskrivelseDTO;
   private DokumentobjektDTO dokumentobjektDTO;
 
@@ -56,7 +80,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -64,7 +88,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
     response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
     response =
         post(
@@ -86,6 +110,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
   @AfterEach
   void cleanup() throws Exception {
+    // Download buckets outlive the fixtures below, so they are removed explicitly
+    downloadCountTestService.deleteAll();
     if (saksmappeDTO != null) {
       var response = delete("/saksmappe/" + saksmappeDTO.getId());
       assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -153,6 +179,207 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void statisticsShouldCountStreamedDownloads() throws Exception {
+    try (var _ = startPdfProxy()) {
+      var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    var statisticsResponse = getJournalpostStatistics();
+    assertEquals(1, statisticsResponse.getSummary().getDownloadCount());
+    assertEquals(1, sumDownloadCount(statisticsResponse));
+  }
+
+  @Test
+  void downloadByExternalIdShouldRecordStatisticsOnInternalId() throws Exception {
+    var externalId = "external-download-id";
+    var dokumentobjektJSON = getDokumentobjektJSON();
+    dokumentobjektJSON.put("referanseDokumentfil", SOURCE_URL);
+    dokumentobjektJSON.put("externalId", externalId);
+    var response =
+        post(
+            "/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId() + "/dokumentobjekt",
+            dokumentobjektJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var externalDokumentobjektDTO = gson.fromJson(response.getBody(), DokumentobjektDTO.class);
+
+    try (var _ = startPdfProxy()) {
+      response = get("/dokumentobjekt/" + externalId + "/download");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    // The path variable is resolved to the internal id before it reaches the service. The bucket
+    // must be keyed by that id, otherwise parent resolution and cleanup on delete never find it.
+    assertEquals(1, downloadCountTestService.getDownloadCount(externalDokumentobjektDTO.getId()));
+    assertEquals(0, downloadCountTestService.getDownloadCount(externalId));
+
+    var statisticsResponse = getJournalpostStatistics();
+    assertEquals(1, statisticsResponse.getSummary().getDownloadCount());
+  }
+
+  @Test
+  void statisticsShouldCountMoetedokumentDownloadsOnMoetemappe() throws Exception {
+    // A Moetedokument file has no Registrering above it, so its downloads attach to the Moetemappe.
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    response =
+        post("/moetemappe/" + moetemappeDTO.getId() + "/moetedokument", getMoetedokumentJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetedokumentDTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
+
+    response =
+        post(
+            "/moetedokument/" + moetedokumentDTO.getId() + "/dokumentbeskrivelse",
+            getDokumentbeskrivelseJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetedokumentDokbeskDTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+
+    var dokumentobjektJSON = getDokumentobjektJSON();
+    dokumentobjektJSON.put("referanseDokumentfil", SOURCE_URL);
+    response =
+        post(
+            "/dokumentbeskrivelse/" + moetedokumentDokbeskDTO.getId() + "/dokumentobjekt",
+            dokumentobjektJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetedokumentDokobjDTO = gson.fromJson(response.getBody(), DokumentobjektDTO.class);
+
+    try (var _ = startPdfProxy()) {
+      response = get("/dokumentobjekt/" + moetedokumentDokobjDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    var bucket = downloadCountTestService.findBuckets(moetedokumentDokobjDTO.getId()).getFirst();
+    assertEquals(moetemappeDTO.getId(), bucket.getParentId());
+    assertEquals(
+        moetemappeDTO.getUtvalgObjekt().getId(),
+        downloadCountTestService.getEnhetId(moetedokumentDokobjDTO.getId()));
+
+    var statisticsResponse = getStatistics("Moetemappe");
+    assertEquals(1, statisticsResponse.getSummary().getDownloadCount());
+    assertEquals(1, sumDownloadCount(statisticsResponse));
+
+    // The Journalpost in this test's fixture has no downloads, so the count is not leaking across.
+    assertEquals(0, getJournalpostStatistics().getSummary().getDownloadCount());
+  }
+
+  @Test
+  void downloadStatisticsShouldSurviveDeletingTheDokumentobjekt() throws Exception {
+    try (var _ = startPdfProxy()) {
+      var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    // The download happened; deleting the file afterwards must not erase that.
+    assertEquals(
+        HttpStatus.OK, delete("/dokumentobjekt/" + dokumentobjektDTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/dokumentobjekt/" + dokumentobjektDTO.getId()).getStatusCode());
+
+    var buckets = downloadCountTestService.findBuckets(dokumentobjektDTO.getId());
+    assertEquals(1, buckets.size());
+    var bucket = buckets.getFirst();
+    assertEquals(1, bucket.getCount());
+
+    // The bucket carries its own attribution, captured while the file still existed
+    assertEquals(journalpostDTO.getId(), bucket.getParentId());
+    assertEquals(
+        journalpostDTO.getAdministrativEnhetObjekt().getId(),
+        downloadCountTestService.getEnhetId(dokumentobjektDTO.getId()));
+
+    // ...so it still counts for the Journalpost it belonged to
+    var statisticsResponse = getJournalpostStatistics();
+    assertEquals(1, statisticsResponse.getSummary().getDownloadCount());
+    assertEquals(1, sumDownloadCount(statisticsResponse));
+  }
+
+  @Test
+  void statisticsShouldAggregateMultipleDownloadsInSameBucket() throws Exception {
+    try (var proxy = startPdfProxy()) {
+      var firstResponse = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, firstResponse.getStatusCode());
+
+      var secondResponse = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, secondResponse.getStatusCode());
+
+      assertEquals(2, proxy.requests().size());
+    }
+
+    var statisticsResponse = getJournalpostStatistics();
+    assertEquals(2, statisticsResponse.getSummary().getDownloadCount());
+    assertEquals(2, sumDownloadCount(statisticsResponse));
+  }
+
+  @Test
+  void statisticsShouldNotLoseConcurrentDownloads() throws Exception {
+    var threads = 8;
+    var downloadsPerThread = 5;
+    var expectedDownloads = threads * downloadsPerThread;
+    var dokumentobjektId = dokumentobjektDTO.getId();
+    var startLatch = new CountDownLatch(1);
+    var futures = new ArrayList<Future<?>>();
+
+    try (var proxy = startPdfProxy();
+        var executor = Executors.newFixedThreadPool(threads)) {
+      for (var i = 0; i < threads; i++) {
+        futures.add(
+            executor.submit(
+                () -> {
+                  // Release all threads at once, so they contend for the same hourly bucket.
+                  startLatch.await();
+                  for (var j = 0; j < downloadsPerThread; j++) {
+                    var response = get("/dokumentobjekt/" + dokumentobjektId + "/download");
+                    assertEquals(HttpStatus.OK, response.getStatusCode());
+                  }
+                  return null;
+                }));
+      }
+      startLatch.countDown();
+      for (var future : futures) {
+        future.get(60, TimeUnit.SECONDS);
+      }
+      assertEquals(expectedDownloads, proxy.requests().size());
+    }
+
+    // A read-modify-write would lose downloads here, and would also fail requests outright once
+    // the optimistic locking retries were exhausted.
+    assertEquals(expectedDownloads, downloadCountTestService.getDownloadCount(dokumentobjektId));
+
+    // The bucket is indexed once by the reindex scheduler, after all increments, so Elasticsearch
+    // holds the final count rather than whichever concurrent index run happened to finish last.
+    var statisticsResponse = getJournalpostStatistics();
+    assertEquals(expectedDownloads, statisticsResponse.getSummary().getDownloadCount());
+    assertEquals(expectedDownloads, sumDownloadCount(statisticsResponse));
+  }
+
+  @Test
+  void downloadShouldSucceedWhenRecordingStatisticsFails() throws Exception {
+    var target = AopTestUtils.getTargetObject(dokumentobjektService);
+    var originalDownloadCountService = ReflectionTestUtils.getField(target, "downloadCountService");
+    var failingDownloadCountService = mock(DownloadCountService.class);
+    doThrow(new DataIntegrityViolationException("simulated statistics failure"))
+        .when(failingDownloadCountService)
+        .recordDownload(anyString());
+    ReflectionTestUtils.setField(target, "downloadCountService", failingDownloadCountService);
+
+    try {
+      try (var _ = startPdfProxy()) {
+        var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+
+        // The file was fetched successfully, so the failure to record statistics must not surface
+        // to the client as a download error.
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("pdf-body", response.getBody());
+      }
+    } finally {
+      ReflectionTestUtils.setField(target, "downloadCountService", originalDownloadCountService);
+    }
+
+    verify(failingDownloadCountService).recordDownload(anyString());
+  }
+
+  @Test
   void downloadShouldPreserveEncodedSourceUrlWhenProxying() throws Exception {
     var encodedSourceUrl = "http://example.com/file%20name.pdf?token=a%2Bb";
     var updateJson = new JSONObject();
@@ -196,6 +423,29 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       assertEquals(SOURCE_URL, proxyRequest.target());
       assertEquals("example.com", proxyRequest.hostHeader());
     }
+  }
+
+  @Test
+  void statisticsShouldCountRedirectDownloads() throws Exception {
+    try (var proxy =
+        startProxyServer(
+            HttpStatus.OK.value(),
+            "text/html; charset=utf-8",
+            "<html><body>proxy</body></html>".getBytes(StandardCharsets.UTF_8),
+            null,
+            null)) {
+
+      var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.FOUND, response.getStatusCode());
+      assertEquals(SOURCE_URL, response.getHeaders().getFirst("Location"));
+
+      var proxyRequests = proxy.requests();
+      assertEquals(1, proxyRequests.size());
+    }
+
+    var statisticsResponse = getJournalpostStatistics();
+    assertEquals(1, statisticsResponse.getSummary().getDownloadCount());
+    assertEquals(1, sumDownloadCount(statisticsResponse));
   }
 
   @Test
@@ -390,6 +640,10 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       throws Exception {
     List<ProxyRequest> requests = Collections.synchronizedList(new ArrayList<>());
     var server = HttpServer.create(new InetSocketAddress(0), 0);
+    // Without an executor, handlers run on the single dispatcher thread, which would serialize
+    // concurrent downloads.
+    var executor = Executors.newCachedThreadPool();
+    server.setExecutor(executor);
     server.createContext(
         "/",
         exchange -> {
@@ -420,20 +674,48 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     // Update the service to use our proxy server
     setDownloadProxy("localhost", server.getAddress().getPort());
 
-    return new StartedProxy(server, requests);
+    return new StartedProxy(server, executor, requests);
   }
 
-  private void setDownloadProxy(String host, int port) throws Exception {
+  private void setDownloadProxy(String host, int port) {
     var target = AopTestUtils.getTargetObject(dokumentobjektService);
     ReflectionTestUtils.setField(target, "downloadProxyHost", host);
     ReflectionTestUtils.setField(target, "downloadProxyPort", port);
   }
 
-  private record StartedProxy(HttpServer server, List<ProxyRequest> requests)
+  private StatisticsResponse getJournalpostStatistics() throws Exception {
+    return getStatistics("Journalpost");
+  }
+
+  private StatisticsResponse getStatistics(String entity) throws Exception {
+    // Downloads are not indexed per request; the hourly reindex scheduler picks up the buckets.
+    taskTestService.updateOutdatedDocuments();
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+    // The statistics endpoint interprets the dates as UTC, while the buckets were created just now
+    // in local time. Pad the range by a day on each side so this does not fail around midnight.
+    var from = LocalDate.now().minusDays(1).toString();
+    var to = LocalDate.now().plusDays(1).toString();
+    var response =
+        get("/statistics?aggregateFrom=" + from + "&aggregateTo=" + to + "&entity=" + entity);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    return gson.fromJson(response.getBody(), StatisticsResponse.class);
+  }
+
+  private int sumDownloadCount(StatisticsResponse statisticsResponse) {
+    return statisticsResponse.getTimeSeries().stream()
+        .map(StatisticsResponse.TimeSeries::getDownloadCount)
+        .filter(Objects::nonNull)
+        .mapToInt(Integer::intValue)
+        .sum();
+  }
+
+  private record StartedProxy(
+      HttpServer server, ExecutorService executor, List<ProxyRequest> requests)
       implements AutoCloseable {
     @Override
     public void close() {
       server.stop(0);
+      executor.shutdown();
     }
   }
 
