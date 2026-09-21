@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.reflect.TypeToken;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -582,6 +583,49 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, korrpartResponse.getStatusCode());
     korrpartResponse = get("/korrespondansepart/" + kp2Id);
     assertEquals(HttpStatus.NOT_FOUND, korrpartResponse.getStatusCode());
+  }
+
+  /**
+   * Korrespondansepart._external_id is not unique, the unique index was dropped in
+   * V20240910_0800__Drop_constraint_korrpart.sql. Make sure a korrespondansepart with an externalId
+   * that already exists is inserted as a new object under its own journalpost, instead of matching
+   * (and stealing) the existing one.
+   *
+   * @throws Exception
+   */
+  @Test
+  void insertKorrespondansepartWithDuplicateExternalId() throws Exception {
+    var smResponse = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, smResponse.getStatusCode());
+    var smDTO = gson.fromJson(smResponse.getBody(), SaksmappeDTO.class);
+
+    var jpIds = new ArrayList<String>();
+    var kpIds = new ArrayList<String>();
+
+    for (var i = 0; i < 3; i++) {
+      var kpInsert = getKorrespondansepartJSON();
+      kpInsert.put("externalId", "duplicate-korrespondansepart-external-id");
+      var jpInsert = getJournalpostJSON();
+      jpInsert.put("korrespondansepart", new JSONArray(List.of(kpInsert)));
+
+      var jpResponse = post("/saksmappe/" + smDTO.getId() + "/journalpost", jpInsert);
+      assertEquals(HttpStatus.CREATED, jpResponse.getStatusCode());
+      var jpDTO = gson.fromJson(jpResponse.getBody(), JournalpostDTO.class);
+      assertEquals(1, jpDTO.getKorrespondansepart().size());
+      jpIds.add(jpDTO.getId());
+      kpIds.add(jpDTO.getKorrespondansepart().getFirst().getId());
+    }
+
+    // Each journalpost got its own korrespondansepart, and none were reparented
+    assertEquals(3, kpIds.stream().distinct().count());
+    for (var i = 0; i < 3; i++) {
+      var kpResponse = get("/korrespondansepart/" + kpIds.get(i));
+      assertEquals(HttpStatus.OK, kpResponse.getStatusCode());
+      var kpDTO = gson.fromJson(kpResponse.getBody(), KorrespondansepartDTO.class);
+      assertEquals(jpIds.get(i), kpDTO.getJournalpost().getId());
+    }
+
+    delete("/saksmappe/" + smDTO.getId());
   }
 
   // /journalpost/{id}/korrespondansepart

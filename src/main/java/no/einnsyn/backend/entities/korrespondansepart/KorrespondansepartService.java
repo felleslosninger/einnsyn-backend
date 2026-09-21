@@ -6,6 +6,8 @@ import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.backend.entities.base.UniqueFieldMatch;
+import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.journalpost.JournalpostRepository;
 import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameters;
@@ -18,6 +20,7 @@ import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class KorrespondansepartService
@@ -55,6 +58,58 @@ public class KorrespondansepartService
   @Override
   public KorrespondansepartDTO newDTO() {
     return new KorrespondansepartDTO();
+  }
+
+  /**
+   * ExternalId is not unique for Korrespondansepart, a Korrespondansepart is a child object that
+   * only has meaning within its parent. Look up by ID or systemId only.
+   *
+   * @param id The unique identifier of the object to find
+   * @return The object with the given ID or systemId, or null if not found
+   */
+  @Transactional(readOnly = true)
+  @Override
+  public Korrespondansepart find(String id) {
+    if (id == null) {
+      return null;
+    }
+
+    if (!id.startsWith(idPrefix)) {
+      var korrespondansepart = repository.findBySystemId(id);
+      if (korrespondansepart != null) {
+        return korrespondansepart;
+      }
+    }
+
+    return repository.findById(id).orElse(null);
+  }
+
+  /**
+   * ExternalId is not unique for Korrespondansepart, see {@link #find(String)}. Match on ID or
+   * systemId only.
+   *
+   * @param dto The DTO to look up
+   * @return A record containing the matching field and object if found, or null if not found
+   */
+  @Transactional(readOnly = true)
+  @Override
+  public UniqueFieldMatch<Korrespondansepart> findUniqueFieldMatch(BaseDTO dto) {
+    if (dto.getId() != null) {
+      var korrespondansepart = repository.findById(dto.getId()).orElse(null);
+      if (korrespondansepart != null) {
+        return new UniqueFieldMatch<>("id", korrespondansepart);
+      }
+    }
+
+    if (dto instanceof KorrespondansepartDTO korrespondansepartDTO
+        && korrespondansepartDTO.getSystemId() != null) {
+      var korrespondansepart = repository.findBySystemId(korrespondansepartDTO.getSystemId());
+      if (korrespondansepart != null) {
+        return new UniqueFieldMatch<>("systemId", korrespondansepart);
+      }
+    }
+
+    return null;
   }
 
   /**
