@@ -18,7 +18,13 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class ArkivBaseDTO extends BaseDTO {
-  /** The unique identifier for the resource, given by the user's system. */
+  /**
+   * An identifier for the resource, given by the user's system.
+   *
+   * <p>For most entities the systemId is unique, and can be used in place of the eInnsynId when
+   * looking up a single object. It is *not* unique for Arkiv, Arkivdel and Klasse, and can not be
+   * used to look those up.
+   */
   protected String systemId;
 
   /**
