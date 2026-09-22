@@ -33,6 +33,7 @@ import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
+import no.einnsyn.backend.common.retry.RetryOnWriteConflict;
 import no.einnsyn.backend.entities.apikey.ApiKeyService;
 import no.einnsyn.backend.entities.arkiv.ArkivService;
 import no.einnsyn.backend.entities.arkivdel.ArkivdelService;
@@ -76,8 +77,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import org.springframework.resilience.annotation.Retryable;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -656,7 +655,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @throws EInnsynException if authorization, validation, or persistence fails
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
+  @RetryOnWriteConflict
   public D add(D dto) throws EInnsynException {
     authorizeAdd(dto);
 
@@ -691,7 +690,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @throws EInnsynException if authorization, validation, lookup, or persistence fails
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
+  @RetryOnWriteConflict
   public D update(String id, D dto) throws EInnsynException {
     var paths = ExpandPathResolver.resolve(dto);
     var obj = getProxy().findForUpdateOrThrow(id, dto);
@@ -709,7 +708,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @throws EInnsynException if authorization, lookup, or deletion fails
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
+  @RetryOnWriteConflict
   public D delete(String id) throws EInnsynException {
     authorizeDelete(id);
 

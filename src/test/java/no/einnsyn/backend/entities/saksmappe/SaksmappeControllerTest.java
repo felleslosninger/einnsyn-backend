@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.reflect.TypeToken;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -886,6 +887,154 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(1, cleanSlugCount, "Exactly one saksmappe should get the clean slug");
     assertEquals(4, randomSuffixCount, "Four saksmapper should have random suffix");
     assertEquals(5, slugs.size(), "All slugs should be unique");
+  }
+
+  /**
+   * The duplicate check in BaseService.add() reads and inserts in the same transaction, so
+   * concurrent adds of the same externalId can all pass the check and race to the unique index. The
+   * losers must come back as 409 Conflict, not 500: retrying on DataIntegrityViolationException
+   * re-runs the check in a new transaction, where the winner's row is now visible.
+   *
+   * @throws Exception
+   */
+  @Test
+  void testConcurrentAddWithSameExternalId() throws Exception {
+    var externalId = "testConcurrentAddWithSameExternalId";
+    var executorService = Executors.newFixedThreadPool(5);
+    var latch = new CountDownLatch(5);
+    var results = new ConcurrentHashMap<Integer, ResponseEntity<String>>();
+
+    try {
+      // Push the same object five times concurrently, as a client retrying a timed-out request
+      // would
+      for (int i = 0; i < 5; i++) {
+        final int threadId = i;
+        executorService.submit(
+            () -> {
+              try {
+                var saksmappeJSON = getSaksmappeJSON();
+                saksmappeJSON.put("externalId", externalId);
+                var response =
+                    post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+                results.put(threadId, response);
+              } catch (Exception e) {
+                e.printStackTrace();
+              } finally {
+                latch.countDown();
+              }
+            });
+      }
+
+      assertTrue(latch.await(60, TimeUnit.SECONDS), "Timeout waiting for threads to complete");
+      executorService.shutdown();
+      assertEquals(5, results.size(), "All threads should have produced a response");
+
+      var createdCount = 0;
+      var conflictCount = 0;
+      for (var response : results.values()) {
+        if (response.getStatusCode() == HttpStatus.CREATED) {
+          createdCount++;
+        } else {
+          assertEquals(
+              HttpStatus.CONFLICT,
+              response.getStatusCode(),
+              "A losing request should be a conflict, not an error: " + response.getBody());
+          conflictCount++;
+        }
+      }
+      assertEquals(1, createdCount, "Exactly one saksmappe should be created");
+      assertEquals(4, conflictCount, "The other four should be rejected as conflicts");
+
+      // The externalId resolves to exactly one object
+      var response = get("/saksmappe/" + externalId);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+      assertEquals(externalId, saksmappeDTO.getExternalId());
+    } finally {
+      executorService.shutdownNow();
+      // Clean up whatever was created, even if an assertion failed, so the fixed externalId
+      // doesn't leak into later runs
+      var response = get("/saksmappe/" + externalId);
+      if (response.getStatusCode() == HttpStatus.OK) {
+        var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+        delete("/saksmappe/" + saksmappeDTO.getId());
+      }
+    }
+  }
+
+  /**
+   * An update is an insert path too: nested objects go through findOrCreate, which adds the ones
+   * that don't exist yet, in the update's transaction. Concurrent updates creating the same nested
+   * externalId therefore race on the unique index exactly as concurrent adds do, and must not
+   * surface as 500s.
+   *
+   * @throws Exception
+   */
+  @Test
+  void testConcurrentUpdateCreatingSameExternalId() throws Exception {
+    var externalId = "testConcurrentUpdateCreatingSameExternalId";
+
+    // Two separate saksmapper, so the updates don't contend on the same parent row
+    var saksmappeIds = new ArrayList<String>();
+    for (int i = 0; i < 2; i++) {
+      var createResponse =
+          post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+      assertEquals(HttpStatus.CREATED, createResponse.getStatusCode());
+      saksmappeIds.add(gson.fromJson(createResponse.getBody(), SaksmappeDTO.class).getId());
+    }
+
+    var executorService = Executors.newFixedThreadPool(2);
+    var latch = new CountDownLatch(2);
+    var results = new ConcurrentHashMap<Integer, ResponseEntity<String>>();
+
+    try {
+      // Both updates add a nested journalpost with the same externalId, so they race on the insert
+      for (int i = 0; i < 2; i++) {
+        final int threadId = i;
+        executorService.submit(
+            () -> {
+              try {
+                var journalpostJSON = getJournalpostJSON();
+                journalpostJSON.put("externalId", externalId);
+                var journalpostJSONList = new JSONArray();
+                journalpostJSONList.put(journalpostJSON);
+                var saksmappeJSON = new JSONObject();
+                saksmappeJSON.put("journalpost", journalpostJSONList);
+                results.put(
+                    threadId, patch("/saksmappe/" + saksmappeIds.get(threadId), saksmappeJSON));
+              } catch (Exception e) {
+                e.printStackTrace();
+              } finally {
+                latch.countDown();
+              }
+            });
+      }
+
+      assertTrue(latch.await(60, TimeUnit.SECONDS), "Timeout waiting for threads to complete");
+      executorService.shutdown();
+      assertEquals(2, results.size(), "All threads should have produced a response");
+
+      // The losers retry, find the journalpost the winner committed, and reassign it
+      for (var response : results.values()) {
+        assertEquals(
+            HttpStatus.OK,
+            response.getStatusCode(),
+            "A losing update should reassign the existing journalpost, not fail: "
+                + response.getBody());
+      }
+
+      // The externalId resolves to exactly one journalpost
+      var response = get("/journalpost/" + externalId);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+      assertEquals(externalId, journalpostDTO.getExternalId());
+    } finally {
+      executorService.shutdownNow();
+      // Deleting the saksmapper cascades to the nested journalpost
+      for (var saksmappeId : saksmappeIds) {
+        delete("/saksmappe/" + saksmappeId);
+      }
+    }
   }
 
   @Test

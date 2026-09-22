@@ -5,6 +5,7 @@ import lombok.Getter;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
+import no.einnsyn.backend.common.retry.RetryOnWriteConflict;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
@@ -13,7 +14,6 @@ import no.einnsyn.backend.entities.utredning.models.Utredning;
 import no.einnsyn.backend.entities.utredning.models.UtredningDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -154,7 +154,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   }
 
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @RetryOnWriteConflict
   public DokumentbeskrivelseDTO addUtredningsdokument(
       String utredningId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {
@@ -167,7 +167,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   }
 
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @RetryOnWriteConflict
   public DokumentbeskrivelseDTO deleteUtredningsdokument(
       String utredningId, String utredningsdokumentId) throws EInnsynException {
     var utredning = utredningService.findForUpdateOrThrow(utredningId);
