@@ -11,9 +11,11 @@ import co.elastic.clients.elasticsearch._types.query_dsl.TermQuery;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import java.io.IOException;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -392,7 +394,16 @@ public class StatisticsService {
     }
 
     if (INTERVAL_WEEK.equals(requestedInterval)) {
-      var weeks = ChronoUnit.WEEKS.between(aggregateFromDate, aggregateToDate) + 1;
+      // Buckets are aligned to Monday, so count the weeks the range touches rather than the whole
+      // seven day periods between its ends: Sunday to the following Tuesday touches three weeks.
+      var firstWeek =
+          aggregateFromDate.toLocalDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+      var lastWeek =
+          aggregateToDate
+              .toLocalDate()
+              .minusDays(1)
+              .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+      var weeks = ChronoUnit.WEEKS.between(firstWeek, lastWeek) + 1;
       if (weeks <= MAX_BUCKETS) {
         return CalendarInterval.Week;
       }
