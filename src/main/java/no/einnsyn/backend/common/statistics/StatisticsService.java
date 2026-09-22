@@ -39,6 +39,7 @@ public class StatisticsService {
   private static final String INTERVAL_HOUR = "hour";
   private static final String INTERVAL_DAY = "day";
   private static final String INTERVAL_WEEK = "week";
+  private static final String INTERVAL_YEAR = "year";
 
   private final ElasticsearchClient esClient;
   private final SearchQueryService searchQueryService;
@@ -348,15 +349,16 @@ public class StatisticsService {
    *
    * <p>The returned interval is the most fine-grained interval that does not exceed {@link
    * #MAX_BUCKETS}. If {@code requestedInterval} is provided, it is treated as the <em>maximum</em>
-   * desired resolution (hour/day/week/month). If that would exceed the bucket limit, the method
-   * falls back to progressively coarser intervals until it fits.
+   * desired resolution (hour/day/week/month/year). If that would exceed the bucket limit, the
+   * method falls back to progressively coarser intervals until it fits.
    *
-   * <p>If {@code requestedInterval} is {@code null} / blank / unrecognized, the method defaults to
-   * trying {@code hour} first.
+   * <p>{@code year} is only ever returned when it is explicitly requested. It is the coarsest
+   * interval we offer, so the fallback chain stops at {@code month} and never reaches it on its
+   * own.
    *
    * @param aggregateFrom the start date in ISO-8601 format (yyyy-MM-dd)
    * @param aggregateTo the end date in ISO-8601 format (yyyy-MM-dd)
-   * @param requestedInterval the desired maximum resolution: hour/day/week/month (case-insensitive)
+   * @param requestedInterval the desired maximum resolution: hour/day/week/month/year
    * @return the chosen bucket interval (Hour/Day/Week/Month/Year)
    */
   private CalendarInterval calculateCalendarInterval(
@@ -394,6 +396,10 @@ public class StatisticsService {
       if (weeks <= MAX_BUCKETS) {
         return CalendarInterval.Week;
       }
+    }
+
+    if (INTERVAL_YEAR.equals(requestedInterval)) {
+      return CalendarInterval.Year;
     }
 
     return CalendarInterval.Month;

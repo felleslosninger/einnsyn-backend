@@ -1,6 +1,7 @@
 package no.einnsyn.backend.common.statistics;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -297,6 +298,47 @@ class StatisticsTest extends EinnsynControllerTestBase {
 
     var metadata = statisticsResponse.getMetadata();
     assertEquals("month", metadata.getAggregateInterval());
+  }
+
+  @Test
+  void testOverrideIntervalToYear() throws Exception {
+    // "year" is a documented interval, and must not silently degrade to month
+    var today = LocalDate.now();
+    var response =
+        get(
+            "/statistics?aggregateFrom="
+                + today.minusDays(1)
+                + "&aggregateTo="
+                + today
+                + "&aggregateInterval=year");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    var statisticsResponse = gson.fromJson(response.getBody(), StatisticsResponse.class);
+    assertNotNull(statisticsResponse);
+    assertEquals("year", statisticsResponse.getMetadata().getAggregateInterval());
+  }
+
+  @Test
+  void testYearIntervalGroupsByCalendarYear() throws Exception {
+    var from = LocalDate.now().minusYears(3).toString();
+    var to = LocalDate.now().plusDays(1).toString();
+    var response =
+        get("/statistics?aggregateFrom=" + from + "&aggregateTo=" + to + "&aggregateInterval=year");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    var statisticsResponse = gson.fromJson(response.getBody(), StatisticsResponse.class);
+    assertNotNull(statisticsResponse);
+    assertEquals("year", statisticsResponse.getMetadata().getAggregateInterval());
+
+    // Buckets are whole years, so every bucket starts on 1 January
+    var timeSeries = statisticsResponse.getTimeSeries();
+    assertFalse(timeSeries.isEmpty());
+    for (var dataPoint : timeSeries) {
+      assertNotNull(dataPoint.getTime());
+      assertTrue(
+          dataPoint.getTime().matches("\\d{4}-01-01T.*"),
+          "Expected a January 1st bucket start, got " + dataPoint.getTime());
+    }
   }
 
   @Test
