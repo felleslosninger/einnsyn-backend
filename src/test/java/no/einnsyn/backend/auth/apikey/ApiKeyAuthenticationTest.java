@@ -114,7 +114,7 @@ class ApiKeyAuthenticationTest extends EinnsynControllerTestBase {
 
     // Update the enhet, set handteresAv to journalenhet2
     enhetJSON.put("handteresAv", journalenhet2Id);
-    response = patch("/enhet/" + enhetDTO.getId(), enhetJSON);
+    response = patchAdmin("/enhet/" + enhetDTO.getId(), enhetJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Try to act on behalf of this enhet with the API key of journalenhet2.

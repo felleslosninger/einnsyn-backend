@@ -114,7 +114,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     enhetOrderV2JSON.put("navn", "EnhetOrderV2");
     enhetOrderV2JSON.put("orderXmlVersjon", 2);
     enhetOrderV2JSON.put("eFormidling", true);
-    enhetResponse = post("/enhet/" + journalenhetId + "/underenhet", enhetOrderV2JSON);
+    enhetResponse = postAdmin("/enhet/" + journalenhetId + "/underenhet", enhetOrderV2JSON);
     assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
     enhetOrderV2DTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
 

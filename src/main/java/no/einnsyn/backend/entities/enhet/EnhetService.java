@@ -207,26 +207,34 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     }
 
     if (dto.getEFormidling() != null) {
+      requireAdminToChange("eFormidling", enhet.isEFormidling(), dto.getEFormidling());
       enhet.setEFormidling(dto.getEFormidling());
     }
 
     if (dto.getVisToppnode() != null) {
+      requireAdminToChange("visToppnode", enhet.isVisToppnode(), dto.getVisToppnode());
       enhet.setVisToppnode(dto.getVisToppnode());
     }
 
     if (dto.getTeknisk() != null) {
+      requireAdminToChange("teknisk", enhet.isErTeknisk(), dto.getTeknisk());
       enhet.setErTeknisk(dto.getTeknisk());
     }
 
     if (dto.getSkalKonvertereId() != null) {
+      requireAdminToChange(
+          "skalKonvertereId", enhet.isSkalKonvertereId(), dto.getSkalKonvertereId());
       enhet.setSkalKonvertereId(dto.getSkalKonvertereId());
     }
 
     if (dto.getSkalMottaKvittering() != null) {
+      requireAdminToChange(
+          "skalMottaKvittering", enhet.isSkalMottaKvittering(), dto.getSkalMottaKvittering());
       enhet.setSkalMottaKvittering(dto.getSkalMottaKvittering());
     }
 
     if (dto.getOrderXmlVersjon() != null) {
+      requireAdminToChange("orderXmlVersjon", enhet.getOrderXmlVersjon(), dto.getOrderXmlVersjon());
       enhet.setOrderXmlVersjon(dto.getOrderXmlVersjon());
     }
 
@@ -244,6 +252,11 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
 
     if (dto.getHandteresAv() != null) {
       var handteresAv = findOrThrow(dto.getHandteresAv());
+      var currentHandteresAv = enhet.getHandteresAv();
+      requireAdminToChange(
+          "handteresAv",
+          currentHandteresAv == null ? null : currentHandteresAv.getId(),
+          handteresAv.getId());
       enhet.setHandteresAv(handteresAv);
     }
 
@@ -321,6 +334,14 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
         maybeExpand(enhet.getHandteresAv(), "handteresAv", expandPaths, currentPath));
 
     return dto;
+  }
+
+  /** Non-admins may echo these fields back unchanged, but not change them. */
+  private void requireAdminToChange(String field, Object current, Object wanted)
+      throws AuthorizationException {
+    if (!Objects.equals(current, wanted) && !authenticationService.isAdmin()) {
+      throw new AuthorizationException(field + " can only be changed by admins");
+    }
   }
 
   /**

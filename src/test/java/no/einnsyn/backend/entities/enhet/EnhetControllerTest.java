@@ -1329,6 +1329,53 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
   }
 
+  /** Non-admins may echo operator-level fields back unchanged, but only admins can change them. */
+  @Test
+  void testOperatorFieldsRequireAdmin() throws Exception {
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("eFormidling", true);
+    var response = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    enhetJSON.put("eFormidling", false);
+    response = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhetId = gson.fromJson(response.getBody(), EnhetDTO.class).getId();
+
+    for (var patchJSON :
+        List.of(
+            new JSONObject().put("eFormidling", true),
+            new JSONObject().put("visToppnode", true),
+            new JSONObject().put("teknisk", true),
+            new JSONObject().put("skalKonvertereId", true),
+            new JSONObject().put("skalMottaKvittering", true),
+            new JSONObject().put("orderXmlVersjon", 2),
+            new JSONObject().put("handteresAv", journalenhet2Id))) {
+      assertEquals(
+          HttpStatus.FORBIDDEN,
+          patch("/enhet/" + enhetId, patchJSON).getStatusCode(),
+          patchJSON.toString());
+    }
+
+    var adminJSON =
+        new JSONObject()
+            .put("teknisk", true)
+            .put("orderXmlVersjon", 2)
+            .put("handteresAv", journalenhet2Id);
+    response = patchAdmin("/enhet/" + enhetId, adminJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+    assertEquals(true, enhetDTO.getTeknisk());
+    assertEquals(2, enhetDTO.getOrderXmlVersjon());
+    assertEquals(journalenhet2Id, enhetDTO.getHandteresAv().getId());
+
+    // Unchanged values pass for non-admins
+    response = patch("/enhet/" + enhetId, adminJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    assertEquals(HttpStatus.OK, delete("/enhet/" + enhetId).getStatusCode());
+  }
+
   /** The administrative flags on an Enhet are persisted and returned. */
   @Test
   void testEnhetAdministrativeFlags() throws Exception {
@@ -1338,7 +1385,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     enhetJSON.put("skalKonvertereId", true);
     enhetJSON.put("skalMottaKvittering", true);
     enhetJSON.put("orderXmlVersjon", 2);
-    var response = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
+    var response = postAdmin("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
 
