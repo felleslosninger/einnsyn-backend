@@ -169,27 +169,6 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     var isAdmin = authenticationService.isAdmin();
     var wasTopNode = enhet.getId() != null && isTopNode(enhet.getId());
 
-    if (dto.getVerified() != null) {
-      if (!isAdmin) {
-        throw new AuthorizationException("verified can only be set by admins");
-      }
-      if (Boolean.TRUE.equals(dto.getVerified())) {
-        if (!enhet.isVerified()) {
-          enhet.setVerifiedAt(Instant.now());
-        }
-      } else {
-        // Admin keys belong to the parentless root, so un-verifying it would lock every admin out
-        if (enhet.getParent() == null) {
-          throw new BadRequestException("Root Enhets cannot be unverified");
-        }
-        enhet.setVerifiedAt(null);
-      }
-    } else if (enhet.getId() == null) {
-      // Only orgnummer-authenticated principals (self-registration) start out unverified.
-      var isVerified = authenticationService.getEnhetId() != null || isAdmin;
-      enhet.setVerifiedAt(isVerified ? Instant.now() : null);
-    }
-
     if (dto.getSlug() != null) {
       enhet.setSlug(dto.getSlug());
     }
@@ -288,6 +267,28 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     if (dto.getHandteresAv() != null) {
       var handteresAv = findOrThrow(dto.getHandteresAv());
       enhet.setHandteresAv(handteresAv);
+    }
+
+    if (dto.getVerified() != null) {
+      if (!isAdmin) {
+        throw new AuthorizationException("verified can only be set by admins");
+      }
+      if (Boolean.TRUE.equals(dto.getVerified())) {
+        if (!enhet.isVerified()) {
+          enhet.setVerifiedAt(Instant.now());
+        }
+      } else {
+        // Admin keys belong to the parentless root, so un-verifying it would lock every admin out.
+        // Runs after the parent is applied above, so a new child is not mistaken for a root.
+        if (enhet.getParent() == null) {
+          throw new BadRequestException("Root Enhets cannot be unverified");
+        }
+        enhet.setVerifiedAt(null);
+      }
+    } else if (enhet.getId() == null) {
+      // Only orgnummer-authenticated principals (self-registration) start out unverified.
+      var isVerified = authenticationService.getEnhetId() != null || isAdmin;
+      enhet.setVerifiedAt(isVerified ? Instant.now() : null);
     }
 
     // Self-registration hangs off top nodes, so only admins may create one
