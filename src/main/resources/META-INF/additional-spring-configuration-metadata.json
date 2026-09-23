@@ -164,6 +164,11 @@
 			"name": "application.ansattporten.allowSelfRegistration",
 			"type": "java.lang.Boolean",
 			"description": "Enable/disable orgnummer self-add for authenticated Ansattporten users without an existing Enhet."
+		},
+		{
+			"name": "application.enhet.verificationNotificationEmail",
+			"type": "java.lang.String",
+			"description": "Recipient for notifications about self-registered Enhets awaiting verification. Empty disables the notification."
 		}
 	]
 }

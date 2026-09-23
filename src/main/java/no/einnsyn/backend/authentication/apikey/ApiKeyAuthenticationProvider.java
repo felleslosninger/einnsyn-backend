@@ -10,6 +10,7 @@ import no.einnsyn.backend.authentication.EInnsynPrincipalBruker;
 import no.einnsyn.backend.authentication.EInnsynPrincipalEnhet;
 import no.einnsyn.backend.entities.apikey.ApiKeyService;
 import no.einnsyn.backend.entities.enhet.EnhetService;
+import no.einnsyn.backend.entities.enhet.models.Enhet;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -61,6 +62,9 @@ public class ApiKeyAuthenticationProvider implements AuthenticationProvider {
       var enhet = apiKey.getEnhet();
       var bruker = apiKey.getBruker();
 
+      // Unverified Enhets hold no usable keys, whatever ACTING-AS asks for below
+      requireVerified(enhet);
+
       // The key's own admin status, before any ACTING-AS reassignment below.
       var keyIsAdmin = enhet != null && enhet.getParent() == null;
 
@@ -77,6 +81,9 @@ public class ApiKeyAuthenticationProvider implements AuthenticationProvider {
           enhet = enhetService.findOrThrow(actingAsId, AuthenticationException.class);
         }
       }
+
+      // The ACTING-AS target must be verified too
+      requireVerified(enhet);
 
       EInnsynPrincipal principal;
       List<EInnsynAuthority> authorities = null;
@@ -115,6 +122,12 @@ public class ApiKeyAuthenticationProvider implements AuthenticationProvider {
     }
 
     return null;
+  }
+
+  private static void requireVerified(Enhet enhet) {
+    if (enhet != null && !enhet.isVerified()) {
+      throw new AuthenticationException("Enhet is not verified") {};
+    }
   }
 
   @Override

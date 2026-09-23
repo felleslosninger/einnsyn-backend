@@ -13,6 +13,7 @@ import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -227,6 +228,48 @@ class ApiKeyAuthenticationTest extends EinnsynControllerTestBase {
 
     var response = get("/testauth", headers);
     assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+  }
+
+  /** A key owned by an unverified Enhet is unusable, also when acting as a verified Enhet. */
+  @Test
+  void testKeyOfUnverifiedEnhetCannotActAsVerifiedEnhet() throws Exception {
+    var pendingJSON = getEnhetJSON();
+    pendingJSON.put("parent", rootEnhetId);
+    pendingJSON.put("verified", false);
+    var response = postAdmin("/enhet", pendingJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var pendingId = gson.fromJson(response.getBody(), EnhetDTO.class).getId();
+
+    response = postAdmin("/enhet/" + pendingId + "/underenhet", getEnhetJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var childId = gson.fromJson(response.getBody(), EnhetDTO.class).getId();
+
+    response = postAdmin("/enhet/" + pendingId + "/apiKey", getApiKeyJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var secretKey = gson.fromJson(response.getBody(), ApiKeyDTO.class).getSecretKey();
+
+    // Directly, acting as the verified child, and an admin acting as the pending Enhet
+    assertEquals(
+        HttpStatus.UNAUTHORIZED, post("/arkiv", getArkivJSON(), secretKey).getStatusCode());
+    var actingAsChild = getActingAsHeaders(secretKey, childId);
+    assertEquals(
+        HttpStatus.UNAUTHORIZED, post("/arkiv", getArkivJSON(), actingAsChild).getStatusCode());
+    var adminActingAsPending = getActingAsHeaders(adminKey, pendingId);
+    assertEquals(
+        HttpStatus.UNAUTHORIZED,
+        post("/arkiv", getArkivJSON(), adminActingAsPending).getStatusCode());
+
+    // Once verified, the same key works
+    response = patchAdmin("/enhet/" + pendingId, new JSONObject().put("verified", true));
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = post("/arkiv", getArkivJSON(), actingAsChild);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    assertEquals(childId, arkivDTO.getJournalenhet().getId());
+
+    assertEquals(
+        HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId(), actingAsChild).getStatusCode());
+    assertEquals(HttpStatus.OK, deleteAdmin("/enhet/" + pendingId).getStatusCode());
   }
 
   @Test

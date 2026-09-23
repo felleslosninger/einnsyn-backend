@@ -130,20 +130,40 @@ public interface EnhetRepository extends HasSlugRepository<Enhet> {
   @Query(
       """
       SELECT o FROM Enhet o
-      WHERE parent = :parent
-      AND id >= COALESCE(:pivot, id)
-      ORDER BY id ASC
+      WHERE (:verifiedOnly = false OR o.verifiedAt IS NOT NULL)
+      AND o.id >= COALESCE(:pivot, o.id)
+      ORDER BY o.id ASC
       """)
-  Slice<Enhet> paginateAsc(Enhet parent, String pivot, Pageable pageable);
+  Slice<Enhet> paginateAllAsc(boolean verifiedOnly, String pivot, Pageable pageable);
+
+  @Query(
+      """
+      SELECT o FROM Enhet o
+      WHERE (:verifiedOnly = false OR o.verifiedAt IS NOT NULL)
+      AND o.id <= COALESCE(:pivot, o.id)
+      ORDER BY o.id DESC
+      """)
+  Slice<Enhet> paginateAllDesc(boolean verifiedOnly, String pivot, Pageable pageable);
 
   @Query(
       """
       SELECT o FROM Enhet o
       WHERE parent = :parent
+      AND (:verifiedOnly = false OR o.verifiedAt IS NOT NULL)
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
+  Slice<Enhet> paginateAsc(Enhet parent, boolean verifiedOnly, String pivot, Pageable pageable);
+
+  @Query(
+      """
+      SELECT o FROM Enhet o
+      WHERE parent = :parent
+      AND (:verifiedOnly = false OR o.verifiedAt IS NOT NULL)
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Slice<Enhet> paginateDesc(Enhet parent, String pivot, Pageable pageable);
+  Slice<Enhet> paginateDesc(Enhet parent, boolean verifiedOnly, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -157,11 +177,16 @@ public interface EnhetRepository extends HasSlugRepository<Enhet> {
         OR LOWER(o.enhetskode) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%'))
       ))
       AND (:orgnummer IS NULL OR o.orgnummer IN :orgnummer)
+      AND (:verifiedOnly = false OR o.verifiedAt IS NOT NULL)
       AND o.id >= COALESCE(:pivot, o.id)
       ORDER BY o.id ASC
       """)
   Slice<Enhet> paginateFilteredAsc(
-      String query, Collection<String> orgnummer, String pivot, Pageable pageable);
+      String query,
+      Collection<String> orgnummer,
+      boolean verifiedOnly,
+      String pivot,
+      Pageable pageable);
 
   @Query(
       """
@@ -175,9 +200,14 @@ public interface EnhetRepository extends HasSlugRepository<Enhet> {
         OR LOWER(o.enhetskode) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%'))
       ))
       AND (:orgnummer IS NULL OR o.orgnummer IN :orgnummer)
+      AND (:verifiedOnly = false OR o.verifiedAt IS NOT NULL)
       AND o.id <= COALESCE(:pivot, o.id)
       ORDER BY o.id DESC
       """)
   Slice<Enhet> paginateFilteredDesc(
-      String query, Collection<String> orgnummer, String pivot, Pageable pageable);
+      String query,
+      Collection<String> orgnummer,
+      boolean verifiedOnly,
+      String pivot,
+      Pageable pageable);
 }

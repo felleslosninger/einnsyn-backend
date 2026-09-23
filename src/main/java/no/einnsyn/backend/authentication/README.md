@@ -26,4 +26,6 @@ curl -X GET https://api.einnsyn.no \
 ```
 
 ## Ansattporten
-In the future, employees will be able to authenticate and send requests on behalf of a public body using [Ansattporten](https://docs.digdir.no/docs/idporten/oidc/ansattporten_guide.html).
+Employees can authenticate on behalf of a public body using [Ansattporten](https://docs.digdir.no/docs/idporten/oidc/ansattporten_guide.html). The token's authorized orgnummer is resolved to an Enhet, which gives the same access as an API key for that Enhet.
+
+If no verified Enhet exists for the orgnummer, the principal carries only the orgnummer. Such a principal can self-register an Enhet under a top node (when `application.ansattporten.allowSelfRegistration` is enabled), and can read and maintain that Enhet while it waits for verification. Unverified Enhets are invisible to everyone but admins and cannot publish data or hold API keys. An admin verifies by setting `verified: true` on the Enhet; a notification is sent to `application.enhet.verificationNotificationEmail` on self-registration.

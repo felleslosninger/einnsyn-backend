@@ -1,8 +1,11 @@
 package no.einnsyn.backend.entities.enhet;
 
 import jakarta.annotation.Nullable;
+import jakarta.mail.MessagingException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -12,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
+import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.hasslug.HasSlugService;
 import no.einnsyn.backend.common.paginators.Paginators;
@@ -34,6 +39,7 @@ import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.utils.IRIMatcher;
 import no.einnsyn.backend.utils.id.IdValidator;
+import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -61,7 +67,10 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
   private final MoetemappeRepository moetemappeRepository;
   private final MoetesakRepository moetesakRepository;
   private final ApiKeyRepository apiKeyRepository;
+  private final MailSenderService mailSender;
   private final boolean ansattportenAllowSelfRegistration;
+  private final String emailFrom;
+  private final String verificationNotificationEmail;
 
   EnhetService(
       EnhetRepository repository,
@@ -70,15 +79,22 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
       MoetemappeRepository moetemappeRepository,
       MoetesakRepository moetesakRepository,
       ApiKeyRepository apiKeyRepository,
+      MailSenderService mailSender,
       @Value("${application.ansattporten.allowSelfRegistration:true}")
-          boolean ansattportenAllowSelfRegistration) {
+          boolean ansattportenAllowSelfRegistration,
+      @Value("${application.email.from}") String emailFrom,
+      @Value("${application.enhet.verificationNotificationEmail:}")
+          String verificationNotificationEmail) {
     this.repository = repository;
     this.innsynskravRepository = innsynskravRepository;
     this.saksmappeRepository = saksmappeRepository;
     this.moetemappeRepository = moetemappeRepository;
     this.moetesakRepository = moetesakRepository;
     this.apiKeyRepository = apiKeyRepository;
+    this.mailSender = mailSender;
     this.ansattportenAllowSelfRegistration = ansattportenAllowSelfRegistration;
+    this.emailFrom = emailFrom;
+    this.verificationNotificationEmail = verificationNotificationEmail;
   }
 
   @Override
@@ -150,6 +166,30 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
   protected Enhet fromDTO(EnhetDTO dto, Enhet enhet) throws EInnsynException {
     super.fromDTO(dto, enhet);
 
+    var isAdmin = authenticationService.isAdmin();
+    var wasTopNode = enhet.getId() != null && isTopNode(enhet.getId());
+
+    if (dto.getVerified() != null) {
+      if (!isAdmin) {
+        throw new AuthorizationException("verified can only be set by admins");
+      }
+      if (Boolean.TRUE.equals(dto.getVerified())) {
+        if (!enhet.isVerified()) {
+          enhet.setVerifiedAt(Instant.now());
+        }
+      } else {
+        // Admin keys belong to the parentless root, so un-verifying it would lock every admin out
+        if (enhet.getParent() == null) {
+          throw new BadRequestException("Root Enhets cannot be unverified");
+        }
+        enhet.setVerifiedAt(null);
+      }
+    } else if (enhet.getId() == null) {
+      // Only orgnummer-authenticated principals (self-registration) start out unverified.
+      var isVerified = authenticationService.getEnhetId() != null || isAdmin;
+      enhet.setVerifiedAt(isVerified ? Instant.now() : null);
+    }
+
     if (dto.getSlug() != null) {
       enhet.setSlug(dto.getSlug());
     }
@@ -191,6 +231,9 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     }
 
     if (dto.getOrgnummer() != null) {
+      if (enhet.getId() != null && !isAdmin && !dto.getOrgnummer().equals(enhet.getOrgnummer())) {
+        throw new AuthorizationException("orgnummer can only be changed by admins");
+      }
       enhet.setOrgnummer(dto.getOrgnummer());
     }
 
@@ -247,6 +290,11 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
       enhet.setHandteresAv(handteresAv);
     }
 
+    // Self-registration hangs off top nodes, so only admins may create one
+    if (!isAdmin && !wasTopNode && isTopNode(enhet)) {
+      throw new AuthorizationException("Only admins can create top nodes");
+    }
+
     // Persist before adding relations
     if (enhet.getId() == null) {
       enhet = repository.saveAndFlush(enhet);
@@ -264,6 +312,8 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
         } else {
           var underenhetDTO = underenhetField.getExpandedObject();
           underenhetDTO.setParent(new ExpandableField<>(enhet.getId()));
+          // Same rule as POST, so an unverified Enhet cannot attach children this way
+          authorizeAdd(underenhetDTO);
           var underenhet = enhetService.addEntity(underenhetDTO);
           enhet.addUnderenhet(underenhet);
         }
@@ -315,12 +365,79 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     dto.setSkalMottaKvittering(enhet.isSkalMottaKvittering());
     dto.setOrderXmlVersjon(enhet.getOrderXmlVersjon());
 
+    var isAdmin = authenticationService.isAdmin();
+    if (isAdmin) {
+      dto.setVerified(enhet.isVerified());
+    }
+
+    // Unverified underenhets exist only for admins
+    var underenhet = enhet.getUnderenhet();
+    if (underenhet != null && !isAdmin) {
+      underenhet = underenhet.stream().filter(Enhet::isVerified).toList();
+    }
+
     dto.setParent(maybeExpand(enhet.getParent(), "parent", expandPaths, currentPath));
-    dto.setUnderenhet(maybeExpand(enhet.getUnderenhet(), "underenhet", expandPaths, currentPath));
+    dto.setUnderenhet(maybeExpand(underenhet, "underenhet", expandPaths, currentPath));
     dto.setHandteresAv(
         maybeExpand(enhet.getHandteresAv(), "handteresAv", expandPaths, currentPath));
 
     return dto;
+  }
+
+  /** Whether the current principal is the orgnummer-only principal that registered this Enhet. */
+  private boolean isOwnUnverifiedEnhet(Enhet enhet) {
+    var orgnummer = authenticationService.getEnhetOrgnummer();
+    return enhet != null
+        && !enhet.isVerified()
+        && authenticationService.getEnhetId() == null
+        && orgnummer != null
+        && orgnummer.equals(enhet.getOrgnummer());
+  }
+
+  /**
+   * Unverified Enhets do not exist for anyone but admins and the principal that registered them.
+   */
+  private void requireVisible(String identifier) throws NotFoundException {
+    var enhet = proxy.find(identifier);
+    if (enhet != null
+        && !enhet.isVerified()
+        && !authenticationService.isAdmin()
+        && !isOwnUnverifiedEnhet(enhet)) {
+      throw new NotFoundException("No Enhet found with identifier " + identifier);
+    }
+  }
+
+  @Override
+  protected Enhet addEntity(EnhetDTO dto) throws EInnsynException {
+    var enhet = super.addEntity(dto);
+    if (!enhet.isVerified()) {
+      sendVerificationNotification(enhet);
+    }
+    return enhet;
+  }
+
+  private void sendVerificationNotification(Enhet enhet) throws EInnsynException {
+    if (!StringUtils.hasText(verificationNotificationEmail)) {
+      log.warn(
+          "No verification notification recipient configured, Enhet {} awaits verification",
+          enhet.getId());
+      return;
+    }
+
+    var context = new HashMap<String, Object>();
+    context.put("navn", Objects.toString(enhet.getNavn(), ""));
+    context.put("orgnummer", Objects.toString(enhet.getOrgnummer(), ""));
+    context.put("enhetId", enhet.getId());
+    context.put("kontaktpunktEpost", Objects.toString(enhet.getKontaktpunktEpost(), ""));
+    context.put("innsynskravEpost", Objects.toString(enhet.getInnsynskravEpost(), ""));
+
+    try {
+      log.debug("Sending verification notification for Enhet {}", enhet.getId());
+      mailSender.send(
+          emailFrom, verificationNotificationEmail, "enhetVerificationRequest", "nn", context);
+    } catch (MessagingException e) {
+      throw new InternalServerErrorException("Unable to send verification notification", e);
+    }
   }
 
   /**
@@ -532,6 +649,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
 
   public PaginatedList<ApiKeyDTO> listApiKey(String enhetId, ListByEnhetParameters query)
       throws EInnsynException {
+    requireVisible(enhetId);
     query.setEnhetId(enhetId);
     return apiKeyService.list(query);
   }
@@ -543,23 +661,28 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
 
   public PaginatedList<ArkivDTO> listArkiv(String enhetId, ListByEnhetParameters query)
       throws EInnsynException {
+    requireVisible(enhetId);
     query.setEnhetId(enhetId);
     return arkivService.list(query);
   }
 
   public PaginatedList<InnsynskravDTO> listInnsynskrav(String enhetId, ListByEnhetParameters query)
       throws EInnsynException {
+    requireVisible(enhetId);
     query.setEnhetId(enhetId);
     return innsynskravService.list(query);
   }
 
   @Override
   protected Paginators<Enhet> getPaginators(ListParameters params) throws EInnsynException {
+    var verifiedOnly = !authenticationService.isAdmin();
     if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
+      requireVisible(p.getEnhetId());
       var parent = enhetService.findOrThrow(p.getEnhetId());
       return new Paginators<>(
-          (pivot, pageRequest) -> repository.paginateAsc(parent, pivot, pageRequest),
-          (pivot, pageRequest) -> repository.paginateDesc(parent, pivot, pageRequest));
+          (pivot, pageRequest) -> repository.paginateAsc(parent, verifiedOnly, pivot, pageRequest),
+          (pivot, pageRequest) ->
+              repository.paginateDesc(parent, verifiedOnly, pivot, pageRequest));
     }
     if (params instanceof EnhetFilterParameters p) {
       var query = StringUtils.hasText(p.getQuery()) ? p.getQuery().trim() : null;
@@ -575,12 +698,15 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
       if (query != null || orgnummer != null) {
         return new Paginators<>(
             (pivot, pageRequest) ->
-                repository.paginateFilteredAsc(query, orgnummer, pivot, pageRequest),
+                repository.paginateFilteredAsc(query, orgnummer, verifiedOnly, pivot, pageRequest),
             (pivot, pageRequest) ->
-                repository.paginateFilteredDesc(query, orgnummer, pivot, pageRequest));
+                repository.paginateFilteredDesc(
+                    query, orgnummer, verifiedOnly, pivot, pageRequest));
       }
     }
-    return super.getPaginators(params);
+    return new Paginators<>(
+        (pivot, pageRequest) -> repository.paginateAllAsc(verifiedOnly, pivot, pageRequest),
+        (pivot, pageRequest) -> repository.paginateAllDesc(verifiedOnly, pivot, pageRequest));
   }
 
   /**
@@ -593,10 +719,12 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     // Anybody can list Enhet objects
   }
 
-  /** No authorization required for get operation. */
+  /**
+   * Anybody can get verified Enhet objects, unverified ones only exist for admins and themselves.
+   */
   @Override
   protected void authorizeGet(String idToGet) throws EInnsynException {
-    // Anybody can get Enhet objects
+    requireVisible(idToGet);
   }
 
   /**
@@ -629,6 +757,9 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
       if (authenticatedOrgnummer != null
           && authenticatedOrgnummer.equals(dto.getOrgnummer())
           && isTopNode(parent.getId())) {
+        if (dto.getUnderenhet() != null && !dto.getUnderenhet().isEmpty()) {
+          throw new AuthorizationException("Underenhet cannot be added before verification");
+        }
         return;
       }
     }
@@ -649,24 +780,19 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     if (!StringUtils.hasText(identifier)) {
       return false;
     }
+    return isTopNode(enhetService.find(identifier));
+  }
 
-    var enhet = enhetService.find(identifier);
-    if (enhet == null) {
-      return false;
-    }
-
-    var visited = new HashSet<String>();
+  /** Walks the in-memory chain, so it also works for an Enhet that is not persisted yet. */
+  private boolean isTopNode(Enhet enhet) {
+    var visited = new HashSet<Enhet>();
     while (enhet != null) {
-      var enhetId = enhet.getId();
-      if (!StringUtils.hasText(enhetId) || !visited.add(enhetId)) {
-        return false;
-      }
-      if (enhet.getEnhetstype() != EnhetDTO.EnhetstypeEnum.DUMMYENHET) {
+      if (!visited.add(enhet) || enhet.getEnhetstype() != EnhetDTO.EnhetstypeEnum.DUMMYENHET) {
         return false;
       }
       enhet = enhet.getParent();
     }
-    return true;
+    return !visited.isEmpty();
   }
 
   /**
@@ -679,8 +805,15 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
    */
   @Override
   protected void authorizeUpdate(String idToUpdate, EnhetDTO dto) throws EInnsynException {
+    requireVisible(idToUpdate);
+
     var loggedInAs = authenticationService.getEnhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToUpdate)) {
+      return;
+    }
+
+    // An unverified Enhet may maintain its own info while waiting for verification
+    if (isOwnUnverifiedEnhet(proxy.find(idToUpdate))) {
       return;
     }
 
@@ -696,6 +829,8 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
    */
   @Override
   protected void authorizeDelete(String idToDelete) throws EInnsynException {
+    requireVisible(idToDelete);
+
     var loggedInAs = authenticationService.getEnhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToDelete)) {
       var enhet = proxy.find(idToDelete);
