@@ -34,6 +34,7 @@ import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.mail.MailException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -120,7 +121,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
             try {
               log.debug("Sending activation email to {}", bruker.getEmail());
               sendActivationEmail(bruker);
-            } catch (MessagingException e) {
+            } catch (MessagingException | MailException e) {
               // The account exists; requestPasswordReset issues a new link.
               log.error("Failed to send activation email for Bruker {}", bruker.getId(), e);
             }
@@ -280,7 +281,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
             try {
               log.debug("Sending password reset email to {}", email);
               mailSender.send(emailFrom, email, "userResetPassword", language, context);
-            } catch (MessagingException e) {
+            } catch (MessagingException | MailException e) {
               // The secret is stored and the old password still works; the user can ask again.
               log.error("Failed to send password reset email for Bruker {}", brukerId, e);
             }
