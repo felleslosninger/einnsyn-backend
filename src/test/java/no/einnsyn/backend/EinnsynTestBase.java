@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.auth.ansattporten.AnsattportenTestKeys;
 import no.einnsyn.backend.authentication.bruker.EInnsynTokenService;
 import no.einnsyn.backend.common.search.SearchService;
 import no.einnsyn.backend.entities.apikey.ApiKeyRepository;
@@ -95,7 +96,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -203,6 +206,14 @@ public abstract class EinnsynTestBase {
 
   @MockitoBean(name = "getJavaMailSender")
   public JavaMailSender javaMailSender;
+
+  // Accepts Ansattporten tokens signed with the test key, in every test context
+  @TestBean(name = "ansattportenJwtDecoder")
+  protected JwtDecoder ansattportenJwtDecoder;
+
+  static JwtDecoder ansattportenJwtDecoder() {
+    return AnsattportenTestKeys.jwtDecoder();
+  }
 
   @Value("${application.elasticsearch.index:test}")
   protected String elasticsearchIndex;

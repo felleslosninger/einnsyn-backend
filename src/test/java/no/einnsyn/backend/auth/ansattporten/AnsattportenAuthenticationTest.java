@@ -1,5 +1,7 @@
 package no.einnsyn.backend.auth.ansattporten;
 
+import static no.einnsyn.backend.auth.ansattporten.AnsattportenTestKeys.TEST_KEY_ID;
+import static no.einnsyn.backend.auth.ansattporten.AnsattportenTestKeys.TEST_KEY_PAIR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -17,44 +19,41 @@ import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.mail.internet.MimeMessage;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import no.einnsyn.backend.EInnsynApplication;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.authinfo.models.AuthInfo;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.enhet.EnhetService;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.utils.id.IdGenerator;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
-@SpringBootTest(
-    webEnvironment = WebEnvironment.RANDOM_PORT,
-    classes = {EInnsynApplication.class, AnsattportenTestJwtConfiguration.class})
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
 
   @Value("${application.ansattporten.issuerUri}")
   private String ansattportenIssuerUri;
 
-  public static final KeyPair TEST_KEY_PAIR = generateTestRsaKeyPair();
-  public static final String TEST_KEY_ID = "test-ansattporten-rsa-key-1";
+  @Autowired private EnhetService enhetService;
+
   private static final String TEST_CLIENT_ID = "einnsyn-test-client";
   private static final String TEST_RESOURCE = "urn:altinn:resource:einnsyn-api";
 
@@ -410,18 +409,63 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
             "urn:altinn:resource:unrelated"));
   }
 
-  private void assertRejected(String jwt) throws Exception {
-    assertEquals(HttpStatus.UNAUTHORIZED, get("/me", jwt).getStatusCode());
+  /** Flips a flag on the live service and restores it on close. Unwraps the AOP proxy itself. */
+  private AutoCloseable withEnhetServiceFlag(String field, boolean value) {
+    var original = (boolean) ReflectionTestUtils.getField(enhetService, field);
+    ReflectionTestUtils.setField(enhetService, field, value);
+    return () -> ReflectionTestUtils.setField(enhetService, field, original);
   }
 
-  private static KeyPair generateTestRsaKeyPair() {
-    try {
-      var keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-      keyPairGenerator.initialize(2048);
-      return keyPairGenerator.generateKeyPair();
-    } catch (NoSuchAlgorithmException e) {
-      throw new IllegalStateException("Failed to generate RSA key pair for tests", e);
+  @Test
+  void shouldRejectSelfAddWhenDisabled() throws Exception {
+    var orgnummer = "623456789";
+    var jwt = generateMockAltinn3Jwt(orgnummer);
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("orgnummer", orgnummer);
+    enhetJSON.put("parent", rootEnhetId);
+
+    try (var _ = withEnhetServiceFlag("ansattportenAllowSelfRegistration", false)) {
+      assertEquals(HttpStatus.FORBIDDEN, post("/enhet", enhetJSON, jwt).getStatusCode());
     }
+    assertNull(enhetRepository.findByOrgnummer(orgnummer));
+  }
+
+  @Test
+  void shouldVerifySelfRegisteredEnhetOnInsertWhenAutoVerifyIsEnabled() throws Exception {
+    var orgnummer = "633456789";
+    var jwt = generateMockAltinn3Jwt(orgnummer);
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("orgnummer", orgnummer);
+    enhetJSON.put("parent", rootEnhetId);
+
+    ResponseEntity<String> response;
+    try (var _ = withEnhetServiceFlag("ansattportenAutoVerifySelfRegistration", true)) {
+      response = post("/enhet", enhetJSON, jwt);
+    }
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhetId = gson.fromJson(response.getBody(), EnhetDTO.class).getId();
+
+    // Verified at once, so nobody is asked to verify it
+    verify(javaMailSender, never()).send(any(MimeMessage.class));
+    response = getAdmin("/enhet/" + enhetId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(true, gson.fromJson(response.getBody(), EnhetDTO.class).getVerified());
+
+    // The token resolves to the Enhet, which is public and may publish right away
+    var authInfo = gson.fromJson(get("/me", jwt).getBody(), AuthInfo.class);
+    assertEquals(enhetId, authInfo.getId());
+    assertEquals(HttpStatus.OK, getAnon("/enhet/" + enhetId).getStatusCode());
+    response = post("/arkiv", getArkivJSON(), jwt);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    assertEquals(enhetId, arkivDTO.getJournalenhet().getId());
+
+    assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId(), jwt).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/enhet/" + enhetId, jwt).getStatusCode());
+  }
+
+  private void assertRejected(String jwt) throws Exception {
+    assertEquals(HttpStatus.UNAUTHORIZED, get("/me", jwt).getStatusCode());
   }
 
   private String generateMockAltinn3Jwt(String orgnummer) throws Exception {
