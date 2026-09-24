@@ -68,7 +68,9 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
   private final MoetesakRepository moetesakRepository;
   private final ApiKeyRepository apiKeyRepository;
   private final MailSenderService mailSender;
-  private final boolean ansattportenAllowSelfRegistration;
+  // Not final so tests can flip them on the live bean instead of paying for a context per value
+  private boolean ansattportenAllowSelfRegistration;
+  private boolean ansattportenAutoVerifySelfRegistration;
   private final String emailFrom;
   private final String verificationNotificationEmail;
 
@@ -82,6 +84,8 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
       MailSenderService mailSender,
       @Value("${application.ansattporten.allowSelfRegistration:true}")
           boolean ansattportenAllowSelfRegistration,
+      @Value("${application.ansattporten.autoVerifySelfRegistration:false}")
+          boolean ansattportenAutoVerifySelfRegistration,
       @Value("${application.email.from}") String emailFrom,
       @Value("${application.enhet.verificationNotificationEmail:}")
           String verificationNotificationEmail) {
@@ -93,6 +97,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     this.apiKeyRepository = apiKeyRepository;
     this.mailSender = mailSender;
     this.ansattportenAllowSelfRegistration = ansattportenAllowSelfRegistration;
+    this.ansattportenAutoVerifySelfRegistration = ansattportenAutoVerifySelfRegistration;
     this.emailFrom = emailFrom;
     this.verificationNotificationEmail = verificationNotificationEmail;
   }
@@ -273,7 +278,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
       if (!isAdmin) {
         throw new AuthorizationException("verified can only be set by admins");
       }
-      if (Boolean.TRUE.equals(dto.getVerified())) {
+      if (dto.getVerified()) {
         if (!enhet.isVerified()) {
           enhet.setVerifiedAt(Instant.now());
         }
@@ -286,8 +291,12 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
         enhet.setVerifiedAt(null);
       }
     } else if (enhet.getId() == null) {
-      // Only orgnummer-authenticated principals (self-registration) start out unverified.
-      var isVerified = authenticationService.getEnhetId() != null || isAdmin;
+      // Only orgnummer-authenticated principals (self-registration) start out unverified, and
+      // even those are verified at once when auto-verification is enabled.
+      var isVerified =
+          authenticationService.getEnhetId() != null
+              || isAdmin
+              || ansattportenAutoVerifySelfRegistration;
       enhet.setVerifiedAt(isVerified ? Instant.now() : null);
     }
 

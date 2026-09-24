@@ -83,6 +83,7 @@ application:
   ansattporten:
     issuerUri: ${ANSATTPORTEN_ISSUER_URI:https://ansattporten.dev}
     allowSelfRegistration: ${ANSATTPORTEN_ALLOW_SELF_REGISTRATION:true}
+    autoVerifySelfRegistration: ${ANSATTPORTEN_AUTO_VERIFY_SELF_REGISTRATION:false}
     # Required. If unset/empty, all Ansattporten tokens will be rejected.
     # These bind tokens to our client and Altinn 3 resources.
     clientId: ${ANSATTPORTEN_CLIENT_ID:}
