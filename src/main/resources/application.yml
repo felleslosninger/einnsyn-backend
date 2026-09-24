@@ -92,7 +92,7 @@ application:
 spring:
   application:
     name: einnsyn-backend
-    environment: local
+    environment: ${SPRING_APPLICATION_ENVIRONMENT:local}
   task:
     scheduling:
       pool:
