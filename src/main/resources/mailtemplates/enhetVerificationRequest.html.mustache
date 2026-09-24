@@ -1,0 +1,41 @@
+{{<index.html.mustache}}
+  {{$content}}
+
+    {{<primitives/h1}}
+      {{$content}}
+        {{labels.enhetVerificationRequestTitle}}
+      {{/content}}
+    {{/primitives/h1}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/paragraph}}
+          {{$content}}{{ labels.enhetVerificationRequestIntro }}{{/content}}
+        {{/primitives/paragraph}}
+      {{/content}}
+    {{/primitives/container}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/paragraph}}
+          {{$content}}
+            <strong>{{ labels.enhetVerificationRequestNavnLabel }}:</strong> {{ navn }}<br />
+            <strong>{{ labels.enhetVerificationRequestOrgnummerLabel }}:</strong> {{ orgnummer }}<br />
+            <strong>{{ labels.enhetVerificationRequestIdLabel }}:</strong> {{ enhetId }}<br />
+            <strong>{{ labels.enhetVerificationRequestKontaktpunktEpostLabel }}:</strong> {{ kontaktpunktEpost }}<br />
+            <strong>{{ labels.enhetVerificationRequestInnsynskravEpostLabel }}:</strong> {{ innsynskravEpost }}
+          {{/content}}
+        {{/primitives/paragraph}}
+      {{/content}}
+    {{/primitives/container}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/paragraph}}
+          {{$content}}{{ labels.enhetVerificationRequestOutro }}{{/content}}
+        {{/primitives/paragraph}}
+      {{/content}}
+    {{/primitives/container}}
+
+  {{/content}}
+{{/index.html.mustache}}

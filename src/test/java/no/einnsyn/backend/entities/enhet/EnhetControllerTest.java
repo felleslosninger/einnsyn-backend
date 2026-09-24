@@ -2,6 +2,7 @@ package no.einnsyn.backend.entities.enhet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.gson.reflect.TypeToken;
 import java.util.ArrayList;
@@ -1327,6 +1328,67 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
 
     // cleanup
     assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
+  }
+
+  /** Un-verifying the root would lock out every admin key. */
+  @Test
+  void testRootEnhetCannotBeUnverified() throws Exception {
+    var response = patchAdmin("/enhet/" + rootEnhetId, new JSONObject().put("verified", false));
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    response = getAdmin("/enhet/" + rootEnhetId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(true, gson.fromJson(response.getBody(), EnhetDTO.class).getVerified());
+  }
+
+  /** Non-admins may echo these fields back unchanged, but only admins can change them. */
+  @Test
+  void testProtectedFieldsRequireAdmin() throws Exception {
+    var response = post("/enhet/" + journalenhetId + "/underenhet", getEnhetJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+    var enhetId = enhetDTO.getId();
+    var orgnummer = enhetDTO.getOrgnummer();
+    assertNull(enhetDTO.getVerified());
+
+    for (var patchJSON :
+        List.of(
+            new JSONObject().put("orgnummer", "999999999"),
+            new JSONObject().put("verified", false))) {
+      assertEquals(
+          HttpStatus.FORBIDDEN,
+          patch("/enhet/" + enhetId, patchJSON).getStatusCode(),
+          patchJSON.toString());
+    }
+
+    // Unchanged values pass, and verified stays admin-only
+    response = patch("/enhet/" + enhetId, new JSONObject().put("orgnummer", orgnummer));
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNull(gson.fromJson(response.getBody(), EnhetDTO.class).getVerified());
+
+    response = patchAdmin("/enhet/" + enhetId, new JSONObject().put("orgnummer", "999999999"));
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+    assertEquals("999999999", enhetDTO.getOrgnummer());
+    assertEquals(true, enhetDTO.getVerified());
+
+    // A verified Enhet directly under a top node cannot make itself a top node either
+    response = patch("/enhet/" + journalenhetId, new JSONObject().put("enhetstype", "DUMMYENHET"));
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    response = get("/enhet/" + journalenhetId);
+    assertEquals("KOMMUNE", gson.fromJson(response.getBody(), EnhetDTO.class).getEnhetstype());
+
+    // DUMMYENHET is fine below a real Enhet, but only admins can turn it into a top node
+    response = patch("/enhet/" + enhetId, new JSONObject().put("enhetstype", "DUMMYENHET"));
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = patch("/enhet/" + enhetId, new JSONObject().put("parent", rootEnhetId));
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    response = patchAdmin("/enhet/" + enhetId, new JSONObject().put("parent", rootEnhetId));
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(
+        rootEnhetId, gson.fromJson(response.getBody(), EnhetDTO.class).getParent().getId());
+
+    assertEquals(HttpStatus.OK, deleteAdmin("/enhet/" + enhetId).getStatusCode());
   }
 
   /** The administrative flags on an Enhet are persisted and returned. */
