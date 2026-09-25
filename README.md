@@ -61,6 +61,8 @@ as the migration interpolates it into a quoted SQL literal.
 ```
 # Application settings
 BASE_URL=http://localhost:8080
+# "prod" in production; any other value prefixes email subjects with [VALUE].
+SPRING_APPLICATION_ENVIRONMENT=local
 # ROOT_API_KEY is required, no default. Generate with `openssl rand -base64 32`.
 ROOT_API_KEY=
 

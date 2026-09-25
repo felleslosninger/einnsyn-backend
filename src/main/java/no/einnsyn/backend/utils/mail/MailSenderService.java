@@ -36,6 +36,9 @@ public class MailSenderService {
   @Value("${application.baseUrl}")
   private String baseUrl;
 
+  @Value("${spring.application.environment:local}")
+  private String environment;
+
   private final Pattern variablePattern = Pattern.compile("\\{([\\w\\.]+)\\}");
 
   public MailSenderService(
@@ -112,11 +115,12 @@ public class MailSenderService {
     // Render email-content (HTML and TXT)
     var html = mailRenderer.renderFile("mailtemplates/" + templateName + ".html.mustache", context);
     var txt = mailRenderer.renderFile("mailtemplates/" + templateName + ".txt.mustache", context);
+    var subject = buildSubject(templateName, labels);
 
     if (attachment != null) {
       // With attachment: use MimeMessageHelper with multipart/mixed
       var message = new MimeMessageHelper(mimeMessage, true, "UTF-8");
-      message.setSubject(labels.get(templateName + "Subject"));
+      message.setSubject(subject);
       message.setFrom(from);
       message.setTo(to);
       message.setText(txt, html);
@@ -131,7 +135,7 @@ public class MailSenderService {
     } else {
       // Without attachment: manually create multipart/alternative structure
       var message = new MimeMessageHelper(mimeMessage, false, "UTF-8");
-      message.setSubject(labels.get(templateName + "Subject"));
+      message.setSubject(subject);
       message.setFrom(from);
       message.setTo(to);
 
@@ -158,7 +162,7 @@ public class MailSenderService {
             .setMessage(
                 "Sending email to {} with subject '{}' and template '{}'. Has attachment: {}")
             .addArgument(to)
-            .addArgument(labels.get(templateName + "Subject"))
+            .addArgument(subject)
             .addArgument(templateName)
             .addArgument(attachment != null)
             .addKeyValue("messageBody", mimeMessageContent)
@@ -171,6 +175,15 @@ public class MailSenderService {
       log.error("Could not send email to {}", to, e);
       throw e;
     }
+  }
+
+  /** Non-production environments mark their emails so they are not mistaken for real ones. */
+  private String buildSubject(String templateName, Map<String, String> labels) {
+    var subject = labels.get(templateName + "Subject");
+    if ("prod".equalsIgnoreCase(environment)) {
+      return subject;
+    }
+    return "[" + environment.toUpperCase(Locale.ROOT) + "] " + subject;
   }
 
   /**
