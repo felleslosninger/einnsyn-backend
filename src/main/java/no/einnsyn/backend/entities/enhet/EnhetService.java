@@ -376,7 +376,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     dto.setOrderXmlVersjon(enhet.getOrderXmlVersjon());
 
     var isAdmin = authenticationService.isAdmin();
-    if (isAdmin) {
+    if (isAdmin || isOwnEnhet(enhet)) {
       dto.setVerified(enhet.isVerified());
     }
 
@@ -392,6 +392,14 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
         maybeExpand(enhet.getHandteresAv(), "handteresAv", expandPaths, currentPath));
 
     return dto;
+  }
+
+  /** Whether the current principal is this Enhet, by id once verified or by orgnummer before. */
+  private boolean isOwnEnhet(Enhet enhet) {
+    var enhetId = authenticationService.getEnhetId();
+    var orgnummer = authenticationService.getEnhetOrgnummer();
+    return (enhetId != null && enhetId.equals(enhet.getId()))
+        || (orgnummer != null && orgnummer.equals(enhet.getOrgnummer()));
   }
 
   /** Whether the current principal is the orgnummer-only principal that registered this Enhet. */
