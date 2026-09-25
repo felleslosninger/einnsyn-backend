@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
+import org.springframework.mail.MailSendException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -287,6 +289,25 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 
     // Remove user
+    brukerResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
+    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
+  }
+
+  /** The mail is sent after commit, so a transport failure must not fail the committed request. */
+  @Test
+  void testMailTransportFailureDoesNotFailTheRequest() throws Exception {
+    doThrow(new MailSendException("smtp down")).when(javaMailSender).send(any(MimeMessage.class));
+
+    var brukerResponse = post("/bruker", getBrukerJSON());
+    assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
+    var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
+    assertNotNull(brukerService.find(insertedBruker.getId()));
+
+    brukerResponse =
+        patch("/bruker/" + insertedBruker.getId() + "/requestPasswordReset", new JSONObject());
+    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
+    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+
     brukerResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
   }

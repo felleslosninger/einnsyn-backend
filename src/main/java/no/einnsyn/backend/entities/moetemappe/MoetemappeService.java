@@ -9,6 +9,7 @@ import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
+import no.einnsyn.backend.common.retry.RetryOnWriteConflict;
 import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
@@ -380,6 +381,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   }
 
   @Transactional(rollbackFor = Exception.class)
+  @RetryOnWriteConflict
   public MatrikkelnummerDTO addMatrikkelnummer(String moetemappeId, MatrikkelnummerDTO dto)
       throws EInnsynException {
     proxy.authorizeDelete(moetemappeId);
