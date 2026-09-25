@@ -167,11 +167,11 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
     var enhetId = enhetDTO.getId();
-    assertNull(enhetDTO.getVerified());
+    assertEquals(false, enhetDTO.getVerified());
 
-    // The token still resolves to the orgnummer only
+    // /me reports the id of the Enhet, but the principal itself still carries only the orgnummer
     var authInfo = gson.fromJson(get("/me", jwt).getBody(), AuthInfo.class);
-    assertNull(authInfo.getId());
+    assertEquals(enhetId, authInfo.getId());
     assertEquals(orgnummer, authInfo.getOrgnummer());
 
     // Cannot publish, create API keys or add underenhets
@@ -202,10 +202,10 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
       assertEquals(HttpStatus.NOT_FOUND, get("/enhet/" + enhetId + sub).getStatusCode(), sub);
     }
 
-    // Exists for itself and for admins, verified is only exposed to admins
+    // Exists for itself and for admins, and both see verified
     response = get("/enhet/" + enhetId, jwt);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertNull(gson.fromJson(response.getBody(), EnhetDTO.class).getVerified());
+    assertEquals(false, gson.fromJson(response.getBody(), EnhetDTO.class).getVerified());
     assertEquals(HttpStatus.OK, get("/enhet/" + orgnummer, jwt).getStatusCode());
     assertEquals(HttpStatus.OK, get("/enhet/" + enhetId + "/arkiv", jwt).getStatusCode());
     assertEquals(HttpStatus.OK, getAdmin("/enhet/" + enhetId + "/arkiv").getStatusCode());
@@ -252,12 +252,14 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals(true, gson.fromJson(response.getBody(), EnhetDTO.class).getVerified());
 
-    // Now the token resolves to the Enhet, and the Enhet is public
+    // Now the token resolves to the Enhet, and the Enhet is public, but verified stays private
     authInfo = gson.fromJson(get("/me", jwt).getBody(), AuthInfo.class);
     assertEquals(enhetId, authInfo.getId());
     response = getAnon("/enhet/" + enhetId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNull(gson.fromJson(response.getBody(), EnhetDTO.class).getVerified());
+    assertEquals(
+        true, gson.fromJson(get("/enhet/" + enhetId, jwt).getBody(), EnhetDTO.class).getVerified());
     assertTrue(listEnhetIds(getAnon("/enhet?orgnummer=" + orgnummer)).contains(enhetId));
     response = post("/arkiv", getArkivJSON(), jwt);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());

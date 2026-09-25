@@ -1341,6 +1341,19 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(true, gson.fromJson(response.getBody(), EnhetDTO.class).getVerified());
   }
 
+  /** Admins see verified on every Enhet, an Enhet sees it on itself, nobody else sees it. */
+  @Test
+  void testVerifiedIsExposedToAdminsAndSelf() throws Exception {
+    var own = gson.fromJson(get("/enhet/" + journalenhetId).getBody(), EnhetDTO.class);
+    assertEquals(true, own.getVerified());
+    var asAdmin = gson.fromJson(getAdmin("/enhet/" + journalenhet2Id).getBody(), EnhetDTO.class);
+    assertEquals(true, asAdmin.getVerified());
+    var other = gson.fromJson(get("/enhet/" + journalenhet2Id).getBody(), EnhetDTO.class);
+    assertNull(other.getVerified());
+    var anon = gson.fromJson(getAnon("/enhet/" + journalenhetId).getBody(), EnhetDTO.class);
+    assertNull(anon.getVerified());
+  }
+
   /** Non-admins may echo these fields back unchanged, but only admins can change them. */
   @Test
   void testProtectedFieldsRequireAdmin() throws Exception {
@@ -1361,7 +1374,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
           patchJSON.toString());
     }
 
-    // Unchanged values pass, and verified stays admin-only
+    // Unchanged values pass, and a parent still does not see verified
     response = patch("/enhet/" + enhetId, new JSONObject().put("orgnummer", orgnummer));
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNull(gson.fromJson(response.getBody(), EnhetDTO.class).getVerified());
