@@ -402,16 +402,6 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
         || (orgnummer != null && orgnummer.equals(enhet.getOrgnummer()));
   }
 
-  /** Whether the current principal is the orgnummer-only principal that registered this Enhet. */
-  private boolean isOwnUnverifiedEnhet(Enhet enhet) {
-    var orgnummer = authenticationService.getEnhetOrgnummer();
-    return enhet != null
-        && !enhet.isVerified()
-        && authenticationService.getEnhetId() == null
-        && orgnummer != null
-        && orgnummer.equals(enhet.getOrgnummer());
-  }
-
   /**
    * Unverified Enhets do not exist for anyone but admins and the principal that registered them.
    */
@@ -420,7 +410,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     if (enhet != null
         && !enhet.isVerified()
         && !authenticationService.isAdmin()
-        && !isOwnUnverifiedEnhet(enhet)) {
+        && !isOwnEnhet(enhet)) {
       throw new NotFoundException("No Enhet found with identifier " + identifier);
     }
   }
@@ -831,7 +821,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     }
 
     // An unverified Enhet may maintain its own info while waiting for verification
-    if (isOwnUnverifiedEnhet(proxy.find(idToUpdate))) {
+    if (isOwnEnhet(proxy.find(idToUpdate))) {
       return;
     }
 
