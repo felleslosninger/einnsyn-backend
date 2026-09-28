@@ -211,7 +211,7 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
     var klasse2DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klasse2DTO.getId());
 
-    response = get("/klasse?externalId=externalId");
+    response = get("/klasse");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     var resultListType = new TypeToken<PaginatedList<KlasseDTO>>() {}.getType();
     PaginatedList<KlasseDTO> klasseResultList = gson.fromJson(response.getBody(), resultListType);
@@ -219,7 +219,7 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
     assertEquals(klasse1DTO.getId(), klasseResultList.getItems().get(1).getId());
     assertEquals(klasse2DTO.getId(), klasseResultList.getItems().get(0).getId());
 
-    response = get("/klasse?externalId=externalId&journalenhet=" + underenhetId);
+    response = get("/klasse?externalIds=externalId&journalenhet=" + underenhetId);
     klasseResultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(1, klasseResultList.getItems().size());
     assertEquals(klasse2DTO.getId(), klasseResultList.getItems().get(0).getId());

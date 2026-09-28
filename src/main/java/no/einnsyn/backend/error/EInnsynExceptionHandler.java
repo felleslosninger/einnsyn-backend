@@ -160,6 +160,20 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
+   * 400 Bad Request
+   *
+   * @param ex The exception
+   * @return The response entity
+   */
+  @ExceptionHandler(ValidationException.class)
+  public ResponseEntity<Object> handleException(ValidationException ex) {
+    var httpStatus = HttpStatus.BAD_REQUEST;
+    logAndCountWarning(ex, httpStatus);
+    var clientResponse = ex.toClientResponse();
+    return ResponseEntity.status(httpStatus).body(clientResponse);
+  }
+
+  /**
    * 403 Forbidden
    *
    * @param ex The exception
