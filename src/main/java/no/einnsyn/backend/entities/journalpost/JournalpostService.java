@@ -14,6 +14,7 @@ import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
+import no.einnsyn.backend.common.retry.RetryOnWriteConflict;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
@@ -38,8 +39,6 @@ import no.einnsyn.backend.utils.ExpandPathResolver;
 import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -713,7 +712,6 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param dto The KorrespondansepartDTO object
    * @return The KorrespondansepartDTO object
    */
-  @Transactional(rollbackFor = Exception.class)
   public KorrespondansepartDTO addKorrespondansepart(
       String journalpostId, KorrespondansepartDTO dto) throws EInnsynException {
     dto.setJournalpost(new ExpandableField<>(journalpostId));
@@ -740,7 +738,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @throws EInnsynException if an error occurs
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
+  @RetryOnWriteConflict
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String journalpostId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {
@@ -767,7 +765,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return The JournalpostDTO object
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
+  @RetryOnWriteConflict
   public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
       String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
     var journalpost = journalpostService.findForUpdateOrThrow(journalpostId);
@@ -788,7 +786,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return The SkjermingDTO object
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
+  @RetryOnWriteConflict
   public SkjermingDTO addSkjerming(
       String journalpostId, ExpandableField<SkjermingDTO> skjermingField) throws EInnsynException {
     var journalpost = journalpostService.findForUpdateOrThrow(journalpostId);
@@ -813,7 +811,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return The SkjermingDTO object
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
+  @RetryOnWriteConflict
   public SkjermingDTO deleteSkjerming(String journalpostId, String skjermingId)
       throws EInnsynException {
     var journalpost = journalpostService.findForUpdateOrThrow(journalpostId);
@@ -859,6 +857,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
   @Transactional(rollbackFor = Exception.class)
+  @RetryOnWriteConflict
   public MatrikkelnummerDTO addMatrikkelnummer(String journalpostId, MatrikkelnummerDTO dto)
       throws EInnsynException {
     proxy.authorizeDelete(journalpostId);
