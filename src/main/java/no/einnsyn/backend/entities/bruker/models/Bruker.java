@@ -31,6 +31,8 @@ public class Bruker extends Base {
   @Email
   private String email;
 
+  @Email private String pendingEmail;
+
   @Column(name = "passord")
   private String password;
 
