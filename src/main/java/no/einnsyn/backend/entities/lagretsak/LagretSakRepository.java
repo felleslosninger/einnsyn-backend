@@ -41,10 +41,20 @@ public interface LagretSakRepository extends BaseRepository<LagretSak> {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   void addHitByMoetemappe(String mappeId, Instant updated);
 
+  /**
+   * Subtract the hits that have been notified. Hits are counted concurrently by the indexer, so the
+   * count is decremented rather than reset, to keep updates that arrived while the mail was being
+   * sent.
+   */
   @Modifying
-  @Query("UPDATE LagretSak SET hitCount = 0 WHERE id = :lagretSakId")
+  @Query(
+      """
+      UPDATE LagretSak
+      SET hitCount = CASE WHEN hitCount > :notifiedCount THEN hitCount - :notifiedCount ELSE 0 END
+      WHERE id = :lagretSakId
+      """)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  void resetHits(String lagretSakId);
+  void acknowledgeHits(String lagretSakId, int notifiedCount);
 
   @Query("SELECT id FROM LagretSak WHERE bruker.id = :brukerId ORDER BY id DESC")
   Stream<String> streamIdByBrukerId(String brukerId);

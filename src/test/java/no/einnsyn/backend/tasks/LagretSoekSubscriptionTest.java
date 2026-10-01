@@ -1,13 +1,18 @@
 package no.einnsyn.backend.tasks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
 import java.time.ZonedDateTime;
 import java.util.function.Function;
 import no.einnsyn.backend.EinnsynControllerTestBase;
@@ -24,6 +29,7 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -136,6 +142,132 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     // Delete the LagretSoek
     response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void testHitsArrivingDuringNotificationAreKept() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    // One matching Saksmappe ("foo"), and one extra Saksmappe used to simulate a late hit
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("offentligTittel", "foo");
+    saksmappeJSON.put("offentligTittelSensitiv", "foo");
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var matchingSaksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var otherSaksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(2)).index(any(Function.class)));
+    resetEs();
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+
+    // Simulate a match committed by the indexer while the mail is being sent
+    doAnswer(
+            invocation -> {
+              lagretSoekService.incrementHitCount(lagretSoekDTO.getId(), otherSaksmappeDTO.getId());
+              return null;
+            })
+        .when(javaMailSender)
+        .send(any(MimeMessage.class));
+    taskTestService.notifyLagretSoek();
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+
+    // The late match must survive the acknowledgement of the notified hits
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    assertEquals(1, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
+
+    // It is included in the next notification
+    doNothing().when(javaMailSender).send(any(MimeMessage.class));
+    taskTestService.notifyLagretSoek();
+    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+    assertEquals(0, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    assertEquals(0, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
+
+    assertEquals(
+        HttpStatus.OK, delete("/saksmappe/" + matchingSaksmappeDTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + otherSaksmappeDTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.OK, delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken).getStatusCode());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void testLateHitWithoutCachedRowIsAnnouncedWithLink() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    // A Saksmappe that does not match "foo" itself, holding one more matching Journalpost than the
+    // hit cache keeps
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+
+    var matches = 11;
+    for (var i = 0; i < matches; i++) {
+      var journalpostJSON = getJournalpostJSON();
+      journalpostJSON.put("offentligTittel", "foo " + i);
+      journalpostJSON.put("offentligTittelSensitiv", "foo " + i);
+      response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    }
+    // Each Journalpost reindexes its Saksmappe too
+    Awaitility.await()
+        .untilAsserted(() -> verify(esClient, atLeast(2 * matches)).index(any(Function.class)));
+    resetEs();
+    assertEquals(matches, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    assertEquals(10, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
+
+    // A match committed by the indexer while the mail is being sent only bumps the count, since
+    // the hit cache is already full. It survives the acknowledgement as a count with no row.
+    doAnswer(
+            invocation -> {
+              lagretSoekService.incrementHitCount(lagretSoekDTO.getId(), saksmappeDTO.getId());
+              return null;
+            })
+        .when(javaMailSender)
+        .send(any(MimeMessage.class));
+    taskTestService.notifyLagretSoek();
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    assertEquals(0, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
+
+    // The next mail has nothing to list, so it must link to the live search instead
+    doNothing().when(javaMailSender).send(any(MimeMessage.class));
+    taskTestService.notifyLagretSoek();
+    var messageCaptor = ArgumentCaptor.forClass(MimeMessage.class);
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(2)).send(messageCaptor.capture()));
+    // The mail is multipart/alternative with the text part first
+    var multipart = (MimeMultipart) messageCaptor.getValue().getContent();
+    var txt = multipart.getBodyPart(0).getContent().toString();
+    assertTrue(txt.contains(lagretSoekDTO.getLabel()), txt);
+    // The text part escapes "=" in the link, so match the path and the count separately
+    assertTrue(txt.contains("/sok?f"), txt);
+    assertTrue(txt.contains("(1 "), txt);
+    assertFalse(txt.contains("/saksmappe?id"), txt);
+    assertEquals(0, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    assertEquals(0, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
+
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.OK, delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken).getStatusCode());
   }
 
   @SuppressWarnings("unchecked")
