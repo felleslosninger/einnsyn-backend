@@ -56,4 +56,24 @@ public interface KlasseRepository extends ArkivBaseRepository<Klasse> {
       ORDER BY id DESC
       """)
   Slice<Klasse> paginateDesc(Klasse parentKlasse, String pivot, Pageable pageable);
+
+  @Query(
+      """
+      SELECT o FROM Klasse o
+      WHERE parentKlassifikasjonssystem = :klassifikasjonssystem
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
+  Slice<Klasse> paginateAsc(
+      Klassifikasjonssystem klassifikasjonssystem, String pivot, Pageable pageable);
+
+  @Query(
+      """
+      SELECT o FROM Klasse o
+      WHERE parentKlassifikasjonssystem = :klassifikasjonssystem
+      AND id <= COALESCE(:pivot, id)
+      ORDER BY id DESC
+      """)
+  Slice<Klasse> paginateDesc(
+      Klassifikasjonssystem klassifikasjonssystem, String pivot, Pageable pageable);
 }
