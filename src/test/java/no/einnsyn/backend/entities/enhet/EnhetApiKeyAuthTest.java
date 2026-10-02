@@ -88,8 +88,10 @@ class EnhetApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var enhetDTO2 = gson.fromJson(response.getBody(), EnhetDTO.class);
 
-    // Authorized are allowed to update
-    response = patch("/enhet/" + enhetDTO2.getId(), getEnhetJSON());
+    // Authorized are allowed to update, but not to change the orgnummer
+    var updateJSON = getEnhetJSON();
+    updateJSON.remove("orgnummer");
+    response = patch("/enhet/" + enhetDTO2.getId(), updateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Authorized are allowed to delete

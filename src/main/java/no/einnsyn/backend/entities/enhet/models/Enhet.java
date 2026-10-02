@@ -13,6 +13,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
@@ -98,6 +99,14 @@ public class Enhet extends Base implements HasSlug {
   private boolean skalMottaKvittering;
 
   private Integer orderXmlVersjon;
+
+  // Null until an admin verifies the Enhet. Self-registered Enhets start out unverified.
+  @Column(name = "verified_at")
+  private Instant verifiedAt;
+
+  public boolean isVerified() {
+    return verifiedAt != null;
+  }
 
   /**
    * Helper that adds a underenhet to the list of underenhets and sets the parent on the underenhet.

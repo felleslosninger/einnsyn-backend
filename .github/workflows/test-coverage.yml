@@ -30,8 +30,8 @@ jobs:
       - name: Check code formatting
         run: mvn spotless:check
         env:
-          MAVEN_USERNAME: ${{ secrets.MAVEN_USER }}
-          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          MAVEN_USERNAME: ${{ secrets.GH_PACKAGES_READ_USER }}
+          MAVEN_PASSWORD: ${{ secrets.GH_PACKAGES_READ_PAT }}
 
       - name: Pull testcontainer images
         run: >-
@@ -42,8 +42,8 @@ jobs:
       - name: Run tests with coverage
         run: mvn clean test
         env:
-          MAVEN_USERNAME: ${{ secrets.MAVEN_USER }}
-          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          MAVEN_USERNAME: ${{ secrets.GH_PACKAGES_READ_USER }}
+          MAVEN_PASSWORD: ${{ secrets.GH_PACKAGES_READ_PAT }}
 
       - name: Upload coverage to Coveralls
         uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # pin@v2.3.8
