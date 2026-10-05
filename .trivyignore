@@ -9,3 +9,17 @@
 CVE-2026-65182
 CVE-2026-65905
 CVE-2026-68525
+
+# Remove once Spring Boot's BOM reaches jackson 2.21.7 / 3.1.7 or later. All
+# five entries hit both 2.21.5 and 3.1.5 and are fixed by that one bump. Each
+# needs a databind feature we don't use for untrusted input: String-to-number
+# coercion into BigDecimal/BigInteger/Double/Float (no such DTO fields),
+# createParser(DataInput) (we never parse from DataInput), XML Duration /
+# XMLGregorianCalendar targets (none), @JsonTypeInfo NAME with a defaultImpl
+# fallback (LegacyQuery.QueryFilter has none, and FAIL_ON_INVALID_SUBTYPE stays
+# on), and @JsonIdentityInfo collections (none).
+CVE-2026-89407
+CVE-2026-89425
+CVE-2026-68497
+CVE-2026-91776
+CVE-2026-91777
