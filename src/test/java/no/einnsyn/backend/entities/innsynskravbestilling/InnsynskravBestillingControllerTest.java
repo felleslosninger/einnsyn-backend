@@ -1186,7 +1186,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
 
     // Check that the innsynskrav isn't verified
     response =
-        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId + "?expand[]=innsynskrav");
+        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId + "?expand=innsynskrav");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     var expandableField = innsynskravBestillingDTO.getInnsynskrav().get(0);
@@ -1210,7 +1210,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
 
     // Check that the innsynskrav isn't verified
     response =
-        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId + "?expand[]=innsynskrav");
+        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId + "?expand=innsynskrav");
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     expandableField = innsynskravBestillingDTO.getInnsynskrav().get(0);
     assertNull(expandableField.getExpandedObject().getSent());
@@ -1232,7 +1232,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
 
     // Check that the innsynskrav isn't verified
     response =
-        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId + "?expand[]=innsynskrav");
+        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId + "?expand=innsynskrav");
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     expandableField = innsynskravBestillingDTO.getInnsynskrav().get(0);
     assertNull(expandableField.getExpandedObject().getSent());
@@ -1254,7 +1254,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
 
     // Check that the innsynskrav is verified
     response =
-        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId + "?expand[]=innsynskrav");
+        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId + "?expand=innsynskrav");
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     expandableField = innsynskravBestillingDTO.getInnsynskrav().get(0);
     assertNotNull(expandableField.getExpandedObject().getSent());
