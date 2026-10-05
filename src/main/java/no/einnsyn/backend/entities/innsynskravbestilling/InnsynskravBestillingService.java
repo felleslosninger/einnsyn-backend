@@ -20,6 +20,7 @@ import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
+import no.einnsyn.backend.common.retry.RetryOnWriteConflict;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
@@ -38,7 +39,6 @@ import org.hibernate.validator.constraints.URL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.resilience.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -418,7 +418,7 @@ public class InnsynskravBestillingService
    * @return The InnsynskravBestilling
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @RetryOnWriteConflict
   public InnsynskravBestillingDTO verify(String innsynskravBestillingId, String verificationSecret)
       throws EInnsynException {
     var innsynskravBestilling = innsynskravBestillingService.findOrThrow(innsynskravBestillingId);

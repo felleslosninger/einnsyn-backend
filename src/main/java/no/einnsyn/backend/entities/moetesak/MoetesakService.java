@@ -11,6 +11,7 @@ import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
+import no.einnsyn.backend.common.retry.RetryOnWriteConflict;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
@@ -34,7 +35,6 @@ import no.einnsyn.backend.utils.TimeConverter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -416,7 +416,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
    * @throws EInnsynException if an error occurs
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @RetryOnWriteConflict
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String moetesakId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {
@@ -443,7 +443,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
    * @return The DokumentbeskrivelseDTO object
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @RetryOnWriteConflict
   public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
       String moetesakId, String dokumentbeskrivelseId) throws EInnsynException {
     var moetesak = moetesakService.findForUpdateOrThrow(moetesakId);
@@ -468,7 +468,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @RetryOnWriteConflict
   public UtredningDTO addUtredning(String moetesakId, UtredningDTO utredningDTO)
       throws EInnsynException {
     var moetesak = proxy.findForUpdateOrThrow(moetesakId);
@@ -490,7 +490,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @RetryOnWriteConflict
   public VedtakDTO addVedtak(String moetesakId, VedtakDTO vedtakDTO) throws EInnsynException {
     var moetesak = proxy.findForUpdateOrThrow(moetesakId);
     var vedtak = vedtakService.createOrThrow(vedtakDTO);
@@ -561,6 +561,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   @Transactional(rollbackFor = Exception.class)
+  @RetryOnWriteConflict
   public MatrikkelnummerDTO addMatrikkelnummer(String moetesakId, MatrikkelnummerDTO dto)
       throws EInnsynException {
     proxy.authorizeDelete(moetesakId);

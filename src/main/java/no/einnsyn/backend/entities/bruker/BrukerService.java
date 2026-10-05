@@ -10,11 +10,11 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
-import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
+import no.einnsyn.backend.common.retry.RetryOnWriteConflict;
 import no.einnsyn.backend.entities.apikey.ApiKeyRepository;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.UniqueFieldMatch;
@@ -34,11 +34,13 @@ import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.resilience.annotation.Retryable;
+import org.springframework.mail.MailException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -110,13 +112,21 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   protected Bruker addEntity(BrukerDTO dto) throws EInnsynException {
     var bruker = super.addEntity(dto);
 
-    // Send activation email
-    try {
-      log.debug("Sending activation email to {}", dto.getEmail());
-      this.sendActivationEmail(bruker);
-    } catch (MessagingException e) {
-      throw new InternalServerErrorException("Unable to send activation email", e);
-    }
+    // Send after commit: add() is retried on a write conflict, and a mail sent inside the
+    // transaction would carry a secret the rollback discards.
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            try {
+              log.debug("Sending activation email to {}", bruker.getEmail());
+              sendActivationEmail(bruker);
+            } catch (MessagingException | MailException e) {
+              // The account exists; requestPasswordReset issues a new link.
+              log.error("Failed to send activation email for Bruker {}", bruker.getId(), e);
+            }
+          }
+        });
 
     return bruker;
   }
@@ -211,7 +221,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @throws NotFoundException if no bruker matches the given id and secret
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @RetryOnWriteConflict
   public BrukerDTO activate(String id, String secret) throws NotFoundException {
     var bruker = proxy.findOrThrow(id, NotFoundException.class, NOT_FOUND_MESSAGE);
 
@@ -247,7 +257,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @throws EInnsynException if the email could not be sent
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @RetryOnWriteConflict
   public BrukerDTO requestPasswordReset(String id) throws EInnsynException {
     var bruker = brukerService.findOrThrow(id);
     var language = bruker.getLanguage();
@@ -259,12 +269,24 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
     // TODO: Final URL will be different (not directly to the API)
     context.put("actionUrl", emailBaseUrl + "/bruker/" + bruker.getId() + "/setPassword/" + secret);
-    try {
-      log.debug("Sending password reset email to {}", bruker.getEmail());
-      mailSender.send(emailFrom, bruker.getEmail(), "userResetPassword", language, context);
-    } catch (MessagingException e) {
-      throw new InternalServerErrorException("Could not send password reset email", e);
-    }
+
+    // Send after commit: this method is retried on a write conflict, and a mail sent inside the
+    // transaction would carry a secret the rollback discards.
+    var email = bruker.getEmail();
+    var brukerId = bruker.getId();
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            try {
+              log.debug("Sending password reset email to {}", email);
+              mailSender.send(emailFrom, email, "userResetPassword", language, context);
+            } catch (MessagingException | MailException e) {
+              // The secret is stored and the old password still works; the user can ask again.
+              log.error("Failed to send password reset email for Bruker {}", brukerId, e);
+            }
+          }
+        });
 
     return proxy.toDTO(bruker);
   }
@@ -275,7 +297,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @throws NotFoundException if no bruker matches the given id and secret
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @RetryOnWriteConflict
   public BrukerDTO updatePasswordWithSecret(
       String brukerId, String secret, BrukerController.UpdatePasswordWithSecret requestBody)
       throws NotFoundException {
@@ -320,7 +342,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @throws NotFoundException if no bruker matches the given id and old password
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @RetryOnWriteConflict
   public BrukerDTO updatePassword(String brukerId, BrukerController.UpdatePassword requestBody)
       throws NotFoundException {
 
