@@ -26,26 +26,19 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class MailSenderServiceTest {
+
+  private static final String NB_CONFIRM_SUBJECT =
+      ResourceBundle.getBundle("mailtemplates/mailtemplates", Locale.forLanguageTag("nb"))
+          .getString("confirmAnonymousOrderSubject");
 
   @Test
   void testCustomMessageIdIsSet() throws Exception {
     var javaMailSender = mock(JavaMailSenderImpl.class);
-    when(javaMailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
-    var renderer = mock(MailRendererService.class);
-    when(renderer.renderFile(anyString(), any())).thenReturn("content");
-
     var meterRegistry = new SimpleMeterRegistry();
-    var service = new MailSenderService(javaMailSender, renderer, meterRegistry);
-
-    // Inject @Value fields
-    var fqdnField = MailSenderService.class.getDeclaredField("fromFqdn");
-    fqdnField.setAccessible(true);
-    fqdnField.set(service, "test.einnsyn.no");
-    var baseUrlField = MailSenderService.class.getDeclaredField("baseUrl");
-    baseUrlField.setAccessible(true);
-    baseUrlField.set(service, "https://test.einnsyn.no");
+    var service = newService(javaMailSender, meterRegistry);
 
     var context = new HashMap<String, Object>();
     service.send("from@example.com", "to@example.com", "confirmAnonymousOrder", "nb", context);
@@ -89,22 +82,49 @@ class MailSenderServiceTest {
   }
 
   private MailSenderService newService(
-      JavaMailSenderImpl javaMailSender, SimpleMeterRegistry meterRegistry) throws Exception {
+      JavaMailSenderImpl javaMailSender, SimpleMeterRegistry meterRegistry) {
+    return newService(javaMailSender, meterRegistry, "test");
+  }
+
+  private MailSenderService newService(
+      JavaMailSenderImpl javaMailSender, SimpleMeterRegistry meterRegistry, String environment) {
     when(javaMailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
     var renderer = mock(MailRendererService.class);
     when(renderer.renderFile(anyString(), any())).thenReturn("content");
 
     var service = new MailSenderService(javaMailSender, renderer, meterRegistry);
-
-    // Inject @Value fields
-    var fqdnField = MailSenderService.class.getDeclaredField("fromFqdn");
-    fqdnField.setAccessible(true);
-    fqdnField.set(service, "test.einnsyn.no");
-    var baseUrlField = MailSenderService.class.getDeclaredField("baseUrl");
-    baseUrlField.setAccessible(true);
-    baseUrlField.set(service, "https://test.einnsyn.no");
-
+    ReflectionTestUtils.setField(service, "fromFqdn", "test.einnsyn.no");
+    ReflectionTestUtils.setField(service, "baseUrl", "https://test.einnsyn.no");
+    ReflectionTestUtils.setField(service, "environment", environment);
     return service;
+  }
+
+  private String sentSubject(JavaMailSenderImpl javaMailSender) throws Exception {
+    var mimeMessageCaptor = ArgumentCaptor.forClass(MimeMessage.class);
+    verify(javaMailSender, times(1)).send(mimeMessageCaptor.capture());
+    return mimeMessageCaptor.getValue().getSubject();
+  }
+
+  @Test
+  void testSubjectIsPrefixedWithEnvironmentOutsideProduction() throws Exception {
+    var javaMailSender = mock(JavaMailSenderImpl.class);
+    var service = newService(javaMailSender, new SimpleMeterRegistry(), "test");
+    var context = new HashMap<String, Object>();
+
+    service.send("from@example.com", "to@example.com", "confirmAnonymousOrder", "nb", context);
+
+    assertEquals("[TEST] " + NB_CONFIRM_SUBJECT, sentSubject(javaMailSender));
+  }
+
+  @Test
+  void testSubjectIsNotPrefixedInProduction() throws Exception {
+    var javaMailSender = mock(JavaMailSenderImpl.class);
+    var service = newService(javaMailSender, new SimpleMeterRegistry(), "prod");
+    var context = new HashMap<String, Object>();
+
+    service.send("from@example.com", "to@example.com", "confirmAnonymousOrder", "nb", context);
+
+    assertEquals(NB_CONFIRM_SUBJECT, sentSubject(javaMailSender));
   }
 
   /** Emails with an attachment are sent as multipart/mixed with the attachment included. */

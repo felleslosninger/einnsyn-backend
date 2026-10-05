@@ -199,7 +199,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(mimeMessage.getFrom()[0].toString(), new InternetAddress(emailFrom).toString());
     assertEquals(mimeMessage.getHeader("to")[0], innsynskravBestillingDTO.getEmail());
     assertEquals(
-        mimeMessage.getSubject(), languageBundle.getString("confirmAnonymousOrderSubject"));
+        "[LOCAL] " + languageBundle.getString("confirmAnonymousOrderSubject"),
+        mimeMessage.getSubject());
 
     // Check that the Innsynskrav is in the DB, with a verification secret
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravBestillingId);

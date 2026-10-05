@@ -81,7 +81,8 @@ public class AnsattportenAuthenticationProvider implements AuthenticationProvide
     var enhetList = new ArrayList<Enhet>();
     for (var orgnummer : orgnummers) {
       var enhet = enhetService.find(orgnummer);
-      if (enhet != null) {
+      // An unverified Enhet counts as missing, so the principal keeps only its orgnummer.
+      if (enhet != null && enhet.isVerified()) {
         enhetList.add(enhet);
         if (representingId == null) {
           representingId = enhet.getId();

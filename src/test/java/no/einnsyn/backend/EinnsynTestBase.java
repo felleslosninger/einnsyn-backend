@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.auth.ansattporten.AnsattportenTestKeys;
 import no.einnsyn.backend.authentication.bruker.EInnsynTokenService;
 import no.einnsyn.backend.common.search.SearchService;
 import no.einnsyn.backend.entities.apikey.ApiKeyRepository;
@@ -95,7 +96,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -204,6 +207,14 @@ public abstract class EinnsynTestBase {
   @MockitoBean(name = "getJavaMailSender")
   public JavaMailSender javaMailSender;
 
+  // Accepts Ansattporten tokens signed with the test key, in every test context
+  @TestBean(name = "ansattportenJwtDecoder")
+  protected JwtDecoder ansattportenJwtDecoder;
+
+  static JwtDecoder ansattportenJwtDecoder() {
+    return AnsattportenTestKeys.jwtDecoder();
+  }
+
   @Value("${application.elasticsearch.index:test}")
   protected String elasticsearchIndex;
 
@@ -299,6 +310,7 @@ public abstract class EinnsynTestBase {
     journalenhet.setEFormidling(true);
     journalenhet.setParent(rootEnhet);
     journalenhet.setAccessibleAfter(Instant.now());
+    journalenhet.setVerifiedAt(Instant.now());
 
     var underenhet1 = new Enhet();
     underenhet1.setNavn("Testunderenhet 1");
@@ -309,6 +321,7 @@ public abstract class EinnsynTestBase {
     underenhet1.setEnhetstype(EnhetDTO.EnhetstypeEnum.BYDEL);
     underenhet1.setParent(journalenhet);
     underenhet1.setAccessibleAfter(Instant.now());
+    underenhet1.setVerifiedAt(Instant.now());
 
     var underenhet2 = new Enhet();
     underenhet2.setNavn("Testunderenhet 2");
@@ -320,6 +333,7 @@ public abstract class EinnsynTestBase {
     underenhet2.setEnhetskode("UNDER");
     underenhet2.setParent(journalenhet);
     underenhet2.setAccessibleAfter(Instant.now());
+    underenhet2.setVerifiedAt(Instant.now());
 
     enhetRepository.saveAndFlush(journalenhet);
     enhetRepository.saveAndFlush(underenhet1);
@@ -338,6 +352,7 @@ public abstract class EinnsynTestBase {
     journalenhet2.setKontaktpunktEpost("kontaktpost2@example.com");
     journalenhet2.setEFormidling(true);
     journalenhet2.setParent(rootEnhet);
+    journalenhet2.setVerifiedAt(Instant.now());
     enhetRepository.saveAndFlush(journalenhet2);
 
     journalenhetId = journalenhet.getId();
