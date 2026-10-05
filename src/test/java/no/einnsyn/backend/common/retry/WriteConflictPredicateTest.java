@@ -9,6 +9,7 @@ import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.exception.ConstraintViolationException.ConstraintKind;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.postgresql.util.PSQLState;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -20,8 +21,8 @@ class WriteConflictPredicateTest {
 
   /** Builds the chain Spring Data JPA produces when a flush hits a constraint. */
   private static DataIntegrityViolationException constraintViolation(
-      ConstraintKind kind, String sqlState) {
-    var sqlException = new SQLException("ERROR: violates constraint", sqlState);
+      ConstraintKind kind, PSQLState sqlState) {
+    var sqlException = new SQLException("ERROR: violates constraint", sqlState.getState());
     var hibernateException =
         new ConstraintViolationException("could not execute statement", sqlException, kind, "c");
     return new DataIntegrityViolationException(hibernateException.getMessage(), hibernateException);
@@ -29,28 +30,40 @@ class WriteConflictPredicateTest {
 
   @Test
   void retriesUniqueConstraintViolation() {
-    assertTrue(predicate.shouldRetry(method, constraintViolation(ConstraintKind.UNIQUE, "23505")));
+    assertTrue(
+        predicate.shouldRetry(
+            method, constraintViolation(ConstraintKind.UNIQUE, PSQLState.UNIQUE_VIOLATION)));
   }
 
   @Test
   void doesNotRetryOtherConstraintViolations() {
     assertFalse(
-        predicate.shouldRetry(method, constraintViolation(ConstraintKind.FOREIGN_KEY, "23503")));
+        predicate.shouldRetry(
+            method,
+            constraintViolation(ConstraintKind.FOREIGN_KEY, PSQLState.FOREIGN_KEY_VIOLATION)));
     assertFalse(
-        predicate.shouldRetry(method, constraintViolation(ConstraintKind.NOT_NULL, "23502")));
-    assertFalse(predicate.shouldRetry(method, constraintViolation(ConstraintKind.CHECK, "23514")));
+        predicate.shouldRetry(
+            method, constraintViolation(ConstraintKind.NOT_NULL, PSQLState.NOT_NULL_VIOLATION)));
+    assertFalse(
+        predicate.shouldRetry(
+            method, constraintViolation(ConstraintKind.CHECK, PSQLState.CHECK_VIOLATION)));
   }
 
   @Test
   void fallsBackToSqlStateWhenHibernateCouldNotClassify() {
-    assertTrue(predicate.shouldRetry(method, constraintViolation(ConstraintKind.OTHER, "23505")));
-    assertFalse(predicate.shouldRetry(method, constraintViolation(ConstraintKind.OTHER, "23503")));
+    assertTrue(
+        predicate.shouldRetry(
+            method, constraintViolation(ConstraintKind.OTHER, PSQLState.UNIQUE_VIOLATION)));
+    assertFalse(
+        predicate.shouldRetry(
+            method, constraintViolation(ConstraintKind.OTHER, PSQLState.FOREIGN_KEY_VIOLATION)));
   }
 
   @Test
   void retriesUniqueViolationWithoutHibernateInTheChain() {
     var exception =
-        new DataIntegrityViolationException("duplicate key", new SQLException("dup", "23505"));
+        new DataIntegrityViolationException(
+            "duplicate key", new SQLException("dup", PSQLState.UNIQUE_VIOLATION.getState()));
     assertTrue(predicate.shouldRetry(method, exception));
   }
 
@@ -76,7 +89,9 @@ class WriteConflictPredicateTest {
   void doesNotRetryWhileAnOuterTransactionIsActive() {
     TransactionSynchronizationManager.setActualTransactionActive(true);
 
-    assertFalse(predicate.shouldRetry(method, constraintViolation(ConstraintKind.UNIQUE, "23505")));
+    assertFalse(
+        predicate.shouldRetry(
+            method, constraintViolation(ConstraintKind.UNIQUE, PSQLState.UNIQUE_VIOLATION)));
     assertFalse(
         predicate.shouldRetry(
             method, new ObjectOptimisticLockingFailureException(Object.class, "id")));
