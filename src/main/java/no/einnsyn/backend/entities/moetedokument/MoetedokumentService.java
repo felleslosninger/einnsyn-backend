@@ -11,6 +11,7 @@ import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
+import no.einnsyn.backend.common.retry.RetryOnWriteConflict;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
@@ -25,7 +26,6 @@ import no.einnsyn.backend.entities.registrering.RegistreringService;
 import no.einnsyn.backend.utils.ExpandPathResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -222,7 +222,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
    * @throws EInnsynException if an error occurs
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @RetryOnWriteConflict
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String moetedokumentId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {
@@ -249,7 +249,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
    * @return The DokumentbeskrivelseDTO object
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @RetryOnWriteConflict
   public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
       String moetedokumentId, String dokumentbeskrivelseId) throws EInnsynException {
     var moetedokument = moetedokumentService.findForUpdateOrThrow(moetedokumentId);
@@ -311,6 +311,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
   }
 
   @Transactional(rollbackFor = Exception.class)
+  @RetryOnWriteConflict
   public MatrikkelnummerDTO addMatrikkelnummer(String moetedokumentId, MatrikkelnummerDTO dto)
       throws EInnsynException {
     proxy.authorizeDelete(moetedokumentId);

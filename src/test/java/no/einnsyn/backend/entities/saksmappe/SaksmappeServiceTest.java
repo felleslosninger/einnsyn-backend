@@ -4,8 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.withSettings;
 
 import com.google.gson.Gson;
 import java.util.List;
@@ -13,8 +19,12 @@ import no.einnsyn.backend.EinnsynServiceTestBase;
 import no.einnsyn.backend.authentication.AuthenticationService;
 import no.einnsyn.backend.authentication.EInnsynAuthentication;
 import no.einnsyn.backend.authentication.EInnsynPrincipalEnhet;
+import no.einnsyn.backend.common.exceptions.models.ConflictException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.backend.entities.journalpost.JournalpostRepository;
+import no.einnsyn.backend.entities.journalpost.JournalpostService;
+import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.utils.SlugGenerator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +34,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.util.AopTestUtils;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 @ExtendWith(MockitoExtension.class)
@@ -349,5 +361,82 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     var deletedSaksmappe = saksmappeService.delete(insertedSaksmappeDTO.getId());
     assertTrue(deletedSaksmappe.getDeleted());
     assertNull(saksmappeRepository.findById(insertedSaksmappeDTO.getId()).orElse(null));
+  }
+
+  /**
+   * Forces the race the duplicate pre-check cannot see: the first lookup misses, the insert hits
+   * the unique index, and the retry's lookup finds the winner.
+   */
+  @Test
+  void addRetriesUniqueViolationAndReportsConflict() throws Exception {
+    var externalId = "addRetriesUniqueViolationAndReportsConflict";
+    var winner = getSaksmappeDTO();
+    winner.setExternalId(externalId);
+    var winnerId = saksmappeService.add(winner).getId();
+
+    var target = AopTestUtils.<SaksmappeService>getUltimateTargetObject(saksmappeService);
+    var repository =
+        mock(
+            SaksmappeRepository.class,
+            withSettings().defaultAnswer(delegatesTo(saksmappeRepository)));
+    doReturn(null)
+        .doAnswer(delegatesTo(saksmappeRepository))
+        .when(repository)
+        .findByExternalId(externalId);
+    ReflectionTestUtils.setField(target, "repository", repository);
+    try {
+      var loser = getSaksmappeDTO();
+      loser.setExternalId(externalId);
+      assertThrows(ConflictException.class, () -> saksmappeService.add(loser));
+      // Two lookups: the stubbed miss, then the retry seeing the winner
+      verify(repository, times(2)).findByExternalId(externalId);
+    } finally {
+      ReflectionTestUtils.setField(target, "repository", saksmappeRepository);
+      saksmappeService.delete(winnerId);
+    }
+  }
+
+  /**
+   * The same forced race for the insert an update performs through findOrCreate: the nested lookup
+   * misses, the journalpost insert hits the unique index, and the retry finds the winner's
+   * journalpost and reassigns it.
+   */
+  @Test
+  void updateRetriesUniqueViolationAndReassignsNestedObject() throws Exception {
+    var externalId = "updateRetriesUniqueViolationAndReassignsNestedObject";
+    var winnerId = saksmappeService.add(getSaksmappeDTO()).getId();
+    var loserId = saksmappeService.add(getSaksmappeDTO()).getId();
+    saksmappeService.update(winnerId, withNestedJournalpost(externalId));
+
+    var target = AopTestUtils.<JournalpostService>getUltimateTargetObject(journalpostService);
+    var repository =
+        mock(
+            JournalpostRepository.class,
+            withSettings().defaultAnswer(delegatesTo(journalpostRepository)));
+    doReturn(null)
+        .doAnswer(delegatesTo(journalpostRepository))
+        .when(repository)
+        .findByExternalId(externalId);
+    ReflectionTestUtils.setField(target, "repository", repository);
+    try {
+      saksmappeService.update(loserId, withNestedJournalpost(externalId));
+      // Two lookups: the stubbed miss, then the retry seeing the winner's journalpost
+      verify(repository, times(2)).findByExternalId(externalId);
+
+      var journalpostId = journalpostRepository.findByExternalId(externalId).getId();
+      assertEquals(loserId, journalpostService.get(journalpostId).getSaksmappe().getId());
+    } finally {
+      ReflectionTestUtils.setField(target, "repository", journalpostRepository);
+      saksmappeService.delete(winnerId);
+      saksmappeService.delete(loserId);
+    }
+  }
+
+  private SaksmappeDTO withNestedJournalpost(String externalId) {
+    var journalpostDTO = getJournalpostDTO();
+    journalpostDTO.setExternalId(externalId);
+    var saksmappeDTO = new SaksmappeDTO();
+    saksmappeDTO.setJournalpost(List.of(new ExpandableField<>(journalpostDTO)));
+    return saksmappeDTO;
   }
 }
