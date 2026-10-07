@@ -1,15 +1,22 @@
 package no.einnsyn.backend.entities.votering;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.gson.reflect.TypeToken;
 import java.util.List;
+import java.util.Set;
 import no.einnsyn.backend.EinnsynControllerTestBase;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
+import no.einnsyn.backend.entities.vedtak.models.VedtakDTO;
 import no.einnsyn.backend.entities.votering.models.VoteringDTO;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -192,5 +199,64 @@ class VoteringControllerTest extends EinnsynControllerTestBase {
     // Clean up
     assertEquals(HttpStatus.OK, delete("/moetesak/" + moetesak2DTO.getId()).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/moetesak/" + moetesak2DTO.getId()).getStatusCode());
+  }
+
+  @Test
+  void testListVoteringIsScopedToVedtak() throws Exception {
+    var vedtak1DTO = moetesakDTO.getVedtak().getExpandedObject();
+    var vedtak1VoteringIds = vedtak1DTO.getVotering().stream().map(ExpandableField::getId).toList();
+
+    // A second Moetesak with its own Vedtak and Votering, which must not show up when listing the
+    // voteringer of the first Vedtak.
+    var moetesakJSON = getMoetesakJSON();
+    var vedtakJSON = getVedtakJSON();
+    vedtakJSON.put("votering", new JSONArray(List.of(getVoteringJSON())));
+    moetesakJSON.put("vedtak", vedtakJSON);
+    var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
+    var moetesak2DTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    var votering2Id = moetesak2DTO.getVedtak().getExpandedObject().getVotering().get(0).getId();
+    assertFalse(vedtak1VoteringIds.contains(votering2Id));
+
+    response = get("/vedtak/" + vedtak1DTO.getId() + "/votering");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var listType = new TypeToken<PaginatedList<VoteringDTO>>() {}.getType();
+    PaginatedList<VoteringDTO> list = gson.fromJson(response.getBody(), listType);
+    var ids = list.getItems().stream().map(VoteringDTO::getId).toList();
+    assertEquals(Set.copyOf(vedtak1VoteringIds), Set.copyOf(ids));
+
+    assertEquals(HttpStatus.OK, delete("/moetesak/" + moetesak2DTO.getId()).getStatusCode());
+  }
+
+  @Test
+  void testVoteringAddedThroughVedtakIsListed() throws Exception {
+    var vedtakId = moetesakDTO.getVedtak().getExpandedObject().getId();
+
+    // Votering owns the relation to Vedtak, so adding through this endpoint must set it. If only
+    // the inverse collection on Vedtak is updated, the Votering is persisted without a vedtak and
+    // disappears from the list below.
+    var response = post("/vedtak/" + vedtakId + "/votering", getVoteringJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var addedDTO = gson.fromJson(response.getBody(), VoteringDTO.class);
+    assertNotNull(addedDTO.getId());
+
+    // Read back through the Vedtak itself. This is loaded from the owning vedtak__id column and
+    // does not depend on how the list endpoint is scoped, so it fails whenever the owning side was
+    // not set, independently of the paginators.
+    response = get("/vedtak/" + vedtakId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var vedtakDTO = gson.fromJson(response.getBody(), VedtakDTO.class);
+    var voteringIds = vedtakDTO.getVotering().stream().map(ExpandableField::getId).toList();
+    assertTrue(
+        voteringIds.contains(addedDTO.getId()),
+        "The added Votering should be related to the Vedtak");
+
+    response = get("/vedtak/" + vedtakId + "/votering");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var listType = new TypeToken<PaginatedList<VoteringDTO>>() {}.getType();
+    PaginatedList<VoteringDTO> list = gson.fromJson(response.getBody(), listType);
+    var ids = list.getItems().stream().map(VoteringDTO::getId).toList();
+    assertTrue(ids.contains(addedDTO.getId()), "The added Votering should be listed");
+
+    assertEquals(HttpStatus.OK, delete("/votering/" + addedDTO.getId()).getStatusCode());
   }
 }
