@@ -154,7 +154,7 @@ class ArkivdelControllerTest extends EinnsynControllerTestBase {
     var arkivdel2DTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
     assertNotNull(arkivdel2DTO.getId());
 
-    response = get("/arkivdel?externalId=externalId");
+    response = get("/arkivdel");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     var resultListType = new TypeToken<PaginatedList<ArkivdelDTO>>() {}.getType();
     PaginatedList<ArkivdelDTO> arkivdelResultList =
@@ -163,7 +163,7 @@ class ArkivdelControllerTest extends EinnsynControllerTestBase {
     assertEquals(arkivdel1DTO.getId(), arkivdelResultList.getItems().get(1).getId());
     assertEquals(arkivdel2DTO.getId(), arkivdelResultList.getItems().get(0).getId());
 
-    response = get("/arkivdel?externalId=externalId&journalenhet=" + underenhetId);
+    response = get("/arkivdel?externalIds=externalId&journalenhet=" + underenhetId);
     arkivdelResultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(1, arkivdelResultList.getItems().size());
     assertEquals(arkivdel2DTO.getId(), arkivdelResultList.getItems().get(0).getId());
