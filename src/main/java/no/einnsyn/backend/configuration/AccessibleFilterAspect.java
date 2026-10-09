@@ -2,6 +2,7 @@ package no.einnsyn.backend.configuration;
 
 import jakarta.persistence.EntityManager;
 import java.util.List;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.authentication.AuthenticationService;
 import no.einnsyn.backend.entities.enhet.EnhetRepository;
@@ -70,19 +71,20 @@ public class AccessibleFilterAspect {
 
     // All other web requests
     else {
-      // Filters live on the session, which lives for the transaction, so nested transactional
-      // calls find them already configured
-      if (session.getEnabledFilter("accessibleFilter") != null
-          || session.getEnabledFilter("accessibleOrAdminFilter") != null) {
-        return;
-      }
-
       var journalenhetId = authenticationService.getEnhetId();
       var journalenhetSubtreeList = authenticationService.getEnhetSubtreeIdList();
-      var hiddenEnhetIdList = getHiddenEnhetIdList();
 
       // Enable combined filter for requests authenticated as an Enhet
       if (!journalenhetSubtreeList.isEmpty()) {
+        var currentFilter = session.getEnabledFilter("accessibleOrAdminFilter");
+
+        // If the filter is already enabled with the same parameters, do nothing
+        if (currentFilter != null
+            && Objects.equals(
+                currentFilter.getParameterValue("journalenhet"), journalenhetSubtreeList)) {
+          return;
+        }
+
         log.trace(
             "Enhet user detected, enabling combined accessibleOrAdminFilter for {}",
             journalenhetId);
@@ -90,13 +92,19 @@ public class AccessibleFilterAspect {
         session
             .enableFilter("accessibleOrAdminFilter")
             .setParameterList("journalenhet", journalenhetSubtreeList)
-            .setParameterList("hiddenEnhet", hiddenEnhetIdList);
+            .setParameterList("hiddenEnhet", getHiddenEnhetIdList());
       }
 
       // Enable standard accessibility filter for other authenticated requests
       else {
+        if (session.getEnabledFilter("accessibleFilter") != null) {
+          return;
+        }
+
         log.trace("Authenticated user detected, enabling accessibleFilter");
-        session.enableFilter("accessibleFilter").setParameterList("hiddenEnhet", hiddenEnhetIdList);
+        session
+            .enableFilter("accessibleFilter")
+            .setParameterList("hiddenEnhet", getHiddenEnhetIdList());
         session.disableFilter("accessibleOrAdminFilter");
       }
     }
