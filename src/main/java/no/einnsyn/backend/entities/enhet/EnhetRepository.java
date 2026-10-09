@@ -127,6 +127,29 @@ public interface EnhetRepository extends HasSlugRepository<Enhet> {
       nativeQuery = true)
   boolean isSkjult(String enhetId);
 
+  /**
+   * Find all Enhets in a hidden subtree, i.e. hidden Enhets and their descendants.
+   *
+   * @return IDs of all Enhets in a hidden subtree
+   */
+  @Query(
+      value =
+          """
+          WITH RECURSIVE hidden AS (
+            SELECT e1._id, e1.id, 1 AS depth
+            FROM enhet e1
+            WHERE e1.skjult = true
+            UNION ALL
+            SELECT e2._id, e2.id, h.depth + 1
+            FROM enhet e2
+            INNER JOIN hidden h ON e2.parent_id = h.id
+            WHERE h.depth < 20
+          )
+          SELECT DISTINCT _id FROM hidden;
+          """,
+      nativeQuery = true)
+  List<String> getHiddenSubtreeIdList();
+
   @Query(
       """
       SELECT o FROM Enhet o

@@ -49,6 +49,7 @@ import org.hibernate.annotations.Generated;
             FROM møtemappe parent_moetemappe
             WHERE parent_moetemappe.møtemappe_id = $FILTER_PLACEHOLDER$.møtemappe_id
               AND parent_moetemappe._accessible_after <= NOW()
+              AND parent_moetemappe.journalenhet__id NOT IN (:hiddenEnhet)
           )
         )
         """)
@@ -63,7 +64,10 @@ import org.hibernate.annotations.Generated;
             FROM møtemappe parent_moetemappe
             WHERE parent_moetemappe.møtemappe_id = $FILTER_PLACEHOLDER$.møtemappe_id
               AND (
-                parent_moetemappe._accessible_after <= NOW() OR
+                (
+                  parent_moetemappe._accessible_after <= NOW() AND
+                  parent_moetemappe.journalenhet__id NOT IN (:hiddenEnhet)
+                ) OR
                 parent_moetemappe.journalenhet__id in (:journalenhet)
               )
           )

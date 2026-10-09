@@ -3,6 +3,7 @@ package no.einnsyn.backend.entities.enhet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
 import java.util.ArrayList;
@@ -34,6 +35,65 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class EnhetControllerTest extends EinnsynControllerTestBase {
+
+  @Test
+  void hiddenEnhetStaysVisibleButItsContentIsHidden() throws Exception {
+    var enhetListType = new TypeToken<PaginatedList<EnhetDTO>>() {}.getType();
+    var arkivListType = new TypeToken<PaginatedList<ArkivDTO>>() {}.getType();
+
+    // Content owned by the Enhet that will be hidden, and by one of its descendants
+    var response = post("/arkiv", getArkivJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivId = gson.fromJson(response.getBody(), ArkivDTO.class).getId();
+    response = post("/enhet/" + underenhetId + "/apiKey", getApiKeyJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var underenhetKey = gson.fromJson(response.getBody(), ApiKeyDTO.class);
+    response = post("/arkiv", getArkivJSON(), underenhetKey.getSecretKey());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var underenhetArkivId = gson.fromJson(response.getBody(), ArkivDTO.class).getId();
+
+    var journalenhet = enhetRepository.findById(journalenhetId).orElseThrow();
+    journalenhet.setSkjult(true);
+    enhetRepository.saveAndFlush(journalenhet);
+    try {
+      // The Enhet and its descendants are still there for everyone
+      assertEquals(HttpStatus.OK, getAnon("/enhet/" + journalenhetId).getStatusCode());
+      assertEquals(HttpStatus.OK, getAnon("/enhet/" + underenhetId).getStatusCode());
+      response = getAnon("/enhet?limit=100");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      PaginatedList<EnhetDTO> enhetList = gson.fromJson(response.getBody(), enhetListType);
+      assertTrue(enhetList.getItems().stream().anyMatch(e -> e.getId().equals(journalenhetId)));
+
+      // Their content is not
+      assertEquals(HttpStatus.NOT_FOUND, getAnon("/arkiv/" + arkivId).getStatusCode());
+      assertEquals(HttpStatus.NOT_FOUND, getAnon("/arkiv/" + underenhetArkivId).getStatusCode());
+      assertEquals(
+          HttpStatus.NOT_FOUND, get("/arkiv/" + arkivId, journalenhet2Key).getStatusCode());
+      response = getAnon("/enhet/" + journalenhetId + "/arkiv");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      PaginatedList<ArkivDTO> arkivList = gson.fromJson(response.getBody(), arkivListType);
+      assertTrue(arkivList.getItems().isEmpty());
+
+      // Except to the hidden subtree itself and to admins
+      assertEquals(HttpStatus.OK, get("/arkiv/" + arkivId).getStatusCode());
+      assertEquals(HttpStatus.OK, get("/arkiv/" + underenhetArkivId).getStatusCode());
+      assertEquals(
+          HttpStatus.OK,
+          get("/arkiv/" + underenhetArkivId, underenhetKey.getSecretKey()).getStatusCode());
+      assertEquals(HttpStatus.OK, getAdmin("/arkiv/" + arkivId).getStatusCode());
+      response = get("/enhet/" + journalenhetId + "/arkiv");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      arkivList = gson.fromJson(response.getBody(), arkivListType);
+      assertTrue(arkivList.getItems().stream().anyMatch(a -> a.getId().equals(arkivId)));
+    } finally {
+      journalenhet = enhetRepository.findById(journalenhetId).orElseThrow();
+      journalenhet.setSkjult(false);
+      enhetRepository.saveAndFlush(journalenhet);
+      assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivId).getStatusCode());
+      assertEquals(HttpStatus.OK, delete("/arkiv/" + underenhetArkivId).getStatusCode());
+      assertEquals(HttpStatus.OK, delete("/apiKey/" + underenhetKey.getId()).getStatusCode());
+    }
+  }
 
   @Test
   void insertEnhet() throws Exception {
