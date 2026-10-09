@@ -46,6 +46,7 @@ import org.hibernate.annotations.Generated;
             FROM saksmappe parent_saksmappe
             WHERE parent_saksmappe.saksmappe_id = $FILTER_PLACEHOLDER$.saksmappe_id
               AND parent_saksmappe._accessible_after <= NOW()
+              AND parent_saksmappe.journalenhet__id NOT IN (:hiddenEnhet)
           )
         )
         """)
@@ -60,7 +61,10 @@ import org.hibernate.annotations.Generated;
             FROM saksmappe parent_saksmappe
             WHERE parent_saksmappe.saksmappe_id = $FILTER_PLACEHOLDER$.saksmappe_id
               AND (
-                parent_saksmappe._accessible_after <= NOW() OR
+                (
+                  parent_saksmappe._accessible_after <= NOW() AND
+                  parent_saksmappe.journalenhet__id NOT IN (:hiddenEnhet)
+                ) OR
                 parent_saksmappe.journalenhet__id in (:journalenhet)
               )
           )

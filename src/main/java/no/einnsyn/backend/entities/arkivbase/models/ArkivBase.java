@@ -17,18 +17,28 @@ import org.hibernate.annotations.ParamDef;
 /**
  * Base class for all eInnsyn objects, containing metadata fields that are common to all objects.
  */
+// Objects owned by an Enhet in a hidden subtree are only visible to that subtree and admins
 @FilterDef(
     name = "accessibleOrAdminFilter",
     applyToLoadByKey = true,
-    parameters = @ParamDef(name = "journalenhet", type = String.class),
+    parameters = {
+      @ParamDef(name = "journalenhet", type = String.class),
+      @ParamDef(name = "hiddenEnhet", type = String.class)
+    },
     defaultCondition =
         """
         (
-          $FILTER_PLACEHOLDER$._accessible_after <= NOW() OR
+          (
+            $FILTER_PLACEHOLDER$._accessible_after <= NOW() AND
+            $FILTER_PLACEHOLDER$.journalenhet__id NOT IN (:hiddenEnhet)
+          ) OR
           $FILTER_PLACEHOLDER$.journalenhet__id in (:journalenhet)
         )
         """)
 @Filter(name = "accessibleOrAdminFilter")
+@Filter(
+    name = "accessibleFilter",
+    condition = "$FILTER_PLACEHOLDER$.journalenhet__id NOT IN (:hiddenEnhet)")
 @MappedSuperclass
 @Getter
 @Setter
