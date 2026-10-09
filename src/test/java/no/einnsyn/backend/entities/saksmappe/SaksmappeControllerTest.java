@@ -71,15 +71,15 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var journalpostSystemId = "hidden-journalpost";
     var journalpostJSON = getJournalpostJSON();
     journalpostJSON.put("systemId", journalpostSystemId);
-    response =
-        post("/saksmappe/" + saksmappeId + "/journalpost", journalpostJSON, journalenhet2Key);
+    journalpostJSON.put("journalenhet", journalenhet2Id);
+    response = postAdmin("/saksmappe/" + saksmappeId + "/journalpost", journalpostJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var journalpostId = gson.fromJson(response.getBody(), JournalpostDTO.class).getId();
     var listType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
 
     var journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
     journalenhet2.setSkjult(true);
-    enhetRepository.saveAndFlush(journalenhet2);
+    journalenhet2 = enhetRepository.saveAndFlush(journalenhet2);
     try {
       // Anonymous should not see the journalpost
       assertEquals(HttpStatus.NOT_FOUND, getAnon("/journalpost/" + journalpostId).getStatusCode());
@@ -134,8 +134,13 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
       assertEquals(HttpStatus.OK, response.getStatusCode());
       list = gson.fromJson(response.getBody(), listType);
       assertTrue(list.getItems().stream().anyMatch(j -> j.getId().equals(journalpostId)));
+
+      // The Mappe-owner should not see the journalpost in the Saksmappe's journalpost list
+      response = get("/saksmappe/" + saksmappeId + "/journalpost?limit=100");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      list = gson.fromJson(response.getBody(), listType);
+      assertTrue(list.getItems().stream().noneMatch(j -> j.getId().equals(journalpostId)));
     } finally {
-      journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
       journalenhet2.setSkjult(false);
       enhetRepository.saveAndFlush(journalenhet2);
       assertEquals(
@@ -154,13 +159,15 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeId = gson.fromJson(response.getBody(), SaksmappeDTO.class).getId();
 
-    response = post("/saksmappe/" + saksmappeId + "/journalpost", getJournalpostJSON());
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("journalenhet", journalenhetId);
+    response = postAdmin("/saksmappe/" + saksmappeId + "/journalpost", journalpostJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var journalpostId = gson.fromJson(response.getBody(), JournalpostDTO.class).getId();
 
     var journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
     journalenhet2.setSkjult(true);
-    enhetRepository.saveAndFlush(journalenhet2);
+    journalenhet2 = enhetRepository.saveAndFlush(journalenhet2);
     try {
       response = getAnon("/journalpost/" + journalpostId);
       assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
@@ -180,7 +187,6 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
       assertEquals(saksmappeId, journalpost.getSaksmappe().getId());
       assertTrue(journalpost.getSaksmappe().isExpanded());
     } finally {
-      journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
       journalenhet2.setSkjult(false);
       enhetRepository.saveAndFlush(journalenhet2);
       assertEquals(HttpStatus.OK, delete("/journalpost/" + journalpostId).getStatusCode());

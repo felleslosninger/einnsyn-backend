@@ -75,7 +75,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     var journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
     journalenhet2.setSkjult(true);
-    enhetRepository.saveAndFlush(journalenhet2);
+    journalenhet2 = enhetRepository.saveAndFlush(journalenhet2);
     try {
       // Anonymous should not see the moetesak
       assertEquals(HttpStatus.NOT_FOUND, getAnon("/moetesak/" + moetesakId).getStatusCode());
@@ -128,6 +128,12 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
       list = gson.fromJson(response.getBody(), listType);
       assertTrue(list.getItems().stream().anyMatch(m -> m.getId().equals(moetesakId)));
 
+      // The Mappe-owner should not see the moetesak in the Moetemappe's moetesak list
+      response = get("/moetemappe/" + moetemappeId + "/moetesak?limit=100");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      list = gson.fromJson(response.getBody(), listType);
+      assertTrue(list.getItems().stream().noneMatch(m -> m.getId().equals(moetesakId)));
+
       // The Moetemappe's embedded moetesak list should not expose the moetesak either
       response = getAnon("/moetemappe/" + moetemappeId);
       assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -140,7 +146,6 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
       moetemappe = gson.fromJson(response.getBody(), MoetemappeDTO.class);
       assertTrue(moetemappe.getMoetesak().stream().anyMatch(m -> m.getId().equals(moetesakId)));
     } finally {
-      journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
       journalenhet2.setSkjult(false);
       enhetRepository.saveAndFlush(journalenhet2);
       assertEquals(HttpStatus.OK, deleteAdmin("/moetesak/" + moetesakId).getStatusCode());
@@ -168,7 +173,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     var journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
     journalenhet2.setSkjult(true);
-    enhetRepository.saveAndFlush(journalenhet2);
+    journalenhet2 = enhetRepository.saveAndFlush(journalenhet2);
     try {
       response = getAnon("/moetesak/" + moetesakId);
       assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
@@ -187,7 +192,6 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
       assertEquals(moetemappeId, moetesak.getMoetemappe().getId());
       assertTrue(moetesak.getMoetemappe().isExpanded());
     } finally {
-      journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
       journalenhet2.setSkjult(false);
       enhetRepository.saveAndFlush(journalenhet2);
       assertEquals(HttpStatus.OK, deleteAdmin("/moetesak/" + moetesakId).getStatusCode());
