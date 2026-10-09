@@ -70,6 +70,13 @@ public class AccessibleFilterAspect {
 
     // All other web requests
     else {
+      // Filters live on the session, which lives for the transaction, so nested transactional
+      // calls find them already configured
+      if (session.getEnabledFilter("accessibleFilter") != null
+          || session.getEnabledFilter("accessibleOrAdminFilter") != null) {
+        return;
+      }
+
       var journalenhetId = authenticationService.getEnhetId();
       var journalenhetSubtreeList = authenticationService.getEnhetSubtreeIdList();
       var hiddenEnhetIdList = getHiddenEnhetIdList();
