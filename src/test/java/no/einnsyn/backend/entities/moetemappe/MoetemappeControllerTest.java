@@ -127,6 +127,18 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
       assertEquals(HttpStatus.OK, response.getStatusCode());
       list = gson.fromJson(response.getBody(), listType);
       assertTrue(list.getItems().stream().anyMatch(m -> m.getId().equals(moetesakId)));
+
+      // The Moetemappe's embedded moetesak list should not expose the moetesak either
+      response = getAnon("/moetemappe/" + moetemappeId);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      var moetemappe = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+      assertTrue(moetemappe.getMoetesak().stream().noneMatch(m -> m.getId().equals(moetesakId)));
+
+      // The owning Enhet should see the moetesak in the Moetemappe's embedded list
+      response = get("/moetemappe/" + moetemappeId, journalenhet2Key);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      moetemappe = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+      assertTrue(moetemappe.getMoetesak().stream().anyMatch(m -> m.getId().equals(moetesakId)));
     } finally {
       journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
       journalenhet2.setSkjult(false);

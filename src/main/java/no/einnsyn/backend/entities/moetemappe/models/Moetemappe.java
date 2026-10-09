@@ -60,13 +60,29 @@ public class Moetemappe extends Mappe implements Indexable {
 
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "moetemappe")
   @Filter(name = "accessibleOrAdminFilter")
-  @Filter(name = "accessibleFilter")
+  @Filter(
+      name = "accessibleFilter",
+      condition =
+          """
+          (
+            $FILTER_PLACEHOLDER$._accessible_after <= NOW() AND
+            $FILTER_PLACEHOLDER$.journalenhet__id NOT IN (:hiddenEnhet)
+          )
+          """)
   @OrderBy("id ASC")
   private List<Moetesak> moetesak;
 
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "moetemappe")
   @Filter(name = "accessibleOrAdminFilter")
-  @Filter(name = "accessibleFilter")
+  @Filter(
+      name = "accessibleFilter",
+      condition =
+          """
+          (
+            $FILTER_PLACEHOLDER$._accessible_after <= NOW() AND
+            $FILTER_PLACEHOLDER$.journalenhet__id NOT IN (:hiddenEnhet)
+          )
+          """)
   @OrderBy("id ASC")
   private List<Moetedokument> moetedokument;
 
