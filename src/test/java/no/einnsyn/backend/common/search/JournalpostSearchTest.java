@@ -76,12 +76,10 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     journalpostJSON.put("journalsekvensnummer", "2");
     journalpostJSON.put("journalpostnummer", 102);
     journalpostJSON.put("journalposttype", "utgaaende_dokument");
-    response =
-        post(
-            "/saksmappe/" + saksmappeFooDTO.getId() + "/journalpost",
-            journalpostJSON,
-            journalenhet2Key);
+    journalpostJSON.put("journalenhet", journalenhet2Id);
+    response = postAdmin("/saksmappe/" + saksmappeFooDTO.getId() + "/journalpost", journalpostJSON);
     journalpostBarDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    journalpostJSON.remove("journalenhet");
 
     // Add journalpost to underenhet
     journalpostJSON.put("offentligTittel", "baz");

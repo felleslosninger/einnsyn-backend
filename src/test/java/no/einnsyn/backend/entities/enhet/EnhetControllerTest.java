@@ -432,11 +432,9 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     var journalpost3 = journalpostList.get(2);
 
     // Add journalpost for another enhet
-    response =
-        post(
-            "/saksmappe/" + saksmappe.getId() + "/journalpost",
-            getJournalpostJSON(),
-            journalenhet2Key);
+    var journalpost4JSON = getJournalpostJSON();
+    journalpost4JSON.put("journalenhet", journalenhet2Id);
+    response = postAdmin("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpost4JSON);
     var journalpost4 = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
     // Add four InnsynskravBestilling
