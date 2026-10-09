@@ -13,6 +13,7 @@ import lombok.Setter;
 import no.einnsyn.backend.utils.id.IdGenerator;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import org.hibernate.annotations.UpdateTimestamp;
 
 /**
@@ -21,6 +22,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 @FilterDef(
     name = "accessibleFilter",
     applyToLoadByKey = true,
+    // Used by ArkivBase, whose objects are not public when owned by a hidden Enhet
+    parameters = @ParamDef(name = "hiddenEnhet", type = String.class),
     defaultCondition =
         """
         $FILTER_PLACEHOLDER$._accessible_after <= NOW()

@@ -3,6 +3,7 @@ package no.einnsyn.backend.entities.moetemappe;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
 import java.time.Instant;
@@ -52,6 +53,151 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     var response = delete("/arkiv/" + arkivDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/arkiv/" + arkivDTO.getId()).getStatusCode());
+  }
+
+  @Test
+  void hiddenJournalenhetIsFiltered() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeId = gson.fromJson(response.getBody(), MoetemappeDTO.class).getId();
+
+    // The child deliberately belongs to a different Enhet than its visible parent. This verifies
+    // that visibility is enforced on returned rows, not inferred from the scoped parent. Only the
+    // Moetemappe's owner may add to it, so an admin attributes the Moetesak to the other Enhet.
+    var moetesakSystemId = "hidden-moetesak";
+    var moetesakJSON = getMoetesakJSON();
+    moetesakJSON.put("systemId", moetesakSystemId);
+    moetesakJSON.put("journalenhet", journalenhet2Id);
+    response = postAdmin("/moetemappe/" + moetemappeId + "/moetesak", moetesakJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesakId = gson.fromJson(response.getBody(), MoetesakDTO.class).getId();
+    var listType = new TypeToken<PaginatedList<MoetesakDTO>>() {}.getType();
+
+    var journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
+    journalenhet2.setSkjult(true);
+    journalenhet2 = enhetRepository.saveAndFlush(journalenhet2);
+    try {
+      // Anonymous should not see the moetesak
+      assertEquals(HttpStatus.NOT_FOUND, getAnon("/moetesak/" + moetesakId).getStatusCode());
+      assertEquals(HttpStatus.NOT_FOUND, getAnon("/moetesak/" + moetesakSystemId).getStatusCode());
+
+      // The owning Enhet should see the moetesak
+      assertEquals(HttpStatus.OK, get("/moetesak/" + moetesakId, journalenhet2Key).getStatusCode());
+      assertEquals(
+          HttpStatus.OK, get("/moetesak/" + moetesakSystemId, journalenhet2Key).getStatusCode());
+
+      // Unscoped lists should not contain the moetesak
+      response = getAnon("/moetesak?limit=100");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      PaginatedList<MoetesakDTO> list = gson.fromJson(response.getBody(), listType);
+      assertTrue(list.getItems().stream().noneMatch(m -> m.getId().equals(moetesakId)));
+
+      // Enhet should see the moetesak in unscoped lists
+      response = get("/moetesak?limit=100", journalenhet2Key);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      list = gson.fromJson(response.getBody(), listType);
+      assertTrue(list.getItems().stream().anyMatch(m -> m.getId().equals(moetesakId)));
+
+      // Lists filtered by ID should not contain the moetesak
+      response = getAnon("/moetesak?ids=" + moetesakId);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      list = gson.fromJson(response.getBody(), listType);
+      assertTrue(list.getItems().isEmpty());
+
+      // Enhet should see the moetesak in lists filtered by ID
+      response = get("/moetesak?ids=" + moetesakId, journalenhet2Key);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      list = gson.fromJson(response.getBody(), listType);
+      assertTrue(list.getItems().stream().anyMatch(m -> m.getId().equals(moetesakId)));
+
+      // The moetesak should not be seen in the Moetemappe's moetesak list
+      response = getAnon("/moetemappe/" + moetemappeId + "/moetesak?limit=100");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      list = gson.fromJson(response.getBody(), listType);
+      assertTrue(list.getItems().stream().noneMatch(m -> m.getId().equals(moetesakId)));
+
+      // The owning Enhet should see the moetesak in the Moetemappe's moetesak list
+      response = get("/moetemappe/" + moetemappeId + "/moetesak?limit=100", journalenhet2Key);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      list = gson.fromJson(response.getBody(), listType);
+      assertTrue(list.getItems().stream().anyMatch(m -> m.getId().equals(moetesakId)));
+
+      // Admin should see the moetesak in the Moetemappe's moetesak list
+      response = getAdmin("/moetemappe/" + moetemappeId + "/moetesak?limit=100");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      list = gson.fromJson(response.getBody(), listType);
+      assertTrue(list.getItems().stream().anyMatch(m -> m.getId().equals(moetesakId)));
+
+      // The Mappe-owner should not see the moetesak in the Moetemappe's moetesak list
+      response = get("/moetemappe/" + moetemappeId + "/moetesak?limit=100");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      list = gson.fromJson(response.getBody(), listType);
+      assertTrue(list.getItems().stream().noneMatch(m -> m.getId().equals(moetesakId)));
+
+      // The Moetemappe's embedded moetesak list should not expose the moetesak either
+      response = getAnon("/moetemappe/" + moetemappeId);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      var moetemappe = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+      assertTrue(moetemappe.getMoetesak().stream().noneMatch(m -> m.getId().equals(moetesakId)));
+
+      // The owning Enhet should see the moetesak in the Moetemappe's embedded list
+      response = get("/moetemappe/" + moetemappeId, journalenhet2Key);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      moetemappe = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+      assertTrue(moetemappe.getMoetesak().stream().anyMatch(m -> m.getId().equals(moetesakId)));
+    } finally {
+      journalenhet2.setSkjult(false);
+      enhetRepository.saveAndFlush(journalenhet2);
+      assertEquals(HttpStatus.OK, deleteAdmin("/moetesak/" + moetesakId).getStatusCode());
+      assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappeId).getStatusCode());
+    }
+  }
+
+  @Test
+  void moetesakIsHiddenWhenMoetemappeEnhetIsHidden() throws Exception {
+    var response =
+        post(
+            "/arkivdel/" + arkivdelDTO.getId() + "/moetemappe",
+            getMoetemappeJSON(),
+            journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeId = gson.fromJson(response.getBody(), MoetemappeDTO.class).getId();
+
+    // Only the Moetemappe's owner may add to it, so an admin attributes the Moetesak to
+    // journalenhet
+    var moetesakJSON = getMoetesakJSON();
+    moetesakJSON.put("journalenhet", journalenhetId);
+    response = postAdmin("/moetemappe/" + moetemappeId + "/moetesak", moetesakJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesakId = gson.fromJson(response.getBody(), MoetesakDTO.class).getId();
+
+    var journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
+    journalenhet2.setSkjult(true);
+    journalenhet2 = enhetRepository.saveAndFlush(journalenhet2);
+    try {
+      response = getAnon("/moetesak/" + moetesakId);
+      assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+      assertEquals(
+          HttpStatus.NOT_FOUND, get("/moetesak/" + moetesakId, journalenhetKey).getStatusCode());
+
+      response = getAnon("/moetesak?ids=" + moetesakId);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      var listType = new TypeToken<PaginatedList<MoetesakDTO>>() {}.getType();
+      PaginatedList<MoetesakDTO> list = gson.fromJson(response.getBody(), listType);
+      assertTrue(list.getItems().isEmpty());
+
+      response = get("/moetesak/" + moetesakId + "?expand=moetemappe", journalenhet2Key);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      var moetesak = gson.fromJson(response.getBody(), MoetesakDTO.class);
+      assertEquals(moetemappeId, moetesak.getMoetemappe().getId());
+      assertTrue(moetesak.getMoetemappe().isExpanded());
+    } finally {
+      journalenhet2.setSkjult(false);
+      enhetRepository.saveAndFlush(journalenhet2);
+      assertEquals(HttpStatus.OK, deleteAdmin("/moetesak/" + moetesakId).getStatusCode());
+      assertEquals(
+          HttpStatus.OK, delete("/moetemappe/" + moetemappeId, journalenhet2Key).getStatusCode());
+    }
   }
 
   @Test
