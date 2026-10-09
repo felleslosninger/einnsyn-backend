@@ -453,7 +453,8 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Insert Journalpost belonging to another Enhet to saksmappe
     var jp2 = getJournalpostJSON();
-    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", jp2, journalenhet2Key);
+    jp2.put("journalenhet", journalenhet2Id);
+    response = postAdmin("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", jp2);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var journalpost2 = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
