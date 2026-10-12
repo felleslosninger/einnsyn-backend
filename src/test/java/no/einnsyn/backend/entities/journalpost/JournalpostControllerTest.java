@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
+import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
@@ -1028,6 +1029,67 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void onlySaksmappeOwnerOrAncestorCanAddJournalpost() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeId = gson.fromJson(response.getBody(), SaksmappeDTO.class).getId();
+
+    var underenhetSaksmappeJSON = getSaksmappeJSON();
+    underenhetSaksmappeJSON.put("journalenhet", underenhetId);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", underenhetSaksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var underenhetSaksmappeId = gson.fromJson(response.getBody(), SaksmappeDTO.class).getId();
+
+    response = post("/enhet/" + underenhetId + "/apiKey", getApiKeyJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var underenhetKey = gson.fromJson(response.getBody(), ApiKeyDTO.class);
+
+    response =
+        post(
+            "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe",
+            getSaksmappeJSON(),
+            journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe2Id = gson.fromJson(response.getBody(), SaksmappeDTO.class).getId();
+    response =
+        post("/saksmappe/" + saksmappe2Id + "/journalpost", getJournalpostJSON(), journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpost2Id = gson.fromJson(response.getBody(), JournalpostDTO.class).getId();
+
+    try {
+      // A sibling Enhet cannot add to the Saksmappe
+      response =
+          post(
+              "/saksmappe/" + saksmappeId + "/journalpost", getJournalpostJSON(), journalenhet2Key);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+      // ...or move its own Journalpost into it
+      var moveJSON = new JSONObject();
+      moveJSON.put("saksmappe", saksmappeId);
+      response = patch("/journalpost/" + journalpost2Id, moveJSON, journalenhet2Key);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+      // A child Enhet cannot add to its parent's Saksmappe
+      response =
+          post(
+              "/saksmappe/" + saksmappeId + "/journalpost",
+              getJournalpostJSON(),
+              underenhetKey.getSecretKey());
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+      // A parent Enhet can add to its child's Saksmappe
+      response = post("/saksmappe/" + underenhetSaksmappeId + "/journalpost", getJournalpostJSON());
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    } finally {
+      assertEquals(HttpStatus.OK, delete("/apiKey/" + underenhetKey.getId()).getStatusCode());
+      assertEquals(
+          HttpStatus.OK, delete("/saksmappe/" + saksmappe2Id, journalenhet2Key).getStatusCode());
+      assertEquals(HttpStatus.OK, delete("/saksmappe/" + underenhetSaksmappeId).getStatusCode());
+      assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeId).getStatusCode());
+    }
+  }
+
+  @Test
   void addExistingSkjermingAndRollbackOnForbidden() throws Exception {
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -1041,9 +1103,23 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     response = post(pathPrefix + "/journalpost", journalpostJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
-    response = post(pathPrefix + "/journalpost", journalpostJSON, journalenhet2Key);
+    // Use journalenhet2's own Saksmappe, so the Skjerming is what's forbidden
+    response =
+        post(
+            "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe",
+            getSaksmappeJSON(),
+            journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe2DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    response =
+        post(
+            "/saksmappe/" + saksmappe2DTO.getId() + "/journalpost",
+            journalpostJSON,
+            journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
+    response = delete("/saksmappe/" + saksmappe2DTO.getId(), journalenhet2Key);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     response = delete("/saksmappe/" + saksmappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
@@ -1307,7 +1383,9 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     var journalpost1DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
     var jp1Id = journalpost1DTO.getId();
 
-    response = post(pathPrefix + "/journalpost", jp, journalenhet2Key);
+    // Only the Saksmappe's owner may add to it, so an admin attributes jp2 to journalenhet2
+    jp.put("journalenhet", journalenhet2Id);
+    response = postAdmin(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var journalpost2DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
     assertEquals(journalenhet2Id, journalpost2DTO.getJournalenhet().getId());

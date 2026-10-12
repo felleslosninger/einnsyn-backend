@@ -113,11 +113,9 @@ class SearchPaginationTest extends EinnsynControllerTestBase {
     journalpostJSON.put("dokumentetsDato", "2023-02-15");
     journalpostJSON.put(
         "korrespondansepart", new JSONArray().appendElement(korrespondansepartBeta));
+    journalpostJSON.put("journalenhet", journalenhet2Id);
     response =
-        post(
-            "/saksmappe/" + saksmappeAlphaDTO.getId() + "/journalpost",
-            journalpostJSON,
-            journalenhet2Key);
+        postAdmin("/saksmappe/" + saksmappeAlphaDTO.getId() + "/journalpost", journalpostJSON);
     journalpostBetaDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
     // Create Journalpost "Gamma" with distinct field values

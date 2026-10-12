@@ -158,7 +158,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // Update saksmappe
     var saksmappeField = dto.getSaksmappe();
     if (saksmappeField != null) {
-      var saksmappe = saksmappeService.findOrThrow(saksmappeField.getId());
+      var saksmappe = saksmappeService.findForUpdateOrThrow(saksmappeField);
       journalpost.setSaksmappe(saksmappe);
     }
 
