@@ -143,7 +143,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
 
     if (dto.getDokumentbeskrivelse() != null) {
       var dokumentbeskrivelse =
-          dokumentbeskrivelseService.findOrThrow(dto.getDokumentbeskrivelse().getId());
+          dokumentbeskrivelseService.findForUpdateOrThrow(dto.getDokumentbeskrivelse());
       dokumentbeskrivelse.addDokumentobjekt(dokumentobjekt);
     }
 

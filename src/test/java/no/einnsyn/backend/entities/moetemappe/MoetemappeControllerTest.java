@@ -623,6 +623,49 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void onlyMoetemappeOwnerCanBeReferencedAsForrigeOrNesteMoete() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeId = gson.fromJson(response.getBody(), MoetemappeDTO.class).getId();
+
+    response = post("/arkiv", getArkivJSON(), journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkiv2Id = gson.fromJson(response.getBody(), ArkivDTO.class).getId();
+
+    try {
+      response = post("/arkiv/" + arkiv2Id + "/arkivdel", getArkivdelJSON(), journalenhet2Key);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var arkivdel2Id = gson.fromJson(response.getBody(), ArkivdelDTO.class).getId();
+
+      // A sibling Enhet cannot link a new Moetemappe to the Moetemappe
+      var moetemappe2JSON = getMoetemappeJSON();
+      moetemappe2JSON.put("referanseForrigeMoete", moetemappeId);
+      response =
+          post("/arkivdel/" + arkivdel2Id + "/moetemappe", moetemappe2JSON, journalenhet2Key);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+      // ...or an existing one
+      response =
+          post("/arkivdel/" + arkivdel2Id + "/moetemappe", getMoetemappeJSON(), journalenhet2Key);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var moetemappe2Id = gson.fromJson(response.getBody(), MoetemappeDTO.class).getId();
+      var linkJSON = new JSONObject();
+      linkJSON.put("referanseNesteMoete", moetemappeId);
+      response = patch("/moetemappe/" + moetemappe2Id, linkJSON, journalenhet2Key);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+      response = get("/moetemappe/" + moetemappeId);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+      assertNull(moetemappeDTO.getReferanseForrigeMoete());
+      assertNull(moetemappeDTO.getReferanseNesteMoete());
+    } finally {
+      assertEquals(HttpStatus.OK, delete("/arkiv/" + arkiv2Id, journalenhet2Key).getStatusCode());
+      assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappeId).getStatusCode());
+    }
+  }
+
+  @Test
   void testInsertWithChildren() throws Exception {
     var moetedokument1JSON = getMoetedokumentJSON();
     var moetedokument2JSON = getMoetedokumentJSON();
