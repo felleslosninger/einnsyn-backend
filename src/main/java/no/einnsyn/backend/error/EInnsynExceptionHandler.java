@@ -19,7 +19,6 @@ import no.einnsyn.backend.common.exceptions.models.TooManyRequestsException;
 import no.einnsyn.backend.common.exceptions.models.TooManyUnverifiedOrdersException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException.FieldError;
-import no.einnsyn.backend.common.responses.models.ErrorResponse;
 import org.apache.tomcat.util.http.InvalidParameterException;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -96,13 +95,10 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   @Override
   protected ResponseEntity<Object> createResponseEntity(
       Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
-    if (body instanceof ErrorResponse) {
-      return ResponseEntity.status(statusCode)
-          .headers(headers)
-          .contentType(MediaType.APPLICATION_JSON)
-          .body(body);
-    }
-    return super.createResponseEntity(body, headers, statusCode, request);
+    return ResponseEntity.status(statusCode)
+        .headers(headers)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(body);
   }
 
   @ExceptionHandler(Exception.class)
