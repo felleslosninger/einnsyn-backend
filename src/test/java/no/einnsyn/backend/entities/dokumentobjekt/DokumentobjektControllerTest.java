@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -45,7 +46,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -131,6 +134,18 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var errorResponse = gson.fromJson(response.getBody(), NetworkException.ClientResponse.class);
     assertEquals("networkError", errorResponse.getType());
     assertEquals("Could not prepare download from source", errorResponse.getMessage());
+  }
+
+  @Test
+  void downloadShouldReturnBadGatewayWhenClientDoesNotAcceptJson() throws Exception {
+    var headers = new HttpHeaders();
+    headers.setAccept(List.of(MediaType.APPLICATION_OCTET_STREAM));
+    var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download", headers);
+
+    assertEquals(HttpStatus.BAD_GATEWAY, response.getStatusCode());
+    assertTrue(MediaType.APPLICATION_JSON.isCompatibleWith(response.getHeaders().getContentType()));
+    var errorResponse = gson.fromJson(response.getBody(), NetworkException.ClientResponse.class);
+    assertEquals("networkError", errorResponse.getType());
   }
 
   @Test
