@@ -37,15 +37,25 @@ public interface LagretSoekRepository
       """)
   Stream<String> streamBrukerIdWithLagretSoekHits();
 
+  /**
+   * Subtract the hits that have been notified. Hits are counted concurrently by the indexer, so the
+   * count is decremented rather than reset, to keep matches that arrived while the mail was being
+   * built.
+   */
   @Modifying
-  @Query("UPDATE LagretSoek SET hitCount = 0 WHERE id IN :idList")
+  @Query(
+      """
+      UPDATE LagretSoek
+      SET hitCount = CASE WHEN hitCount > :notifiedCount THEN hitCount - :notifiedCount ELSE 0 END
+      WHERE id = :id
+      """)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  void resetHitCount(List<String> idList);
+  void acknowledgeHits(String id, int notifiedCount);
 
   @Modifying
-  @Query("DELETE FROM LagretSoekHit WHERE lagretSoek.id IN :idList")
+  @Query("DELETE FROM LagretSoekHit WHERE id IN :hitIdList")
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  void deleteHits(List<String> idList);
+  void deleteHitsById(List<String> hitIdList);
 
   @Query("SELECT o.id FROM LagretSoek o WHERE bruker.id = :brukerId ORDER BY id DESC")
   Stream<String> streamIdByBrukerId(String brukerId);
