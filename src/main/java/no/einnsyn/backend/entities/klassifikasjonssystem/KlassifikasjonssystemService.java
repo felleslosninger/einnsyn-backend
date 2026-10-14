@@ -4,8 +4,11 @@ import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
+import no.einnsyn.backend.common.paginators.Paginators;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
 import no.einnsyn.backend.entities.klasse.KlasseRepository;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.Klassifikasjonssystem;
@@ -90,6 +93,18 @@ public class KlassifikasjonssystemService
     }
 
     super.deleteEntity(object);
+  }
+
+  @Override
+  protected Paginators<Klassifikasjonssystem> getPaginators(ListParameters params)
+      throws EInnsynException {
+    if (params instanceof ListByArkivdelParameters p && p.getArkivdelId() != null) {
+      var arkivdel = arkivdelService.findOrThrow(p.getArkivdelId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
+    }
+    return super.getPaginators(params);
   }
 
   // Klasse
