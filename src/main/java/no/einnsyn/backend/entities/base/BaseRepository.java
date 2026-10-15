@@ -32,6 +32,14 @@ public interface BaseRepository<T extends Base> extends CrudRepository<T, String
   @Query("UPDATE #{#entityName} e SET e.updated = :updated WHERE e.id = :id")
   void touchUpdated(String id, Instant updated);
 
+  /**
+   * Acquires an advisory lock for the given value, held until the end of the transaction.
+   *
+   * @param value The value to lock on.
+   */
+  @Query(value = "SELECT pg_advisory_xact_lock(hashtext(:value))", nativeQuery = true)
+  void acquireAdvisoryLock(String value);
+
   Slice<T> findAllByOrderByIdDesc(Pageable pageable);
 
   Slice<T> findAllByOrderByIdAsc(Pageable pageable);

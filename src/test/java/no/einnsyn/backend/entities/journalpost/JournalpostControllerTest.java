@@ -12,6 +12,7 @@ import com.google.gson.reflect.TypeToken;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
@@ -2227,5 +2228,44 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     // Clean up. The Enhet is not deletable until the Saksmappe (and its Journalposts) are gone.
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
     assertEquals(HttpStatus.OK, delete("/enhet/" + enhetDTO.getId()).getStatusCode());
+  }
+
+  // A Journalpost is looked up by systemId, slug and externalId, so another Journalpost must not
+  // be able to claim any of them
+  @Test
+  void identifiersCannotBeReusedByAnotherJournalpost() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeId = gson.fromJson(response.getBody(), SaksmappeDTO.class).getId();
+
+    try {
+      var systemId = UUID.randomUUID().toString();
+      var journalpostJSON = getJournalpostJSON();
+      journalpostJSON.put("systemId", systemId);
+      response = post("/saksmappe/" + saksmappeId + "/journalpost", journalpostJSON);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+      var slug = journalpostDTO.getSlug();
+
+      var takenIdentifiers =
+          List.of(
+              List.of("systemId", slug),
+              List.of("slug", systemId),
+              List.of("externalId", slug),
+              List.of("externalId", systemId));
+      for (var taken : takenIdentifiers) {
+        var json = getJournalpostJSON();
+        json.put(taken.get(0), taken.get(1));
+        response = post("/saksmappe/" + saksmappeId + "/journalpost", json);
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode(), taken.toString());
+      }
+
+      response = getAnon("/journalpost/" + slug);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      assertEquals(
+          journalpostDTO.getId(), gson.fromJson(response.getBody(), JournalpostDTO.class).getId());
+    } finally {
+      assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeId).getStatusCode());
+    }
   }
 }
