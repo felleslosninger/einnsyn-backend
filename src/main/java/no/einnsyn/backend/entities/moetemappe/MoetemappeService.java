@@ -152,7 +152,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     // Add referanseForrigeMoete
     var referanseForrigeMoeteField = dto.getReferanseForrigeMoete();
     if (referanseForrigeMoeteField != null) {
-      var forrigeMoete = moetemappeService.findOrThrow(referanseForrigeMoeteField.getId());
+      var forrigeMoete = moetemappeService.findForUpdateOrThrow(referanseForrigeMoeteField);
       moetemappe.setReferanseForrigeMoete(forrigeMoete);
       forrigeMoete.setReferanseNesteMoete(moetemappe);
     }
@@ -160,7 +160,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     // Add referanseNesteMoete
     var referanseNesteMoeteField = dto.getReferanseNesteMoete();
     if (referanseNesteMoeteField != null) {
-      var nesteMoete = moetemappeService.findOrThrow(referanseNesteMoeteField.getId());
+      var nesteMoete = moetemappeService.findForUpdateOrThrow(referanseNesteMoeteField);
       moetemappe.setReferanseNesteMoete(nesteMoete);
       nesteMoete.setReferanseForrigeMoete(moetemappe);
     }

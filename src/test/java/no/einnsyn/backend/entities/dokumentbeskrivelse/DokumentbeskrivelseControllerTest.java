@@ -2,6 +2,7 @@ package no.einnsyn.backend.entities.dokumentbeskrivelse;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
@@ -12,6 +13,7 @@ import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -212,5 +214,72 @@ public class DokumentbeskrivelseControllerTest extends EinnsynControllerTestBase
     // Clean up
     response = delete("/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test
+  void onlyDokumentbeskrivelseOwnerCanAddDokumentobjekt() throws Exception {
+    var response =
+        post(
+            "/journalpost/" + journalpostDTO.getId() + "/dokumentbeskrivelse",
+            getDokumentbeskrivelseJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var dokumentbeskrivelseId =
+        gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class).getId();
+
+    // A sibling Enhet with a Dokumentobjekt of its own
+    response = post("/arkiv", getArkivJSON(), journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkiv2Id = gson.fromJson(response.getBody(), ArkivDTO.class).getId();
+
+    try {
+      response = post("/arkiv/" + arkiv2Id + "/arkivdel", getArkivdelJSON(), journalenhet2Key);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var arkivdel2Id = gson.fromJson(response.getBody(), ArkivdelDTO.class).getId();
+
+      response =
+          post("/arkivdel/" + arkivdel2Id + "/saksmappe", getSaksmappeJSON(), journalenhet2Key);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var saksmappe2Id = gson.fromJson(response.getBody(), SaksmappeDTO.class).getId();
+
+      var dokumentbeskrivelse2JSON = getDokumentbeskrivelseJSON();
+      dokumentbeskrivelse2JSON.put("dokumentobjekt", new JSONArray().put(getDokumentobjektJSON()));
+      var journalpost2JSON = getJournalpostJSON();
+      journalpost2JSON.put("dokumentbeskrivelse", new JSONArray().put(dokumentbeskrivelse2JSON));
+      response =
+          post("/saksmappe/" + saksmappe2Id + "/journalpost", journalpost2JSON, journalenhet2Key);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var dokumentobjekt2Id =
+          gson.fromJson(response.getBody(), JournalpostDTO.class)
+              .getDokumentbeskrivelse()
+              .getFirst()
+              .getExpandedObject()
+              .getDokumentobjekt()
+              .getFirst()
+              .getId();
+
+      // The sibling cannot add a Dokumentobjekt to the Dokumentbeskrivelse
+      response =
+          post(
+              "/dokumentbeskrivelse/" + dokumentbeskrivelseId + "/dokumentobjekt",
+              getDokumentobjektJSON(),
+              journalenhet2Key);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+      // ...or move its own Dokumentobjekt into it
+      var moveJSON = new JSONObject();
+      moveJSON.put("dokumentbeskrivelse", dokumentbeskrivelseId);
+      response = patch("/dokumentobjekt/" + dokumentobjekt2Id, moveJSON, journalenhet2Key);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+      response = get("/dokumentbeskrivelse/" + dokumentbeskrivelseId);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      var dokumentobjektList =
+          gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class).getDokumentobjekt();
+      assertTrue(dokumentobjektList == null || dokumentobjektList.isEmpty());
+    } finally {
+      assertEquals(HttpStatus.OK, delete("/arkiv/" + arkiv2Id, journalenhet2Key).getStatusCode());
+      assertEquals(
+          HttpStatus.OK, delete("/dokumentbeskrivelse/" + dokumentbeskrivelseId).getStatusCode());
+    }
   }
 }
