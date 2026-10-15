@@ -388,8 +388,9 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
       var loser = getSaksmappeDTO();
       loser.setExternalId(externalId);
       assertThrows(ConflictException.class, () -> saksmappeService.add(loser));
-      // Two lookups: the stubbed miss, then the retry seeing the winner
-      verify(repository, times(2)).findByExternalId(externalId);
+      // The stubbed miss, the identifier check leaving the same-field match to the unique index,
+      // then the retry seeing the winner
+      verify(repository, times(3)).findByExternalId(externalId);
     } finally {
       ReflectionTestUtils.setField(target, "repository", saksmappeRepository);
       saksmappeService.delete(winnerId);
@@ -420,8 +421,9 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     ReflectionTestUtils.setField(target, "repository", repository);
     try {
       saksmappeService.update(loserId, withNestedJournalpost(externalId));
-      // Two lookups: the stubbed miss, then the retry seeing the winner's journalpost
-      verify(repository, times(2)).findByExternalId(externalId);
+      // The stubbed miss and the identifier check, then the retry seeing the winner's journalpost
+      // and the identifier check finding that same journalpost
+      verify(repository, times(4)).findByExternalId(externalId);
 
       var journalpostId = journalpostRepository.findByExternalId(externalId).getId();
       assertEquals(loserId, journalpostService.get(journalpostId).getSaksmappe().getId());

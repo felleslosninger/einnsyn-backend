@@ -1,8 +1,11 @@
 package no.einnsyn.backend.configuration;
 
 import jakarta.persistence.EntityManager;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.authentication.AuthenticationService;
 import no.einnsyn.backend.entities.enhet.EnhetRepository;
@@ -29,6 +32,9 @@ import org.springframework.web.context.request.RequestContextHolder;
 @Order(Ordered.LOWEST_PRECEDENCE)
 public class AccessibleFilterAspect {
 
+  // Set by withoutFilters(), so transactional calls inside it don't re-enable the filters
+  private static final ThreadLocal<Boolean> suspended = ThreadLocal.withInitial(() -> false);
+
   AuthenticationService authenticationService;
   EntityManager entityManager;
   EnhetRepository enhetRepository;
@@ -48,8 +54,8 @@ public class AccessibleFilterAspect {
    */
   @Before("@annotation(org.springframework.transaction.annotation.Transactional)")
   public void enableFilters(JoinPoint joinPoint) throws Throwable {
-    // Ensure logic runs only when a new transaction starts
-    if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+    // Runs on every transactional call, including those joining an existing transaction
+    if (!TransactionSynchronizationManager.isSynchronizationActive() || suspended.get()) {
       return;
     }
 
@@ -106,6 +112,42 @@ public class AccessibleFilterAspect {
             .enableFilter("accessibleFilter")
             .setParameterList("hiddenEnhet", getHiddenEnhetIdList());
         session.disableFilter("accessibleOrAdminFilter");
+      }
+    }
+  }
+
+  /**
+   * Runs the action without the visibility filters, for checks that must also see objects hidden
+   * from the caller. Objects it loads stay in the persistence context, where a later lookup by ID
+   * returns them unfiltered, so only use it for checks.
+   *
+   * @param action The action to run
+   * @return The result of the action
+   */
+  public <T> T withoutFilters(Supplier<T> action) {
+    if (suspended.get()) {
+      return action.get();
+    }
+    var session = entityManager.unwrap(Session.class);
+    var enabledFilters =
+        Stream.of("accessibleFilter", "accessibleOrAdminFilter")
+            .map(session::getEnabledFilter)
+            .filter(Objects::nonNull)
+            .toList();
+    enabledFilters.forEach(filter -> session.disableFilter(filter.getName()));
+    suspended.set(true);
+    try {
+      return action.get();
+    } finally {
+      suspended.remove();
+      // Restore rather than recompute, which would query the database while changes are pending
+      for (var filter : enabledFilters) {
+        var restored = session.enableFilter(filter.getName());
+        for (var parameter : List.of("journalenhet", "hiddenEnhet")) {
+          if (filter.getParameterValue(parameter) instanceof Collection<?> values) {
+            restored.setParameterList(parameter, values);
+          }
+        }
       }
     }
   }

@@ -6,6 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.resilience.annotation.Retryable;
 
@@ -24,7 +25,8 @@ import org.springframework.resilience.annotation.Retryable;
 @Retryable(
     includes = {
       ObjectOptimisticLockingFailureException.class,
-      DataIntegrityViolationException.class
+      DataIntegrityViolationException.class,
+      PessimisticLockingFailureException.class
     },
     predicate = WriteConflictPredicate.class,
     delay = 0)
