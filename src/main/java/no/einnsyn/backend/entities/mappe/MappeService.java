@@ -61,9 +61,10 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
    */
   @Override
   protected O fromDTO(D dto, O mappe) throws EInnsynException {
-    if (isIdentifierTaken(mappe, dto.getSystemId(), Mappe::getSystemId)
-        || isIdentifierTaken(mappe, dto.getSlug(), Mappe::getSlug)
-        || isIdentifierTaken(mappe, dto.getExternalId(), Mappe::getExternalId)) {
+    var repository = getRepository();
+    if (isIdentifierTaken(mappe, dto.getSystemId(), repository::findBySystemId)
+        || isIdentifierTaken(mappe, dto.getSlug(), repository::findBySlug)
+        || isIdentifierTaken(mappe, dto.getExternalId(), repository::findByExternalId)) {
       throw new ConflictException(
           "The systemId, slug or externalId is already used by another " + objectClassName);
     }

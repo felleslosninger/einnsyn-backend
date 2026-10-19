@@ -298,10 +298,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    *
    * @param object The object the identifier is for
    * @param identifier The identifier to check, ignored if null
-   * @param field The field the identifier is written to, or null if a match in any field counts
+   * @param findInField Looks up the identifier in the field it is written to, or null if a match in
+   *     any field counts
    * @return true if the identifier belongs to another object
    */
-  public boolean isIdentifierTaken(O object, String identifier, Function<? super O, String> field) {
+  public boolean isIdentifierTaken(O object, String identifier, Function<String, O> findInField) {
     if (identifier == null) {
       return false;
     }
@@ -310,9 +311,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
           // Same lock as the slug generator, so concurrent writes of a value see each other
           getRepository().acquireAdvisoryLock(identifier);
           var existing = getProxy().find(identifier);
-          return existing != null
-              && !existing.getId().equals(object.getId())
-              && (field == null || !identifier.equals(field.apply(existing)));
+          if (existing == null || existing.getId().equals(object.getId())) {
+            return false;
+          }
+          // Compare IDs, since entities loaded earlier in the transaction can hold stale fields
+          var inField = findInField == null ? null : findInField.apply(identifier);
+          return inField == null || !inField.getId().equals(existing.getId());
         });
   }
 

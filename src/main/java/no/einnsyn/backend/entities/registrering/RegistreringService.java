@@ -61,9 +61,10 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
    */
   @Override
   protected O fromDTO(D dto, O registrering) throws EInnsynException {
-    if (isIdentifierTaken(registrering, dto.getSystemId(), Registrering::getSystemId)
-        || isIdentifierTaken(registrering, dto.getSlug(), Registrering::getSlug)
-        || isIdentifierTaken(registrering, dto.getExternalId(), Registrering::getExternalId)) {
+    var repository = getRepository();
+    if (isIdentifierTaken(registrering, dto.getSystemId(), repository::findBySystemId)
+        || isIdentifierTaken(registrering, dto.getSlug(), repository::findBySlug)
+        || isIdentifierTaken(registrering, dto.getExternalId(), repository::findByExternalId)) {
       throw new ConflictException(
           "The systemId, slug or externalId is already used by another " + objectClassName);
     }
