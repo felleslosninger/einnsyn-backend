@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.FunctionScore;
 import co.elastic.clients.elasticsearch._types.query_dsl.FunctionScoreQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
 import co.elastic.clients.json.JsonpUtils;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -58,6 +59,9 @@ public class SearchService {
 
   @Value("${application.defaultSearchResults:25}")
   private int defaultSearchLimit;
+
+  @Value("${application.elasticsearch.trackTotalHits}")
+  private int trackTotalHits;
 
   private static final String SORT_BY_SCORE = "score";
 
@@ -115,9 +119,16 @@ public class SearchService {
       var esResponse = esClient.search(esSearchRequest, Void.class);
       log.debug("search() response: {}", esResponse.toString());
 
+      var response = new PaginatedList<BaseDTO>();
+      var total = esResponse.hits().total();
+      if (total != null) {
+        response.setTotal(
+            new PaginatedList.Total(total.value(), total.relation() == TotalHitsRelation.Gte));
+      }
+
       var responseList = esResponse.hits().hits();
       if (responseList.size() == 0) {
-        return new PaginatedList<BaseDTO>(new ArrayList<BaseDTO>());
+        return response;
       }
 
       var startingAfter = searchParams.getStartingAfter();
@@ -128,7 +139,6 @@ public class SearchService {
       var uri = request.getRequestURI();
       var queryString = request.getQueryString();
       var uriBuilder = UriComponentsBuilder.fromUriString(uri).query(queryString);
-      var response = new PaginatedList<BaseDTO>();
 
       // If startingAfter, we have a previous page.
       if (startingAfter != null) {
@@ -296,8 +306,8 @@ public class SearchService {
     // We only need the ID of each match, so don't fetch sources
     searchRequestBuilder.source(b -> b.fetch(false));
 
-    // We don't need total hits for pagination
-    searchRequestBuilder.trackTotalHits(track -> track.enabled(false));
+    // Exact up to the limit, a lower bound above it
+    searchRequestBuilder.trackTotalHits(track -> track.count(trackTotalHits));
 
     return searchRequestBuilder.build();
   }

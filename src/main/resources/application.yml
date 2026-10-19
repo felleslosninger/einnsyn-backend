@@ -24,6 +24,7 @@ application:
     uri: ${ELASTICSEARCH_URIS:http://localhost:9200}
     percolatorIndex: ${ELASTICSEARCH_PERCOLATOR_INDEX:percolator_queries}
     concurrency: ${ELASTICSEARCH_CONCURRENCY:5}
+    trackTotalHits: ${ELASTICSEARCH_TRACK_TOTAL_HITS:100000} # Search hits are counted exactly up to this number
     reindexer:
       getBatchSize: ${ELASTICSEARCH_REINDEXER_GET_BATCH_SIZE:1000}
       indexBatchSize: ${ELASTICSEARCH_REINDEXER_INDEX_BATCH_SIZE:1000}
