@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
 import java.net.URI;
+import java.util.List;
 import java.util.stream.Stream;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.exceptions.models.AuthenticationException;
@@ -98,6 +99,30 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
             "/validationTest/sendError/500",
             HttpStatus.INTERNAL_SERVER_ERROR,
             "internalServerError"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("nonJsonAcceptErrorResponses")
+  void testErrorResponsesWithNonJsonAcceptHeaderReturnJson(
+      String endpoint, HttpStatus expectedStatus) throws Exception {
+    var headers = new HttpHeaders();
+    headers.setAccept(List.of(MediaType.APPLICATION_OCTET_STREAM));
+    var response = get(endpoint, headers);
+
+    assertEquals(expectedStatus, response.getStatusCode());
+    assertNotNull(response.getHeaders().getContentType());
+    assertTrue(MediaType.APPLICATION_JSON.isCompatibleWith(response.getHeaders().getContentType()));
+    assertNotNull(gson.fromJson(response.getBody(), JsonObject.class));
+  }
+
+  private static Stream<Arguments> nonJsonAcceptErrorResponses() {
+    return Stream.of(
+        // ErrorResponse bodies
+        Arguments.of("/validationTest/notFound", HttpStatus.NOT_FOUND),
+        Arguments.of("/validationTest/minValue/0", HttpStatus.BAD_REQUEST),
+        // ProblemDetail bodies built by Spring
+        Arguments.of("/validationTest/minParam", HttpStatus.BAD_REQUEST),
+        Arguments.of("/validationTest/minValue/abc", HttpStatus.BAD_REQUEST));
   }
 
   @Test

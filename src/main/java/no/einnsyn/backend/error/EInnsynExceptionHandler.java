@@ -25,6 +25,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.transaction.TransactionSystemException;
@@ -85,13 +86,28 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
         .increment();
   }
 
+  // Preset the content type so the error body is written even when the client's Accept header
+  // excludes JSON (e.g. file downloads). Otherwise Tomcat logs the exception a second time.
+  private static ResponseEntity<Object> jsonResponse(HttpStatusCode status, Object body) {
+    return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(body);
+  }
+
+  @Override
+  protected ResponseEntity<Object> createResponseEntity(
+      Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
+    return ResponseEntity.status(statusCode)
+        .headers(headers)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(body);
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Object> handleException(Exception ex) {
     var httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
     var internalServerErrorException =
         new InternalServerErrorException("Internal server error", ex);
     logAndCountError(internalServerErrorException, httpStatus);
-    return ResponseEntity.status(httpStatus).body(internalServerErrorException.toClientResponse());
+    return jsonResponse(httpStatus, internalServerErrorException.toClientResponse());
   }
 
   @ExceptionHandler(TransactionSystemException.class)
@@ -105,7 +121,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
         new InternalServerErrorException("Transaction system exception", ex);
     logAndCountError(internalServerErrorException, httpStatus);
     var clientResponse = internalServerErrorException.toClientResponse();
-    return ResponseEntity.status(httpStatus).body(clientResponse);
+    return jsonResponse(httpStatus, clientResponse);
   }
 
   /**
@@ -120,7 +136,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var badRequestException = new BadRequestException(ex.getMessage(), ex);
     logAndCountWarning(badRequestException, httpStatus);
     var clientResponse = badRequestException.toClientResponse();
-    return ResponseEntity.status(httpStatus).body(clientResponse);
+    return jsonResponse(httpStatus, clientResponse);
   }
 
   /**
@@ -142,7 +158,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
         new BadRequestException("Invalid character encoding in request parameters.", ex);
     logAndCountWarning(censoredBadRequestException, httpStatus);
     var clientResponse = censoredBadRequestException.toClientResponse();
-    return ResponseEntity.status(httpStatus).body(clientResponse);
+    return jsonResponse(httpStatus, clientResponse);
   }
 
   /**
@@ -156,7 +172,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.BAD_REQUEST;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return ResponseEntity.status(httpStatus).body(clientResponse);
+    return jsonResponse(httpStatus, clientResponse);
   }
 
   /**
@@ -170,7 +186,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.BAD_REQUEST;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return ResponseEntity.status(httpStatus).body(clientResponse);
+    return jsonResponse(httpStatus, clientResponse);
   }
 
   /**
@@ -184,7 +200,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.FORBIDDEN;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return ResponseEntity.status(httpStatus).body(clientResponse);
+    return jsonResponse(httpStatus, clientResponse);
   }
 
   /**
@@ -198,7 +214,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.UNAUTHORIZED;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return ResponseEntity.status(httpStatus).body(clientResponse);
+    return jsonResponse(httpStatus, clientResponse);
   }
 
   /*
@@ -212,7 +228,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.NOT_FOUND;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return ResponseEntity.status(httpStatus).body(clientResponse);
+    return jsonResponse(httpStatus, clientResponse);
   }
 
   /**
@@ -226,7 +242,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.BAD_GATEWAY;
     logAndCountError(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return ResponseEntity.status(httpStatus).body(clientResponse);
+    return jsonResponse(httpStatus, clientResponse);
   }
 
   /**
@@ -244,7 +260,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
         new InternalServerErrorException("Data integrity violation", ex);
     logAndCountError(internalServerErrorException, httpStatus);
     var clientResponse = internalServerErrorException.toClientResponse();
-    return ResponseEntity.status(httpStatus).body(clientResponse);
+    return jsonResponse(httpStatus, clientResponse);
   }
 
   /**
@@ -257,7 +273,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.CONFLICT;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return ResponseEntity.status(httpStatus).body(clientResponse);
+    return jsonResponse(httpStatus, clientResponse);
   }
 
   /**
@@ -271,7 +287,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.TOO_MANY_REQUESTS;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return ResponseEntity.status(httpStatus).body(clientResponse);
+    return jsonResponse(httpStatus, clientResponse);
   }
 
   /**
@@ -286,7 +302,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.TOO_MANY_REQUESTS;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return ResponseEntity.status(httpStatus).body(clientResponse);
+    return jsonResponse(httpStatus, clientResponse);
   }
 
   /**
