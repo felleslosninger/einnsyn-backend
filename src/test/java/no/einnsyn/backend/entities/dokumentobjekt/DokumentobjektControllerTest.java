@@ -194,6 +194,15 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void anonymousDownloadShouldNotBeCached() throws Exception {
+    try (var _ = startPdfProxy()) {
+      var response = getAnon("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      assertTrue(response.getHeaders().getCacheControl().contains("no-store"));
+    }
+  }
+
+  @Test
   void statisticsShouldCountStreamedDownloads() throws Exception {
     try (var _ = startPdfProxy()) {
       var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");

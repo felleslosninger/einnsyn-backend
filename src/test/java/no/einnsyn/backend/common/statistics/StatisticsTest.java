@@ -3,10 +3,14 @@ package no.einnsyn.backend.common.statistics;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.statistics.models.StatisticsResponse;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -24,7 +28,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -529,5 +535,54 @@ class StatisticsTest extends EinnsynControllerTestBase {
 
     var statisticsResponse = gson.fromJson(response.getBody(), StatisticsResponse.class);
     assertNotNull(statisticsResponse);
+  }
+
+  @Test
+  void testCachedUntilMidnight() throws Exception {
+    assertCachedUntilMidnight(getAnon("/statistics"));
+    assertCachedUntilMidnight(get("/statistics"));
+  }
+
+  @Test
+  void testHourlyIntervalIsNotCachedUntilMidnight() throws Exception {
+    var from = LocalDate.now().minusDays(1).toString();
+    var to = LocalDate.now().toString();
+    var url = "/statistics?aggregateFrom=" + from + "&aggregateTo=" + to;
+
+    var response = getAnon(url);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var statisticsResponse = gson.fromJson(response.getBody(), StatisticsResponse.class);
+    assertEquals("hour", statisticsResponse.getMetadata().getAggregateInterval());
+    assertTrue(response.getHeaders().getCacheControl().contains("max-age=120"));
+
+    response = get(url);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertTrue(response.getHeaders().getCacheControl().contains("no-store"));
+  }
+
+  @Test
+  void testErrorIsNotCached() throws Exception {
+    var response = getAnon("/statistics?aggregateFrom=invalid");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertTrue(response.getHeaders().getCacheControl().contains("no-store"));
+    assertFalse(response.getHeaders().getVary().stream().anyMatch("api-key"::equalsIgnoreCase));
+  }
+
+  private void assertCachedUntilMidnight(ResponseEntity<String> response) {
+    var now = ZonedDateTime.now();
+    var midnight = now.toLocalDate().plusDays(1).atStartOfDay(now.getZone());
+    var secondsUntilMidnight = Duration.between(now, midnight).toSeconds();
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var headers = response.getHeaders();
+    var cacheControl = headers.getCacheControl();
+    assertTrue(cacheControl.contains("public"), cacheControl);
+    var maxAge = Long.parseLong(cacheControl.replaceAll(".*max-age=(\\d+).*", "$1"));
+    assertTrue(maxAge <= secondsUntilMidnight + 1, cacheControl);
+    assertTrue(maxAge >= secondsUntilMidnight - 10, cacheControl);
+    assertNull(headers.getPragma());
+    assertNull(headers.getFirst(HttpHeaders.EXPIRES));
+    var vary = headers.getVary().stream().map(String::toLowerCase).toList();
+    assertTrue(vary.containsAll(List.of("authorization", "api-key", "acting-as")), vary.toString());
   }
 }
