@@ -575,8 +575,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
    */
   private Race raceBehindLock(SaksmappeDTO firstDTO, SaksmappeDTO secondDTO) {
     var securityContext = SecurityContextHolder.getContext();
-    var executor = Executors.newSingleThreadExecutor();
-    try {
+    try (var executor = Executors.newSingleThreadExecutor()) {
       return new TransactionTemplate(transactionManager)
           .execute(
               status -> {
@@ -601,8 +600,6 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
                   throw new IllegalStateException(e);
                 }
               });
-    } finally {
-      executor.shutdown();
     }
   }
 
