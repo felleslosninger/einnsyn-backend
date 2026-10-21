@@ -52,6 +52,7 @@ class SearchSortingConsistencyTest {
     // Set test values for the SearchService properties
     ReflectionTestUtils.setField(searchService, "elasticsearchIndex", "test-index");
     ReflectionTestUtils.setField(searchService, "defaultSearchLimit", 25);
+    ReflectionTestUtils.setField(searchService, "trackTotalHits", 100000);
   }
 
   @Test
@@ -239,7 +240,7 @@ class SearchSortingConsistencyTest {
   }
 
   @Test
-  void testTrackTotalHitsIsFalse() throws Exception {
+  void testTrackTotalHitsIsCapped() throws Exception {
     // Create search parameters
     var searchParams = new SearchParameters();
     when(searchQueryService.getQueryBuilder(searchParams))
@@ -256,10 +257,9 @@ class SearchSortingConsistencyTest {
       // Get search request
       var searchRequest = searchService.getSearchRequest(searchParams);
 
-      // Verify trackTotalHits is disabled for cursor-based pagination
       var trackTotalHits = searchRequest.trackTotalHits();
       assertNotNull(trackTotalHits);
-      assertEquals(false, trackTotalHits.enabled());
+      assertEquals(100000, trackTotalHits.count());
     }
   }
 }

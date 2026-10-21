@@ -34,6 +34,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -199,6 +200,41 @@ class SearchPaginationTest extends EinnsynControllerTestBase {
     assertEquals(totalCount, searchResult.getItems().size());
     assertNull(searchResult.getNext());
     assertNull(searchResult.getPrevious());
+  }
+
+  @Test
+  void testTotal() throws Exception {
+    var response = get("/search?limit=2");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(new PaginatedList.Total(7, false), searchResult.getTotal());
+
+    // The total is the same on every page
+    response = get(searchResult.getNext());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(new PaginatedList.Total(7, false), searchResult.getTotal());
+
+    response = get("/search?query=nonexistentword");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(0, searchResult.getItems().size());
+    assertEquals(new PaginatedList.Total(0, false), searchResult.getTotal());
+
+    // Above the limit, the total is a lower bound
+    try (var _ = withTrackTotalHits(5)) {
+      response = get("/search?limit=2");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      searchResult = gson.fromJson(response.getBody(), jptype);
+      assertEquals(new PaginatedList.Total(5, true), searchResult.getTotal());
+    }
+  }
+
+  /** Sets the hit count limit on the live service and restores it on close. */
+  private AutoCloseable withTrackTotalHits(int value) {
+    var original = (int) ReflectionTestUtils.getField(searchService, "trackTotalHits");
+    ReflectionTestUtils.setField(searchService, "trackTotalHits", value);
+    return () -> ReflectionTestUtils.setField(searchService, "trackTotalHits", original);
   }
 
   @Test

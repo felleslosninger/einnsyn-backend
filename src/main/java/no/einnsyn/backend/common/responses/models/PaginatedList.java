@@ -15,9 +15,14 @@ public class PaginatedList<T> {
 
   private String previous;
 
+  private Total total;
+
   public PaginatedList() {}
 
   public PaginatedList(List<T> items) {
     this.items = items;
   }
+
+  /** The number of matching items, a lower bound when capped. */
+  public record Total(long value, boolean capped) {}
 }
