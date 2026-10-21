@@ -2,14 +2,19 @@ package no.einnsyn.backend.entities.saksmappe;
 
 import static no.einnsyn.backend.testutils.Assertions.assertEqualInstants;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -1083,5 +1088,117 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
 
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+  }
+
+  // A Saksmappe is looked up by systemId, slug and externalId, so another Saksmappe must not be
+  // able to claim any of them, not even in another field
+  @Test
+  void identifiersCannotBeReusedByAnotherSaksmappe() throws Exception {
+    var systemId = UUID.randomUUID().toString();
+    var externalId = "external-" + UUID.randomUUID();
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("systemId", systemId);
+    saksmappeJSON.put("externalId", externalId);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var slug = saksmappeDTO.getSlug();
+
+    // The identifiers of inaccessible Saksmapper are reserved as well
+    var hiddenSaksmappeJSON = getSaksmappeJSON();
+    hiddenSaksmappeJSON.put("accessibleAfter", Instant.now().plus(2, ChronoUnit.DAYS).toString());
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", hiddenSaksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var hiddenSaksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    response = post("/arkiv", getArkivJSON(), journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkiv2Id = gson.fromJson(response.getBody(), ArkivDTO.class).getId();
+
+    try {
+      response = post("/arkiv/" + arkiv2Id + "/arkivdel", getArkivdelJSON(), journalenhet2Key);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var arkivdel2Id = gson.fromJson(response.getBody(), ArkivdelDTO.class).getId();
+
+      var takenIdentifiers =
+          List.of(
+              List.of("systemId", slug),
+              List.of("systemId", externalId),
+              List.of("systemId", hiddenSaksmappeDTO.getSlug()),
+              List.of("slug", systemId),
+              List.of("slug", externalId),
+              List.of("externalId", slug),
+              List.of("externalId", systemId));
+      for (var taken : takenIdentifiers) {
+        var json = getSaksmappeJSON();
+        json.put(taken.get(0), taken.get(1));
+        response = post("/arkivdel/" + arkivdel2Id + "/saksmappe", json, journalenhet2Key);
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode(), taken.toString());
+      }
+
+      // The same goes for updates
+      response =
+          post("/arkivdel/" + arkivdel2Id + "/saksmappe", getSaksmappeJSON(), journalenhet2Key);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var saksmappe2Id = gson.fromJson(response.getBody(), SaksmappeDTO.class).getId();
+      var updateJSON = new JSONObject().put("systemId", slug);
+      response = patch("/saksmappe/" + saksmappe2Id, updateJSON, journalenhet2Key);
+      assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+
+      // The slug still resolves to the original Saksmappe
+      response = getAnon("/saksmappe/" + slug);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      assertEquals(
+          saksmappeDTO.getId(), gson.fromJson(response.getBody(), SaksmappeDTO.class).getId());
+
+      // A Saksmappe can keep its own identifiers
+      updateJSON =
+          new JSONObject()
+              .put("systemId", systemId)
+              .put("slug", slug)
+              .put("externalId", externalId);
+      response = patch("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+    } finally {
+      assertEquals(HttpStatus.OK, delete("/arkiv/" + arkiv2Id, journalenhet2Key).getStatusCode());
+      assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+      assertEquals(
+          HttpStatus.OK, delete("/saksmappe/" + hiddenSaksmappeDTO.getId()).getStatusCode());
+    }
+  }
+
+  @Test
+  void generatedSlugDoesNotReuseIdentifierOfAnotherSaksmappe() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("offentligTittel", "Slug " + UUID.randomUUID());
+
+    // Find the slug that this Saksmappe will be given
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var firstSaksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var slug = firstSaksmappeDTO.getSlug();
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + firstSaksmappeDTO.getId()).getStatusCode());
+
+    // Another Saksmappe claims the slug as its systemId
+    var squatterJSON = getSaksmappeJSON();
+    squatterJSON.put("systemId", slug);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", squatterJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var squatterDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    try {
+      response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+      assertNotEquals(slug, saksmappeDTO.getSlug());
+
+      response = getAnon("/saksmappe/" + saksmappeDTO.getSlug());
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      assertEquals(
+          saksmappeDTO.getId(), gson.fromJson(response.getBody(), SaksmappeDTO.class).getId());
+      assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+    } finally {
+      assertEquals(HttpStatus.OK, delete("/saksmappe/" + squatterDTO.getId()).getStatusCode());
+    }
   }
 }

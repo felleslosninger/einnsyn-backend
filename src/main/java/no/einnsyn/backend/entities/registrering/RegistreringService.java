@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Set;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
+import no.einnsyn.backend.common.exceptions.models.ConflictException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.hasslug.HasSlugService;
@@ -60,6 +61,14 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
    */
   @Override
   protected O fromDTO(D dto, O registrering) throws EInnsynException {
+    var repository = getRepository();
+    if (isIdentifierTaken(registrering, dto.getSystemId(), repository::findBySystemId)
+        || isIdentifierTaken(registrering, dto.getSlug(), repository::findBySlug)
+        || isIdentifierTaken(registrering, dto.getExternalId(), repository::findByExternalId)) {
+      throw new ConflictException(
+          "The systemId, slug or externalId is already used by another " + objectClassName);
+    }
+
     super.fromDTO(dto, registrering);
 
     if (dto.getSlug() != null) {
