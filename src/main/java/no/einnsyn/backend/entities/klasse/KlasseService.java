@@ -16,6 +16,7 @@ import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.klasse.models.Klasse;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
 import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
+import no.einnsyn.backend.entities.klassifikasjonssystem.models.ListByKlassifikasjonssystemParameters;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
@@ -229,6 +230,15 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(klasse, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(klasse, pivot, pageRequest));
+    }
+    if (params instanceof ListByKlassifikasjonssystemParameters p
+        && p.getKlassifikasjonssystemId() != null) {
+      var klassifikasjonssystem =
+          klassifikasjonssystemService.findOrThrow(p.getKlassifikasjonssystemId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(klassifikasjonssystem, pivot, pageRequest),
+          (pivot, pageRequest) ->
+              repository.paginateDesc(klassifikasjonssystem, pivot, pageRequest));
     }
     return super.getPaginators(params);
   }
