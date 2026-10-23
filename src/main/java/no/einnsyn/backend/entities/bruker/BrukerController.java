@@ -272,7 +272,6 @@ public class BrukerController {
   @Getter
   @Setter
   public static class UpdatePassword {
-    @Password
     @NotBlank(groups = {Insert.class})
     protected String oldPassword;
 
