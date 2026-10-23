@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,7 @@ import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.common.retry.RetryOnWriteConflict;
+import no.einnsyn.backend.configuration.AccessibleFilterAspect;
 import no.einnsyn.backend.entities.apikey.ApiKeyService;
 import no.einnsyn.backend.entities.arkiv.ArkivService;
 import no.einnsyn.backend.entities.arkivdel.ArkivdelService;
@@ -128,6 +130,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Lazy @Autowired protected VedtakService vedtakService;
   @Lazy @Autowired protected VoteringService voteringService;
   @Lazy @Autowired protected AuthenticationService authenticationService;
+  @Lazy @Autowired protected AccessibleFilterAspect accessibleFilterAspect;
 
   /**
    * Returns the repository used to persist and query this entity type.
@@ -274,6 +277,47 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var object = repository.findById(id).orElse(null);
     log.trace("findById {}:{}, {}", objectClassName, id, object);
     return object;
+  }
+
+  /**
+   * Whether find() resolves the identifier to another object. Objects hidden from the caller count
+   * too, since they are found once they become visible.
+   *
+   * @param object The object the identifier is for
+   * @param identifier The identifier to check, ignored if null
+   * @return true if the identifier belongs to another object
+   */
+  public boolean isIdentifierTaken(O object, String identifier) {
+    return isIdentifierTaken(object, identifier, null);
+  }
+
+  /**
+   * Like {@link #isIdentifierTaken(Base, String)}, except that another object with the identifier
+   * in the same field is left to the unique index. Its violation is retried, and the retry finds
+   * the other object, so concurrent upserts of the same object converge instead of conflicting.
+   *
+   * @param object The object the identifier is for
+   * @param identifier The identifier to check, ignored if null
+   * @param findInField Looks up the identifier in the field it is written to, or null if a match in
+   *     any field counts
+   * @return true if the identifier belongs to another object
+   */
+  public boolean isIdentifierTaken(O object, String identifier, Function<String, O> findInField) {
+    if (identifier == null) {
+      return false;
+    }
+    return accessibleFilterAspect.withoutFilters(
+        () -> {
+          // Same lock as the slug generator, so concurrent writes of a value see each other
+          getRepository().acquireAdvisoryLock(identifier);
+          var existing = getProxy().find(identifier);
+          if (existing == null || existing.getId().equals(object.getId())) {
+            return false;
+          }
+          // Compare IDs, since entities loaded earlier in the transaction can hold stale fields
+          var inField = findInField == null ? null : findInField.apply(identifier);
+          return inField == null || !inField.getId().equals(existing.getId());
+        });
   }
 
   /**

@@ -9,14 +9,17 @@ import org.springframework.resilience.retry.MethodRetryPredicate;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
- * Retry policy for {@link RetryOnWriteConflict}: optimistic lock failures, and unique violations
- * from a row our pre-checks did not see. Not-null, foreign key and check violations are
+ * Retry policy for {@link RetryOnWriteConflict}: optimistic lock failures, unique violations from a
+ * row our pre-checks did not see, and deadlocks. Not-null, foreign key and check violations are
  * deterministic and would fail the same way on every attempt.
  */
 public class WriteConflictPredicate implements MethodRetryPredicate {
 
   /** PostgreSQL SQLSTATE for unique_violation. */
   static final String UNIQUE_VIOLATION_SQLSTATE = "23505";
+
+  /** PostgreSQL SQLSTATE for deadlock_detected. */
+  static final String DEADLOCK_SQLSTATE = "40P01";
 
   /**
    * {@inheritDoc}
@@ -45,7 +48,8 @@ public class WriteConflictPredicate implements MethodRetryPredicate {
         return true;
       }
       if (cause instanceof SQLException sqlException) {
-        return UNIQUE_VIOLATION_SQLSTATE.equals(sqlException.getSQLState());
+        var sqlState = sqlException.getSQLState();
+        return UNIQUE_VIOLATION_SQLSTATE.equals(sqlState) || DEADLOCK_SQLSTATE.equals(sqlState);
       }
     }
     return false;

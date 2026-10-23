@@ -10,6 +10,7 @@ import org.hibernate.exception.ConstraintViolationException.ConstraintKind;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.util.PSQLState;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -64,6 +65,14 @@ class WriteConflictPredicateTest {
     var exception =
         new DataIntegrityViolationException(
             "duplicate key", new SQLException("dup", PSQLState.UNIQUE_VIOLATION.getState()));
+    assertTrue(predicate.shouldRetry(method, exception));
+  }
+
+  @Test
+  void retriesDeadlock() {
+    var exception =
+        new CannotAcquireLockException(
+            "deadlock", new SQLException("deadlock", PSQLState.DEADLOCK_DETECTED.getState()));
     assertTrue(predicate.shouldRetry(method, exception));
   }
 

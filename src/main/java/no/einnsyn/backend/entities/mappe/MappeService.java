@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Set;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
+import no.einnsyn.backend.common.exceptions.models.ConflictException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.hasslug.HasSlugService;
@@ -60,6 +61,14 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
    */
   @Override
   protected O fromDTO(D dto, O mappe) throws EInnsynException {
+    var repository = getRepository();
+    if (isIdentifierTaken(mappe, dto.getSystemId(), repository::findBySystemId)
+        || isIdentifierTaken(mappe, dto.getSlug(), repository::findBySlug)
+        || isIdentifierTaken(mappe, dto.getExternalId(), repository::findByExternalId)) {
+      throw new ConflictException(
+          "The systemId, slug or externalId is already used by another " + objectClassName);
+    }
+
     super.fromDTO(dto, mappe);
 
     if (dto.getSlug() != null) {
