@@ -192,6 +192,53 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
 
   @SuppressWarnings("unchecked")
   @Test
+  void testMatchingLagretSoekByMappe() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var otherSaksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, times(2)).index(any(Function.class)));
+    resetEs();
+
+    // Create a LagretSoek that follows the first Saksmappe
+    var lagretSoekJSON = getLagretSoekJSON();
+    lagretSoekJSON.put(
+        "searchParameters",
+        new JSONObject().put("mappe", new JSONArray().put(saksmappeDTO.getId())));
+    response = post("/bruker/" + brukerDTO.getId() + "/lagretSoek", lagretSoekJSON, accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, times(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    // A Journalpost in the other Saksmappe doesn't match
+    response =
+        post("/saksmappe/" + otherSaksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    Awaitility.await().untilAsserted(() -> verify(esClient, times(2)).index(any(Function.class)));
+    resetEs();
+    assertEquals(0, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+
+    // A Journalpost in the followed Saksmappe matches
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId())));
+
+    response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/saksmappe/" + otherSaksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
   void testReindexDocumentThatTurnsAccessible() throws Exception {
     // Add Arkiv, Saksmappe with Journalposts that is not accessible
     var response = post("/arkiv", getArkivJSON());

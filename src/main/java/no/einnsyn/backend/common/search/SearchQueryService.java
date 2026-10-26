@@ -22,6 +22,9 @@ import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.queryparameters.models.FilterParameters;
 import no.einnsyn.backend.entities.enhet.EnhetService;
+import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
+import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
+import no.einnsyn.backend.utils.id.IdUtils;
 import no.einnsyn.backend.validation.isodatetime.RelativeDateMath;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -43,11 +46,18 @@ public class SearchQueryService {
 
   private final AuthenticationService authenticationService;
   private final EnhetService enhetService;
+  private final MoetemappeService moetemappeService;
+  private final SaksmappeService saksmappeService;
 
   public SearchQueryService(
-      AuthenticationService authenticationService, EnhetService enhetService) {
+      AuthenticationService authenticationService,
+      EnhetService enhetService,
+      MoetemappeService moetemappeService,
+      SaksmappeService saksmappeService) {
     this.authenticationService = authenticationService;
     this.enhetService = enhetService;
+    this.moetemappeService = moetemappeService;
+    this.saksmappeService = saksmappeService;
   }
 
   private String toElasticsearchDateValue(String dateString, DateBoundary boundary)
@@ -134,6 +144,32 @@ public class SearchQueryService {
       enhetIds.add(enhetId);
     }
     return enhetIds;
+  }
+
+  /**
+   * Resolve Saksmappe and Moetemappe IDs from identifiers like systemId, slug, ...
+   *
+   * @param mappeIdentifiers the list of identifiers to resolve
+   * @return the list of resolved Mappe IDs
+   * @throws BadRequestException if a Mappe is not found
+   */
+  private List<String> resolveMappeIds(List<String> mappeIdentifiers) throws BadRequestException {
+    var mappeIds = new ArrayList<String>(mappeIdentifiers.size());
+    for (var identifier : mappeIdentifiers) {
+      String mappeId = null;
+      // A Moetemappe ID can't resolve to a Saksmappe, so skip that lookup
+      if (!"Moetemappe".equals(IdUtils.resolveEntity(identifier))) {
+        mappeId = saksmappeService.resolveId(identifier);
+      }
+      if (mappeId == null) {
+        mappeId = moetemappeService.resolveId(identifier);
+      }
+      if (mappeId == null) {
+        throw new BadRequestException("Mappe not found: " + identifier);
+      }
+      mappeIds.add(mappeId);
+    }
+    return mappeIds;
   }
 
   /**
@@ -347,6 +383,12 @@ public class SearchQueryService {
     if (filterParameters.getExcludeAdministrativEnhetExact() != null) {
       var enhetList = resolveEnhetIds(filterParameters.getExcludeAdministrativEnhetExact());
       addMustNot(rootBoolQueryBuilder, "administrativEnhet", enhetList);
+    }
+
+    // Filter by parent Saksmappe or Moetemappe
+    if (filterParameters.getMappe() != null) {
+      var mappeIds = resolveMappeIds(filterParameters.getMappe());
+      addFilter(rootBoolQueryBuilder, "parent.id", mappeIds);
     }
 
     // Filter by publisertDatoTo
