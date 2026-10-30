@@ -1494,7 +1494,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void testLoggedInUserCanSaveInnsynskravDraft() throws Exception {
+  void testLoggedInUserCanSaveAndSendInnsynskravDraft() throws Exception {
     var brukerJSON = getBrukerJSON();
     var response = post("/bruker", brukerJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -1543,6 +1543,25 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     draftDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertTrue(draftDTO.getDraft());
     assertEquals("en", draftDTO.getLanguage());
+
+    response = post("/innsynskravBestilling/" + draftId + "/send", new JSONObject(), token);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    draftDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    assertFalse(draftDTO.getDraft());
+    assertTrue(innsynskravBestillingService.find(draftId).isLocked());
+
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              verify(ipSender, times(1))
+                  .sendInnsynskrav(
+                      any(String.class),
+                      any(String.class),
+                      any(String.class),
+                      any(String.class),
+                      any(String.class));
+              verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+            });
 
     response = delete("/innsynskravBestilling/" + draftId, token);
     assertEquals(HttpStatus.OK, response.getStatusCode());

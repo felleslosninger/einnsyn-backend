@@ -114,6 +114,18 @@ public class InnsynskravBestillingController {
     return ResponseEntity.ok().body(responseBody);
   }
 
+  @PostMapping("/innsynskravBestilling/{id}/send")
+  public ResponseEntity<InnsynskravBestillingDTO> send(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = InnsynskravBestillingService.class, mustExist = true)
+          ExpandableField<InnsynskravBestillingDTO> id)
+      throws EInnsynException {
+    var responseBody = service.send(id.getId());
+    return ResponseEntity.ok().body(responseBody);
+  }
+
   @PatchMapping("/innsynskravBestilling/{id}/verify/{secret}")
   public ResponseEntity<InnsynskravBestillingDTO> verify(
       @Valid @PathVariable @NotNull String id, @Valid @PathVariable @NotNull String secret)

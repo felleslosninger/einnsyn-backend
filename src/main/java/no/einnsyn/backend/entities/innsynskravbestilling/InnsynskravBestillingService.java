@@ -305,6 +305,41 @@ public class InnsynskravBestillingService
       throw new TooManyUnverifiedOrdersException("Too many unverified orders for e-mail " + epost);
   }
 
+  /** Lock a draft and send it. Only the owner (or an admin) can send a draft. */
+  @Transactional(rollbackFor = Exception.class)
+  @RetryOnWriteConflict
+  public InnsynskravBestillingDTO send(String id) throws EInnsynException {
+    var innsynskravBestilling = findOrThrow(id);
+    var bruker = innsynskravBestilling.getBruker();
+
+    if (!authenticationService.isAdmin()
+        && (bruker == null || !authenticationService.isSelf(bruker.getId()))) {
+      throw new AuthorizationException("Not authorized to send " + id);
+    }
+    if (innsynskravBestilling.isLocked()) {
+      throw new BadRequestException("The access request is not a draft");
+    }
+    if (innsynskravBestilling.getInnsynskrav() == null
+        || innsynskravBestilling.getInnsynskrav().isEmpty()) {
+      throw new BadRequestException("The access request must contain at least one document");
+    }
+
+    innsynskravBestilling.setLocked(true);
+    repository.saveAndFlush(innsynskravBestilling);
+    scheduleIndex(id);
+
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            innsynskravSenderService.sendInnsynskravBestillingAsync(id);
+            proxy.sendOrderConfirmationToBruker(id);
+          }
+        });
+
+    return proxy.toDTO(innsynskravBestilling);
+  }
+
   /**
    * Send e-mail to user, asking to verify the InnsynskravBestilling
    *
