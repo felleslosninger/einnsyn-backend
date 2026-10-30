@@ -300,38 +300,6 @@ public class InnsynskravBestillingService
       throw new TooManyUnverifiedOrdersException("Too many unverified orders for e-mail " + epost);
   }
 
-  @Transactional(rollbackFor = Exception.class)
-  @RetryOnWriteConflict
-  public InnsynskravBestillingDTO send(String id) throws EInnsynException {
-    var innsynskravBestilling = findOrThrow(id);
-    var bruker = innsynskravBestilling.getBruker();
-
-    if (!authenticationService.isAdmin()
-        && (bruker == null || !authenticationService.isSelf(bruker.getId()))) {
-      throw new AuthorizationException("Not authorized to send " + id);
-    }
-
-    if (innsynskravBestilling.isLocked()) {
-      throw new BadRequestException("The access request is not a draft");
-    }
-
-    if (!innsynskravBestilling.isVerified()) {
-      throw new BadRequestException("The access request must be verified before sending");
-    }
-
-    if (innsynskravBestilling.getInnsynskrav() == null
-        || innsynskravBestilling.getInnsynskrav().isEmpty()) {
-      throw new BadRequestException("The access request must contain at least one document");
-    }
-
-    innsynskravBestilling.setLocked(true);
-    repository.saveAndFlush(innsynskravBestilling);
-    scheduleIndex(id);
-    registerVerifiedOrderSideEffects(id);
-
-    return proxy.toDTO(innsynskravBestilling);
-  }
-
   private void registerVerifiedOrderSideEffects(String id) {
     TransactionSynchronizationManager.registerSynchronization(
         new TransactionSynchronization() {
