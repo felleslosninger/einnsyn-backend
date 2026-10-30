@@ -41,6 +41,9 @@ public class InnsynskravBestillingDTO extends BaseDTO {
   @NotNull(groups = {Insert.class})
   protected List<@Valid ExpandableField<InnsynskravDTO>> innsynskrav;
 
+  /** Whether the request is saved as a draft and has not been sent. */
+  protected Boolean draft;
+
   /** Indicates whether the email address has been verified. */
   @Null(groups = {Insert.class, Update.class})
   protected Boolean verified;

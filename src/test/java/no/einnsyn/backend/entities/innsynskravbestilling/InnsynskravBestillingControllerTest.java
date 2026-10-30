@@ -1494,6 +1494,85 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void testLoggedInUserCanSaveAndSendInnsynskravDraft() throws Exception {
+    var brukerJSON = getBrukerJSON();
+    var response = post("/bruker", brukerJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
+    var bruker = brukerService.find(brukerDTO.getId());
+    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret(), null);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    var loginRequest = new JSONObject();
+    loginRequest.put("username", brukerJSON.get("email"));
+    loginRequest.put("password", brukerJSON.get("password"));
+    response = post("/auth/token", loginRequest);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var tokenResponse = gson.fromJson(response.getBody(), TokenResponse.class);
+    var token = tokenResponse.getToken();
+    Mockito.clearInvocations(javaMailSender, ipSender);
+
+    var draftJSON = getInnsynskravBestillingJSON();
+    draftJSON.put("email", brukerDTO.getEmail());
+    draftJSON.put("draft", true);
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostDTO.getId());
+    draftJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+
+    response = postAnon("/innsynskravBestilling", draftJSON);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    response = post("/innsynskravBestilling", draftJSON, token);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var draftDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var draftId = draftDTO.getId();
+    assertTrue(draftDTO.getDraft());
+    assertTrue(innsynskravBestillingService.find(draftId).isVerified());
+    verify(ipSender, times(0))
+        .sendInnsynskrav(
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class));
+    verify(javaMailSender, times(0)).send(any(MimeMessage.class));
+
+    response =
+        patch("/innsynskravBestilling/" + draftId, new JSONObject().put("language", "en"), token);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    draftDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    assertTrue(draftDTO.getDraft());
+    assertEquals("en", draftDTO.getLanguage());
+
+    response = post("/innsynskravBestilling/" + draftId + "/send", new JSONObject(), token);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    draftDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    assertFalse(draftDTO.getDraft());
+    assertTrue(innsynskravBestillingService.find(draftId).isLocked());
+
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              verify(ipSender, times(1))
+                  .sendInnsynskrav(
+                      any(String.class),
+                      any(String.class),
+                      any(String.class),
+                      any(String.class),
+                      any(String.class));
+              verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+            });
+
+    response = delete("/innsynskravBestilling/" + draftId, token);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    deleteInnsynskravFromBestilling(
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class));
+
+    response = delete("/bruker/" + brukerDTO.getId(), token);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test
   void testInnsynskravByInnsynskrav() throws Exception {
     // Add Saksmappe with ten journalposts
     var response = post("/arkiv", getArkivJSON());
