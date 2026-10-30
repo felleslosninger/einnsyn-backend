@@ -1544,6 +1544,25 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertTrue(draftDTO.getDraft());
     assertEquals("en", draftDTO.getLanguage());
 
+    // Another user cannot send the draft
+    var otherBrukerJSON = getBrukerJSON();
+    response = post("/bruker", otherBrukerJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var otherBrukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
+    var otherBruker = brukerService.find(otherBrukerDTO.getId());
+    response =
+        patch("/bruker/" + otherBrukerDTO.getId() + "/activate/" + otherBruker.getSecret(), null);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var otherLoginRequest = new JSONObject();
+    otherLoginRequest.put("username", otherBrukerJSON.get("email"));
+    otherLoginRequest.put("password", otherBrukerJSON.get("password"));
+    response = post("/auth/token", otherLoginRequest);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var otherToken = gson.fromJson(response.getBody(), TokenResponse.class).getToken();
+    response = post("/innsynskravBestilling/" + draftId + "/send", new JSONObject(), otherToken);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertFalse(innsynskravBestillingService.find(draftId).isLocked());
+
     response = post("/innsynskravBestilling/" + draftId + "/send", new JSONObject(), token);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     draftDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
