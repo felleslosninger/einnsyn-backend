@@ -137,7 +137,6 @@ public class InnsynskravBestillingService
   protected InnsynskravBestilling addEntity(InnsynskravBestillingDTO dto) throws EInnsynException {
     var brukerId = authenticationService.getBrukerId();
     var isDraft = Boolean.TRUE.equals(dto.getDraft());
-
     if (isDraft && brukerId == null) {
       throw new AuthorizationException("Only logged-in users can save drafts");
     }
@@ -149,29 +148,35 @@ public class InnsynskravBestillingService
 
     var innsynskravBestilling = super.addEntity(dto);
 
-    if (!isDraft) {
-      // No more Innsynskrav objects can be added
-      innsynskravBestilling.setLocked(true);
-
-      if (brukerId != null) {
-        registerVerifiedOrderSideEffects(innsynskravBestilling.getId());
-      } else {
-        TransactionSynchronizationManager.registerSynchronization(
-            new TransactionSynchronization() {
-              @Override
-              public void afterCommit() {
-                try {
-                  proxy.sendAnonymousConfirmationEmail(innsynskravBestilling.getId());
-                } catch (EInnsynException e) {
-                  log.error(
-                      "Failed to send anonymous confirmation email for InnsynskravBestilling {}",
-                      innsynskravBestilling.getId(),
-                      e);
-                }
-              }
-            });
-      }
+    // Drafts are neither locked nor sent
+    if (isDraft) {
+      return innsynskravBestilling;
     }
+
+    // No more Innsynskrav objects can be added
+    innsynskravBestilling.setLocked(true);
+
+    // Send email after the current transaction is persisted
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            if (brukerId != null) {
+              innsynskravSenderService.sendInnsynskravBestillingAsync(
+                  innsynskravBestilling.getId());
+              proxy.sendOrderConfirmationToBruker(innsynskravBestilling.getId());
+            } else {
+              try {
+                proxy.sendAnonymousConfirmationEmail(innsynskravBestilling.getId());
+              } catch (EInnsynException e) {
+                log.error(
+                    "Failed to send anonymous confirmation email for InnsynskravBestilling {}",
+                    innsynskravBestilling.getId(),
+                    e);
+              }
+            }
+          }
+        });
 
     return innsynskravBestilling;
   }
@@ -298,17 +303,6 @@ public class InnsynskravBestillingService
 
     if (numberOfUnverifiedOrdersWithinQuarantine >= verificationQuarantineLimit)
       throw new TooManyUnverifiedOrdersException("Too many unverified orders for e-mail " + epost);
-  }
-
-  private void registerVerifiedOrderSideEffects(String id) {
-    TransactionSynchronizationManager.registerSynchronization(
-        new TransactionSynchronization() {
-          @Override
-          public void afterCommit() {
-            innsynskravSenderService.sendInnsynskravBestillingAsync(id);
-            proxy.sendOrderConfirmationToBruker(id);
-          }
-        });
   }
 
   /**
@@ -454,7 +448,16 @@ public class InnsynskravBestillingService
       // Ensure Elasticsearch documents (including child innsynskrav docs) are reindexed with the
       // updated verified state.
       scheduleIndex(innsynskravBestilling.getId());
-      registerVerifiedOrderSideEffects(innsynskravBestilling.getId());
+
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+              innsynskravSenderService.sendInnsynskravBestillingAsync(
+                  innsynskravBestilling.getId());
+              proxy.sendOrderConfirmationToBruker(innsynskravBestilling.getId());
+            }
+          });
     }
 
     return proxy.toDTO(innsynskravBestilling);
