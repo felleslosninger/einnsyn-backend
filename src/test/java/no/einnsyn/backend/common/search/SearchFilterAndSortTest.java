@@ -579,6 +579,38 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void testFilterByMappe() throws Exception {
+    var response = get("/search?mappe=" + saksmappe2023DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), baseDTOListType);
+    var ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertEquals(2, ids.size());
+    assertTrue(ids.contains(journalpost1DTO.getId()));
+    assertTrue(ids.contains(journalpost3DTO.getId()));
+
+    response = get("/search?mappe=" + moetemappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(1, result.getItems().size());
+    assertEquals(moetesakDTO.getId(), result.getItems().get(0).getId());
+
+    // Slugs (and other identifiers) are resolved, and values can be combined
+    response =
+        get("/search?mappe=" + saksmappe2023DTO.getSlug() + "&mappe=" + moetemappeDTO.getSlug());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertEquals(3, ids.size());
+    assertTrue(ids.contains(journalpost1DTO.getId()));
+    assertTrue(ids.contains(journalpost3DTO.getId()));
+    assertTrue(ids.contains(moetesakDTO.getId()));
+
+    // IDs of other entities are rejected
+    response = get("/search?mappe=" + journalpost1DTO.getId());
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
+
+  @Test
   void testExcludeAdministrativEnhetExact() throws Exception {
     // First verify we have documents for journalenhetId
     var response = get("/search?administrativEnhetExact=" + journalenhetId);
