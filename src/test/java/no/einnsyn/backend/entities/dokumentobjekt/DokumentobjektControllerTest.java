@@ -672,6 +672,31 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void checkLinkShouldMarkLinkOnOtherPortThan443AsFailedWithoutRequest() throws Exception {
+    // The proxy only allows port 443, so the link can never be downloaded
+    useSource("https://example.com:8443/dokument.pdf");
+    try (var proxy = startTunnelProxy("HTTP/1.1 403 Forbidden")) {
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+      assertEquals(0, proxy.requests().size());
+    }
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNotNull(dokumentobjekt.getLinkCheckedAt());
+    assertNotNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
+  void checkLinkShouldAllowExplicitPort443() throws Exception {
+    useSource("https://example.com:443/dokument.pdf");
+    try (var proxy = startTunnelProxy("HTTP/1.1 403 Forbidden")) {
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+      assertEquals(List.of("CONNECT example.com:443 HTTP/1.1"), proxy.requests());
+    }
+
+    assertNull(getDokumentobjekt().getLinkFailedSince());
+  }
+
+  @Test
   void checkLinkShouldMarkLinkAsFailedWhenProxyCannotReachSource() throws Exception {
     // A gateway error from the proxy means the source is unreachable
     useHttpsSource();
@@ -817,8 +842,12 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   private void useHttpsSource() throws Exception {
+    useSource(HTTPS_SOURCE_URL);
+  }
+
+  private void useSource(String url) throws Exception {
     var updateJson = new JSONObject();
-    updateJson.put("referanseDokumentfil", HTTPS_SOURCE_URL);
+    updateJson.put("referanseDokumentfil", url);
     var response = patch("/dokumentobjekt/" + dokumentobjektDTO.getId(), updateJson);
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }

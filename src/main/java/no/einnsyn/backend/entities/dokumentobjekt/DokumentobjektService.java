@@ -273,9 +273,9 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
       if (connection != null) {
         connection.disconnect();
       }
-      // Only mark the link as failed when the failure is external, or the link isn't HTTPS.
+      // Only mark the link as failed when the failure is external, or the link isn't HTTPS on 443.
       // Failures on our side (proxy, network, timeouts) say nothing about the link.
-      if (e instanceof SourceStatusException || !isHttps(sourceUri)) {
+      if (e instanceof SourceStatusException || !isHttpsOnDefaultPort(sourceUri)) {
         recordLinkStatus(id, false);
       }
       // Don't expose source URL in the message, as it will be sent to the client.
@@ -285,7 +285,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     // Recorded outside the try block: the download has already succeeded at this point, and a
     // failure to record statistics must not be reported to the client as a download failure.
     recordDownload(id);
-    recordLinkStatus(id, isHttps(sourceUri));
+    recordLinkStatus(id, isHttpsOnDefaultPort(sourceUri));
 
     return downloadResponse;
   }
@@ -295,8 +295,8 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    * file, and record the result.
    *
    * <p>The link is only marked as failed when the source responds with an error status, the proxy
-   * can't reach the source, or the source URL is invalid or not HTTPS. Non-HTTPS links are marked
-   * without a request. Failures on our side (proxy, network, timeouts) only update the check
+   * can't reach the source, or the source URL is invalid or not HTTPS on port 443. Such links are
+   * marked without a request. Failures on our side (proxy, network, timeouts) only update the check
    * timestamp, so the link is moved to the back of the queue without being marked as failed.
    *
    * @param id dokumentobjekt id
@@ -307,8 +307,8 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     HttpURLConnection connection = null;
     try {
       var sourceUri = getProxy().getSourceUri(id);
-      if (!isHttps(sourceUri)) {
-        throw new SourceStatusException("Source URL is not HTTPS: " + sourceUri);
+      if (!isHttpsOnDefaultPort(sourceUri)) {
+        throw new SourceStatusException("Source URL is not HTTPS on port 443: " + sourceUri);
       }
       connection = openDownloadConnection(sourceUri);
       repository.setLinkOk(id, checkedAt);
@@ -492,9 +492,13 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     return connection;
   }
 
-  /** Fulltext files must be served over HTTPS, so a link with any other scheme doesn't work. */
-  private boolean isHttps(URI sourceUri) {
-    return "https".equalsIgnoreCase(sourceUri.getScheme());
+  /**
+   * Fulltext files must be served over HTTPS on the default port, since the proxy only allows port
+   * 443. A link with any other scheme or port doesn't work.
+   */
+  private boolean isHttpsOnDefaultPort(URI sourceUri) {
+    var port = sourceUri.getPort();
+    return "https".equalsIgnoreCase(sourceUri.getScheme()) && (port == -1 || port == 443);
   }
 
   /** Check whether the content type indicates HTML or XHTML content. */
