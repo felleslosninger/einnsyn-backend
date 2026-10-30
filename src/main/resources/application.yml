@@ -43,6 +43,12 @@ application:
       proxy:
         port: ${DOKUMENTOBJEKT_DOWNLOAD_PROXY_PORT:3128}
         host: ${DOKUMENTOBJEKT_DOWNLOAD_PROXY_HOST:}
+  linkCheck:
+    interval: ${LINK_CHECK_INTERVAL:PT1M}
+    initialDelay: ${LINK_CHECK_INITIAL_DELAY:PT5M}
+    batchSize: ${LINK_CHECK_BATCH_SIZE:1000}
+    concurrency: ${LINK_CHECK_CONCURRENCY:10}
+    recheckFailedAfter: ${LINK_CHECK_RECHECK_FAILED_AFTER:P1D}
   legacyLagretSoekConversion:
     dryRun: ${LEGACY_LAGRET_SOEK_CONVERSION_DRY_RUN:true}
     interval: ${LEGACY_LAGRET_SOEK_CONVERSION_INTERVAL:PT1H}

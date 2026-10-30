@@ -11,9 +11,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.sun.net.httpserver.HttpServer;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -29,6 +35,7 @@ import no.einnsyn.backend.common.statistics.models.StatisticsResponse;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.backend.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.backend.entities.downloadcount.DownloadCountService;
 import no.einnsyn.backend.entities.downloadcount.DownloadCountTestService;
@@ -37,6 +44,7 @@ import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.tasks.TaskTestService;
+import no.einnsyn.backend.tasks.handlers.linkcheck.FulltextLinkCheckScheduler;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,6 +66,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
   private static final String SOURCE_URL = "http://example.com/dokument.pdf";
+  private static final String HTTPS_SOURCE_URL = "https://example.com/dokument.pdf";
   private static final int DEFAULT_DOWNLOAD_PROXY_PORT = 3128;
 
   @Value("${application.baseUrl}")
@@ -65,6 +74,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
   @Autowired private DownloadCountTestService downloadCountTestService;
   @Autowired private TaskTestService taskTestService;
+  @Autowired private FulltextLinkCheckScheduler fulltextLinkCheckScheduler;
 
   private ArkivDTO arkivDTO;
   private ArkivdelDTO arkivdelDTO;
@@ -612,6 +622,205 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     }
   }
 
+  @Test
+  void downloadShouldMarkLinkAsFailedWhenProxyCannotReachSource() throws Exception {
+    useHttpsSource();
+    try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.BAD_GATEWAY, response.getStatusCode());
+      assertEquals(1, proxy.requests().size());
+    }
+
+    assertNotNull(getDokumentobjekt().getLinkFailedSince());
+  }
+
+  @Test
+  void downloadShouldNotMarkLinkAsFailedWhenProxyIsUnavailable() throws Exception {
+    // The proxy is unavailable, so the failure is on our side and says nothing about the link
+    useHttpsSource();
+    useUnavailableProxy();
+    var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+    assertEquals(HttpStatus.BAD_GATEWAY, response.getStatusCode());
+
+    assertNull(getDokumentobjekt().getLinkFailedSince());
+  }
+
+  @Test
+  void downloadShouldMarkHttpLinkAsFailedEvenWhenSourceResponds() throws Exception {
+    // Fulltext files must be served over HTTPS
+    try (var _ = startPdfProxy()) {
+      var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    assertNotNull(getDokumentobjekt().getLinkFailedSince());
+  }
+
+  @Test
+  void checkLinkShouldMarkHttpLinkAsFailedWithoutRequest() throws Exception {
+    try (var proxy = startPdfProxy()) {
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+      assertEquals(0, proxy.requests().size());
+    }
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNotNull(dokumentobjekt.getLinkCheckedAt());
+    assertNotNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
+  void checkLinkShouldMarkLinkAsFailedWhenProxyCannotReachSource() throws Exception {
+    // A gateway error from the proxy means the source is unreachable
+    useHttpsSource();
+    try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+      assertEquals(List.of("CONNECT example.com:443 HTTP/1.1"), proxy.requests());
+    }
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNotNull(dokumentobjekt.getLinkCheckedAt());
+    assertNotNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
+  void checkLinkShouldNotMarkLinkAsFailedWhenProxyDeniesAccess() throws Exception {
+    // Access denied by our own proxy policy says nothing about the source
+    useHttpsSource();
+    try (var _ = startTunnelProxy("HTTP/1.1 403 Forbidden")) {
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+    }
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNotNull(dokumentobjekt.getLinkCheckedAt());
+    assertNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
+  void checkLinkShouldNotMarkLinkAsFailedWhenProxyIsUnavailable() throws Exception {
+    // The proxy is unavailable, so the link is only marked as checked
+    useHttpsSource();
+    useUnavailableProxy();
+    dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNotNull(dokumentobjekt.getLinkCheckedAt());
+    assertNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
+  void checkLinkShouldKeepFirstFailureTimeWhenLinkKeepsFailing() {
+    dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+    var firstCheck = getDokumentobjekt();
+    assertNotNull(firstCheck.getLinkFailedSince());
+
+    dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+    var secondCheck = getDokumentobjekt();
+    assertEquals(firstCheck.getLinkFailedSince(), secondCheck.getLinkFailedSince());
+    assertTrue(secondCheck.getLinkCheckedAt().isAfter(firstCheck.getLinkCheckedAt()));
+  }
+
+  @Test
+  void linkCheckSchedulerShouldCheckLinks() throws Exception {
+    useHttpsSource();
+    try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      fulltextLinkCheckScheduler.checkLinks();
+      assertEquals(1, proxy.requests().size());
+    }
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNotNull(dokumentobjekt.getLinkCheckedAt());
+    assertNotNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
+  void linkCheckSchedulerShouldCheckFailedLinksFirst() throws Exception {
+    // A link that has never been checked would otherwise be picked first
+    var response =
+        post(
+            "/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId() + "/dokumentobjekt",
+            getDokumentobjektJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var uncheckedDTO = gson.fromJson(response.getBody(), DokumentobjektDTO.class);
+
+    var failedCheckedAt = Instant.now().minus(2, ChronoUnit.DAYS);
+    dokumentobjektRepository.setLinkFailed(dokumentobjektDTO.getId(), failedCheckedAt);
+
+    var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
+    ReflectionTestUtils.setField(target, "batchSize", 1);
+    try {
+      useUnavailableProxy();
+      fulltextLinkCheckScheduler.checkLinks();
+    } finally {
+      ReflectionTestUtils.setField(target, "batchSize", 1000);
+    }
+
+    assertTrue(getDokumentobjekt().getLinkCheckedAt().isAfter(failedCheckedAt));
+    var unchecked = dokumentobjektRepository.findById(uncheckedDTO.getId()).orElseThrow();
+    assertNull(unchecked.getLinkCheckedAt());
+  }
+
+  @Test
+  void linkCheckSchedulerShouldSkipWhenProxyIsNotConfigured() {
+    fulltextLinkCheckScheduler.checkLinks();
+
+    assertNull(getDokumentobjekt().getLinkCheckedAt());
+  }
+
+  private Dokumentobjekt getDokumentobjekt() {
+    return dokumentobjektRepository.findById(dokumentobjektDTO.getId()).orElseThrow();
+  }
+
+  private void useHttpsSource() throws Exception {
+    var updateJson = new JSONObject();
+    updateJson.put("referanseDokumentfil", HTTPS_SOURCE_URL);
+    var response = patch("/dokumentobjekt/" + dokumentobjektDTO.getId(), updateJson);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  /** Point the download proxy to a local port that nothing listens on. */
+  private void useUnavailableProxy() throws Exception {
+    int port;
+    try (var socket = new ServerSocket(0)) {
+      port = socket.getLocalPort();
+    }
+    setDownloadProxy("localhost", port);
+  }
+
+  /**
+   * Start a proxy that answers HTTPS tunnel requests (CONNECT) with the given status line, like a
+   * proxy that refuses or can't open the tunnel. The JDK HttpServer used by startProxyServer()
+   * doesn't support CONNECT.
+   */
+  private StartedTunnelProxy startTunnelProxy(String statusLine) throws Exception {
+    var serverSocket = new ServerSocket(0);
+    List<String> requests = Collections.synchronizedList(new ArrayList<>());
+    Thread.ofVirtual()
+        .start(
+            () -> {
+              while (!serverSocket.isClosed()) {
+                try (var socket = serverSocket.accept()) {
+                  var reader =
+                      new BufferedReader(
+                          new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+                  requests.add(reader.readLine());
+                  // Skip the request headers
+                  var line = reader.readLine();
+                  while (line != null && !line.isEmpty()) {
+                    line = reader.readLine();
+                  }
+                  var response = statusLine + "\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+                  socket.getOutputStream().write(response.getBytes(StandardCharsets.UTF_8));
+                  socket.getOutputStream().flush();
+                } catch (IOException _) {
+                  // The server socket was closed
+                }
+              }
+            });
+
+    setDownloadProxy("localhost", serverSocket.getLocalPort());
+    return new StartedTunnelProxy(serverSocket, requests);
+  }
+
   private StartedProxy startPdfProxy() throws Exception {
     return startProxyServer(
         HttpStatus.OK.value(),
@@ -740,6 +949,14 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     public void close() {
       server.stop(0);
       executor.shutdown();
+    }
+  }
+
+  private record StartedTunnelProxy(ServerSocket serverSocket, List<String> requests)
+      implements AutoCloseable {
+    @Override
+    public void close() throws IOException {
+      serverSocket.close();
     }
   }
 
