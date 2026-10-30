@@ -59,4 +59,16 @@ public interface DokumentobjektRepository extends ArkivBaseRepository<Dokumentob
   @Modifying
   @Query("UPDATE Dokumentobjekt o SET o.linkCheckedAt = :checkedAt WHERE o.id = :id")
   void setLinkChecked(String id, Instant checkedAt);
+
+  // Runs in the caller's transaction, so the reset is rolled back if the update fails
+  @Modifying
+  @Query(
+      """
+      UPDATE Dokumentobjekt o
+      SET
+        o.linkCheckedAt = NULL,
+        o.linkFailedSince = NULL
+      WHERE o.id = :id
+      """)
+  void resetLinkStatus(String id);
 }

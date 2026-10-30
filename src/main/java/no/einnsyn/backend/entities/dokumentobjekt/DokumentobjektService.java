@@ -135,6 +135,11 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     }
 
     if (dto.getReferanseDokumentfil() != null) {
+      // The link status belongs to the old URL, so a new URL is checked from scratch
+      if (dokumentobjekt.getReferanseDokumentfil() != null
+          && !dto.getReferanseDokumentfil().equals(dokumentobjekt.getReferanseDokumentfil())) {
+        repository.resetLinkStatus(dokumentobjekt.getId());
+      }
       dokumentobjekt.setReferanseDokumentfil(dto.getReferanseDokumentfil());
     }
 

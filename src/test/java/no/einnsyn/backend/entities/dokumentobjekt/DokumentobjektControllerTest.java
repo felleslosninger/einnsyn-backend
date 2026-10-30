@@ -60,6 +60,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -75,6 +77,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   @Autowired private DownloadCountTestService downloadCountTestService;
   @Autowired private TaskTestService taskTestService;
   @Autowired private FulltextLinkCheckScheduler fulltextLinkCheckScheduler;
+  @Autowired private PlatformTransactionManager transactionManager;
 
   private ArkivDTO arkivDTO;
   private ArkivdelDTO arkivdelDTO;
@@ -717,6 +720,49 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var secondCheck = getDokumentobjekt();
     assertEquals(firstCheck.getLinkFailedSince(), secondCheck.getLinkFailedSince());
     assertTrue(secondCheck.getLinkCheckedAt().isAfter(firstCheck.getLinkCheckedAt()));
+  }
+
+  @Test
+  void updateShouldNotOverwriteLinkStatusFromConcurrentCheck() {
+    // The entity is loaded before the link check commits, and saved after it
+    new TransactionTemplate(transactionManager)
+        .executeWithoutResult(
+            _ -> {
+              var dokumentobjekt = getDokumentobjekt();
+              dokumentobjektRepository.setLinkFailed(dokumentobjektDTO.getId(), Instant.now());
+              dokumentobjekt.setDokumentFormat("application/pdf");
+            });
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertEquals("application/pdf", dokumentobjekt.getDokumentFormat());
+    assertNotNull(dokumentobjekt.getLinkCheckedAt());
+    assertNotNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
+  void updateShouldResetLinkStatusWhenUrlChanges() throws Exception {
+    dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+    assertNotNull(getDokumentobjekt().getLinkFailedSince());
+
+    useHttpsSource();
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNull(dokumentobjekt.getLinkCheckedAt());
+    assertNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
+  void updateShouldKeepLinkStatusWhenUrlIsUnchanged() throws Exception {
+    dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+
+    var updateJson = new JSONObject();
+    updateJson.put("referanseDokumentfil", SOURCE_URL);
+    var response = patch("/dokumentobjekt/" + dokumentobjektDTO.getId(), updateJson);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNotNull(dokumentobjekt.getLinkCheckedAt());
+    assertNotNull(dokumentobjekt.getLinkFailedSince());
   }
 
   @Test
