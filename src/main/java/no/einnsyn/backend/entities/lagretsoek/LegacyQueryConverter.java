@@ -8,6 +8,7 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -89,23 +90,27 @@ public class LegacyQueryConverter {
   }
 
   /**
-   * Resolves an enhet IRI or ID to an internal enhet ID. Returns null if the enhet cannot be found.
+   * Resolves an enhet IRI or ID to an internal enhet ID.
    *
    * @param iri The IRI or ID to resolve
-   * @return The internal enhet ID, or null if not found
+   * @return The internal enhet ID
+   * @throws EInnsynException if the enhet cannot be found
    */
-  private String resolveEnhetId(String iri) {
-    try {
-      var enhet = enhetService.find(iri);
-      if (enhet == null) {
-        log.warn("Could not resolve enhet IRI/ID: {}", iri);
-        return null;
-      }
-      return enhet.getId();
-    } catch (Exception e) {
-      log.warn("Error resolving enhet IRI/ID: {}", iri, e);
-      return null;
+  private String resolveEnhetId(String iri) throws EInnsynException {
+    var enhet = enhetService.find(iri);
+    if (enhet == null) {
+      throw new EInnsynException(
+          "Could not resolve enhet IRI/ID in legacy query: " + iri, "legacyQueryConversionError");
     }
+    return enhet.getId();
+  }
+
+  private List<String> resolveEnhetIds(Collection<String> iris) throws EInnsynException {
+    var enhetIds = new ArrayList<String>(iris.size());
+    for (var iri : iris) {
+      enhetIds.add(resolveEnhetId(iri));
+    }
+    return enhetIds;
   }
 
   @SuppressWarnings("java:S1192") // Easier to handle mappings with string literals
@@ -342,7 +347,8 @@ public class LegacyQueryConverter {
     return newValues;
   }
 
-  private void processFilters(LegacyQuery query, SearchParameters searchParameters) {
+  private void processFilters(LegacyQuery query, SearchParameters searchParameters)
+      throws EInnsynException {
     if (query.getAppliedFilters() == null) {
       return;
     }
@@ -352,7 +358,8 @@ public class LegacyQueryConverter {
     }
   }
 
-  private void processFilter(LegacyQuery.QueryFilter filter, SearchParameters searchParameters) {
+  private void processFilter(LegacyQuery.QueryFilter filter, SearchParameters searchParameters)
+      throws EInnsynException {
     switch (filter) {
       case LegacyQuery.QueryFilter.NotQueryFilter notFilter ->
           processNotQueryFilter(notFilter, searchParameters);
@@ -367,16 +374,13 @@ public class LegacyQueryConverter {
   }
 
   private void processNotQueryFilter(
-      LegacyQuery.QueryFilter.NotQueryFilter notQueryFilter, SearchParameters searchParameters) {
+      LegacyQuery.QueryFilter.NotQueryFilter notQueryFilter, SearchParameters searchParameters)
+      throws EInnsynException {
     var fieldName = notQueryFilter.getFieldName();
     // NotQueryFilter represents exclusion filters. Map to exclude* fields where available.
     if (fieldName.equals("arkivskaperTransitive")
         || fieldName.equals("arkivskaperTransitive_filter")) {
-      var values =
-          notQueryFilter.getFieldValue().stream()
-              .map(this::resolveEnhetId)
-              .filter(Objects::nonNull)
-              .toList();
+      var values = resolveEnhetIds(notQueryFilter.getFieldValue());
       searchParameters.setExcludeAdministrativEnhet(values);
     } else {
       log.warn("NotQueryFilter for field '{}' cannot be converted", fieldName);
@@ -384,16 +388,13 @@ public class LegacyQueryConverter {
   }
 
   private void processPostQueryFilter(
-      LegacyQuery.QueryFilter.PostQueryFilter postQueryFilter, SearchParameters searchParameters) {
+      LegacyQuery.QueryFilter.PostQueryFilter postQueryFilter, SearchParameters searchParameters)
+      throws EInnsynException {
     var fieldName = postQueryFilter.getFieldName();
     if (fieldName.equals("arkivskaperTransitive")
         || fieldName.equals("arkivskaperTransitive_filter")) {
       // Look up IDs - convert IRIs to internal IDs
-      var values =
-          postQueryFilter.getFieldValue().stream()
-              .map(this::resolveEnhetId)
-              .filter(Objects::nonNull)
-              .toList();
+      var values = resolveEnhetIds(postQueryFilter.getFieldValue());
       searchParameters.setAdministrativEnhet(values);
     } else if (fieldName.equals("type_filter")) {
       var values =
