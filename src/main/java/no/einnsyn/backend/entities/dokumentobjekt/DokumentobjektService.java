@@ -247,7 +247,8 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    */
   @Transactional(propagation = Propagation.NEVER)
   public DownloadResponseBase download(String id) throws EInnsynException {
-    var sourceUri = getProxy().getSourceUri(id);
+    var sourceLink = getProxy().getSourceLink(id);
+    var sourceUri = sourceLink.uri();
     var fileName = getProxy().generateDownloadFileName(id, sourceUri);
     HttpURLConnection connection = null;
     DownloadResponseBase downloadResponse;
@@ -276,7 +277,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
       // Only mark the link as failed when the failure is external, or the link isn't HTTPS on 443.
       // Failures on our side (proxy, network, timeouts) say nothing about the link.
       if (e instanceof SourceStatusException || !isHttpsOnDefaultPort(sourceUri)) {
-        recordLinkStatus(id, false);
+        recordLinkStatus(id, sourceLink.sourceUrl(), false);
       }
       // Don't expose source URL in the message, as it will be sent to the client.
       throw new NetworkException("Could not prepare download from source", e, null);
@@ -285,7 +286,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     // Recorded outside the try block: the download has already succeeded at this point, and a
     // failure to record statistics must not be reported to the client as a download failure.
     recordDownload(id);
-    recordLinkStatus(id, isHttpsOnDefaultPort(sourceUri));
+    recordLinkStatus(id, sourceLink.sourceUrl(), isHttpsOnDefaultPort(sourceUri));
 
     return downloadResponse;
   }
@@ -305,20 +306,29 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   public void checkLink(String id) {
     var checkedAt = Instant.now();
     HttpURLConnection connection = null;
+    SourceLink sourceLink = null;
     try {
-      var sourceUri = getProxy().getSourceUri(id);
+      sourceLink = getProxy().getSourceLink(id);
+      var sourceUri = sourceLink.uri();
       if (!isHttpsOnDefaultPort(sourceUri)) {
         throw new SourceStatusException("Source URL is not HTTPS on port 443: " + sourceUri);
       }
       connection = openDownloadConnection(sourceUri);
-      repository.setLinkOk(id, checkedAt);
-    } catch (SourceStatusException | NotFoundException e) {
+      repository.setLinkOk(id, sourceLink.sourceUrl(), checkedAt);
+    } catch (SourceStatusException e) {
+      log.debug("Link check failed for Dokumentobjekt {}: {}", id, e.getMessage());
+      if (sourceLink != null) {
+        repository.setLinkFailed(id, sourceLink.sourceUrl(), checkedAt);
+      }
+    } catch (NotFoundException e) {
       log.debug("Link check failed for Dokumentobjekt {}: {}", id, e.getMessage());
       repository.setLinkFailed(id, checkedAt);
     } catch (Exception e) {
       // Failures on our side can't be fixed per link, so they're not logged as warnings
       log.debug("Could not check link for Dokumentobjekt {}: {}", id, e.getMessage());
-      repository.setLinkChecked(id, checkedAt);
+      if (sourceLink != null) {
+        repository.setLinkChecked(id, sourceLink.sourceUrl(), checkedAt);
+      }
     } finally {
       if (connection != null) {
         connection.disconnect();
@@ -338,12 +348,12 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    * @param id dokumentobjekt id
    * @param ok whether the link works
    */
-  private void recordLinkStatus(String id, boolean ok) {
+  private void recordLinkStatus(String id, String sourceUrl, boolean ok) {
     try {
       if (ok) {
-        repository.setLinkOk(id, Instant.now());
+        repository.setLinkOk(id, sourceUrl, Instant.now());
       } else {
-        repository.setLinkFailed(id, Instant.now());
+        repository.setLinkFailed(id, sourceUrl, Instant.now());
       }
     } catch (Exception e) {
       log.error("Could not record link status for Dokumentobjekt {}", id, e);
@@ -376,6 +386,11 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    */
   @Transactional(readOnly = true)
   public URI getSourceUri(String id) throws EInnsynException {
+    return getProxy().getSourceLink(id).uri();
+  }
+
+  @Transactional(readOnly = true)
+  public SourceLink getSourceLink(String id) throws EInnsynException {
     authorizeGet(id);
     var dokumentobjekt = getProxy().findOrThrow(id, NotFoundException.class);
     var sourceUrl = dokumentobjekt.getReferanseDokumentfil();
@@ -385,16 +400,19 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
 
     try {
       // Preserve already-encoded source URLs exactly as stored.
-      return URI.create(sourceUrl);
+      return new SourceLink(sourceUrl, URI.create(sourceUrl));
     } catch (IllegalArgumentException _) {
       // Fall back to encoding for user-provided URLs with spaces/non-ASCII.
       try {
-        return UriComponentsBuilder.fromUriString(sourceUrl).encode().build().toUri();
+        return new SourceLink(
+            sourceUrl, UriComponentsBuilder.fromUriString(sourceUrl).encode().build().toUri());
       } catch (Exception e) {
         throw new NotFoundException("Invalid source URL for " + id, e);
       }
     }
   }
+
+  public record SourceLink(String sourceUrl, URI uri) {}
 
   /**
    * Generate a human-readable download file name for a Dokumentobjekt. Uses the source URI file

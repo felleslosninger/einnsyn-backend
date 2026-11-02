@@ -40,8 +40,22 @@ public interface DokumentobjektRepository extends ArkivBaseRepository<Dokumentob
         o.linkCheckedAt = :checkedAt,
         o.linkFailedSince = NULL
       WHERE o.id = :id
+      AND o.referanseDokumentfil = :sourceUrl
       """)
-  void setLinkOk(String id, Instant checkedAt);
+  void setLinkOk(String id, String sourceUrl, Instant checkedAt);
+
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Modifying
+  @Query(
+      """
+      UPDATE Dokumentobjekt o
+      SET
+        o.linkCheckedAt = :checkedAt,
+        o.linkFailedSince = COALESCE(o.linkFailedSince, :checkedAt)
+      WHERE o.id = :id
+      AND o.referanseDokumentfil = :sourceUrl
+      """)
+  void setLinkFailed(String id, String sourceUrl, Instant checkedAt);
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Modifying
@@ -57,8 +71,14 @@ public interface DokumentobjektRepository extends ArkivBaseRepository<Dokumentob
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Modifying
-  @Query("UPDATE Dokumentobjekt o SET o.linkCheckedAt = :checkedAt WHERE o.id = :id")
-  void setLinkChecked(String id, Instant checkedAt);
+  @Query(
+      """
+      UPDATE Dokumentobjekt o
+      SET o.linkCheckedAt = :checkedAt
+      WHERE o.id = :id
+      AND o.referanseDokumentfil = :sourceUrl
+      """)
+  void setLinkChecked(String id, String sourceUrl, Instant checkedAt);
 
   // Runs in the caller's transaction, so the reset is rolled back if the update fails
   @Modifying

@@ -724,6 +724,17 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void delayedLinkCheckShouldNotApplyAfterSourceUrlChanges() throws Exception {
+    useHttpsSource();
+
+    dokumentobjektRepository.setLinkFailed(dokumentobjektDTO.getId(), SOURCE_URL, Instant.now());
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNull(dokumentobjekt.getLinkCheckedAt());
+    assertNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
   void checkLinkShouldNotMarkLinkAsFailedWhenProxyIsUnavailable() throws Exception {
     // The proxy is unavailable, so the link is only marked as checked
     useHttpsSource();
@@ -754,7 +765,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
         .executeWithoutResult(
             _ -> {
               var dokumentobjekt = getDokumentobjekt();
-              dokumentobjektRepository.setLinkFailed(dokumentobjektDTO.getId(), Instant.now());
+              dokumentobjektRepository.setLinkFailed(
+                  dokumentobjektDTO.getId(), SOURCE_URL, Instant.now());
               dokumentobjekt.setDokumentFormat("application/pdf");
             });
 
@@ -814,7 +826,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var uncheckedDTO = gson.fromJson(response.getBody(), DokumentobjektDTO.class);
 
     var failedCheckedAt = Instant.now().minus(2, ChronoUnit.DAYS);
-    dokumentobjektRepository.setLinkFailed(dokumentobjektDTO.getId(), failedCheckedAt);
+    dokumentobjektRepository.setLinkFailed(dokumentobjektDTO.getId(), SOURCE_URL, failedCheckedAt);
 
     var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
     ReflectionTestUtils.setField(target, "batchSize", 1);
