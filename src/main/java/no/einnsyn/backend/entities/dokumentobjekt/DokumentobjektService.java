@@ -316,7 +316,8 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
       log.debug("Link check failed for Dokumentobjekt {}: {}", id, e.getMessage());
       repository.setLinkFailed(id, checkedAt);
     } catch (Exception e) {
-      log.warn("Could not check link for Dokumentobjekt {}: {}", id, e.getMessage());
+      // Failures on our side can't be fixed per link, so they're not logged as warnings
+      log.debug("Could not check link for Dokumentobjekt {}: {}", id, e.getMessage());
       repository.setLinkChecked(id, checkedAt);
     } finally {
       if (connection != null) {
