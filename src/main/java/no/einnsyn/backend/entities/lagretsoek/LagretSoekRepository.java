@@ -50,19 +50,34 @@ public interface LagretSoekRepository
   @Query("SELECT o.id FROM LagretSoek o WHERE bruker.id = :brukerId ORDER BY id DESC")
   Stream<String> streamIdByBrukerId(String brukerId);
 
+  /**
+   * Count one hit on each of the given LagretSoek. Rows are locked in ID order, since concurrent
+   * matchers update overlapping sets of rows and would otherwise deadlock.
+   *
+   * @return the IDs of those whose hit should be cached for the notification
+   */
   @Query(
       value =
           """
-          UPDATE lagret_sok
-          SET hit_count = hit_count + 1
-          WHERE _id = :id
-          AND abonnere = true
-          AND hit_count < 101
-          RETURNING hit_count
+          WITH locked AS (
+            SELECT _id FROM lagret_sok
+            WHERE _id IN (:ids)
+            AND abonnere = true
+            AND hit_count < 101
+            ORDER BY _id
+            FOR NO KEY UPDATE
+          ), updated AS (
+            UPDATE lagret_sok
+            SET hit_count = lagret_sok.hit_count + 1
+            FROM locked
+            WHERE lagret_sok._id = locked._id
+            RETURNING lagret_sok._id, lagret_sok.hit_count
+          )
+          SELECT _id FROM updated WHERE hit_count <= 10
           """,
       nativeQuery = true)
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  Integer addHitById(String id);
+  @Transactional
+  List<String> addHitByIds(List<String> ids);
 
   @Query(
       """

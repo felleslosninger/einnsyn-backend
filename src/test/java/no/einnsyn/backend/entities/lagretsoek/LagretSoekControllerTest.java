@@ -9,6 +9,7 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
@@ -378,21 +379,21 @@ class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
     assertEquals(lagretSoekDTO.getId(), found.getId());
 
     // Hits can also be registered on the legacy id
-    lagretSoekService.incrementHitCount(legacyId.toString(), saksmappeDTO.getId());
+    lagretSoekService.addHits(List.of(legacyId.toString()), saksmappeDTO.getId());
     assertEquals(1, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
 
     // Moetemappe hits are also cached
-    lagretSoekService.incrementHitCount(legacyId.toString(), moetemappeDTO.getId());
+    lagretSoekService.addHits(List.of(legacyId.toString()), moetemappeDTO.getId());
     assertEquals(2, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
     assertEquals(2, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
 
-    // An unknown legacy id is logged and ignored, neither counted nor cached
-    lagretSoekService.incrementHitCount(UUID.randomUUID().toString(), saksmappeDTO.getId());
+    // An unknown legacy id is ignored, neither counted nor cached
+    lagretSoekService.addHits(List.of(UUID.randomUUID().toString()), saksmappeDTO.getId());
     assertEquals(2, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
     assertEquals(2, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
 
     // A document with an unknown entity type is counted, but not cached
-    lagretSoekService.incrementHitCount(lagretSoekDTO.getId(), "unknown-document-id");
+    lagretSoekService.addHits(List.of(lagretSoekDTO.getId()), "unknown-document-id");
     assertEquals(3, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
     assertEquals(2, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
 

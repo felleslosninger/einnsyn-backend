@@ -5,6 +5,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.gson.reflect.TypeToken;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -213,41 +214,30 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   }
 
   /**
-   * Add hit to lagret soek. Up to {maxHits} hits will be temporarily saved as LagretSoekHit, and
-   * deleted after the user has been notified.
+   * Add a hit for one document to each of the given lagret soek, in a single transaction. Up to 10
+   * hits per lagret soek will be temporarily saved as LagretSoekHit, and deleted after the user has
+   * been notified.
    *
-   * @param lagretSoekId the ID of the lagret soek
+   * @param lagretSoekIds the IDs or legacy IDs of the matching lagret soek
    * @param documentId the ID of the matched document
    */
-  public void incrementHitCount(String lagretSoekId, String documentId) {
-    var id = lagretSoekId;
-
-    // If the ID does not have the valid entity prefix, try to look up by legacy ID
-    if (!objectClassName.equals(IdUtils.resolveEntity(id))) {
-      try {
-        id = proxy.find(id).getId();
-      } catch (Exception e) {
-        log.error("Could not find LagretSoek with legacy ID {}", lagretSoekId, e);
-        return;
-      }
-    }
-
-    var hitCount = repository.addHitById(id);
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void addHits(List<String> lagretSoekIds, String documentId) {
+    // Unknown legacy IDs pass through unresolved, and match no row
+    var ids = proxy.resolveIds(lagretSoekIds);
+    var idsToCache = repository.addHitByIds(ids);
     log.debug(
-        "Matched document {} with percolator query {}. Search has {} hits.",
+        "Matched document {} with percolator queries {}, caching the hit for {}",
         documentId,
-        lagretSoekId,
-        hitCount);
+        lagretSoekIds,
+        idsToCache);
 
-    // Cache hit for email notification
-    if (hitCount != null && hitCount <= 10) {
-      log.debug("Adding hit to LagretSoek {}", id);
-      getProxy().addHit(id, documentId);
+    for (var id : idsToCache) {
+      addHit(id, documentId);
     }
   }
 
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public void addHit(String lagretSoekId, String documentId) {
+  private void addHit(String lagretSoekId, String documentId) {
     var lagretSoekHit = new LagretSoekHit();
     var documentEntity = IdUtils.resolveEntity(documentId);
 
