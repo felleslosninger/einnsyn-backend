@@ -38,11 +38,11 @@ public class FilterParameters extends QueryParameters {
    */
   protected List<String> excludeAdministrativEnhetExact;
 
-  /**
-   * A list of Saksmappe or Moetemappe IDs. Matches the Journalposts and Moetesaker that belong to
-   * them.
-   */
-  protected List<String> mappe;
+  /** A list of Saksmappe IDs. Matches the Journalposts that belong to them. */
+  protected List<String> saksmappe;
+
+  /** A list of Moetemappe IDs. Matches the Moetesaker that belong to them. */
+  protected List<String> moetemappe;
 
   /** Filter by title. This is a free text search. */
   protected List<String> tittel;

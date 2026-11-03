@@ -192,7 +192,7 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
 
   @SuppressWarnings("unchecked")
   @Test
-  void testMatchingLagretSoekByMappe() throws Exception {
+  void testMatchingLagretSoekBySaksmappe() throws Exception {
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
@@ -206,7 +206,7 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     var lagretSoekJSON = getLagretSoekJSON();
     lagretSoekJSON.put(
         "searchParameters",
-        new JSONObject().put("mappe", new JSONArray().put(saksmappeDTO.getId())));
+        new JSONObject().put("saksmappe", new JSONArray().put(saksmappeDTO.getId())));
     response = post("/bruker/" + brukerDTO.getId() + "/lagretSoek", lagretSoekJSON, accessToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);

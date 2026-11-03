@@ -21,10 +21,10 @@ import no.einnsyn.backend.authentication.AuthenticationService;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.queryparameters.models.FilterParameters;
+import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.enhet.EnhetService;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
-import no.einnsyn.backend.utils.id.IdUtils;
 import no.einnsyn.backend.validation.isodatetime.RelativeDateMath;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -128,48 +128,26 @@ public class SearchQueryService {
   }
 
   /**
-   * Resolve IDs from identifiers like orgnummer, email, ...
+   * Resolve IDs from identifiers like orgnummer, systemId, slug, ...
    *
-   * @param enhetIdentifiers the list of identifiers to resolve
-   * @return the list of resolved Enhet IDs
-   * @throws BadRequestException if an Enhet is not found
+   * @param service the service of the entity to resolve
+   * @param entityName the name of the entity, used in the error message
+   * @param identifiers the list of identifiers to resolve
+   * @return the list of resolved IDs
+   * @throws BadRequestException if an identifier is not found
    */
-  private List<String> resolveEnhetIds(List<String> enhetIdentifiers) throws BadRequestException {
-    var enhetIds = new ArrayList<String>(enhetIdentifiers.size());
-    for (var identifier : enhetIdentifiers) {
-      var enhetId = enhetService.resolveId(identifier);
-      if (enhetId == null) {
-        throw new BadRequestException("Enhet not found: " + identifier);
+  private List<String> resolveIds(
+      BaseService<?, ?> service, String entityName, List<String> identifiers)
+      throws BadRequestException {
+    var ids = new ArrayList<String>(identifiers.size());
+    for (var identifier : identifiers) {
+      var id = service.resolveId(identifier);
+      if (id == null) {
+        throw new BadRequestException(entityName + " not found: " + identifier);
       }
-      enhetIds.add(enhetId);
+      ids.add(id);
     }
-    return enhetIds;
-  }
-
-  /**
-   * Resolve Saksmappe and Moetemappe IDs from identifiers like systemId, slug, ...
-   *
-   * @param mappeIdentifiers the list of identifiers to resolve
-   * @return the list of resolved Mappe IDs
-   * @throws BadRequestException if a Mappe is not found
-   */
-  private List<String> resolveMappeIds(List<String> mappeIdentifiers) throws BadRequestException {
-    var mappeIds = new ArrayList<String>(mappeIdentifiers.size());
-    for (var identifier : mappeIdentifiers) {
-      String mappeId = null;
-      // A Moetemappe ID can't resolve to a Saksmappe, so skip that lookup
-      if (!"Moetemappe".equals(IdUtils.resolveEntity(identifier))) {
-        mappeId = saksmappeService.resolveId(identifier);
-      }
-      if (mappeId == null) {
-        mappeId = moetemappeService.resolveId(identifier);
-      }
-      if (mappeId == null) {
-        throw new BadRequestException("Mappe not found: " + identifier);
-      }
-      mappeIds.add(mappeId);
-    }
-    return mappeIds;
+    return ids;
   }
 
   /**
@@ -363,32 +341,42 @@ public class SearchQueryService {
 
     // Matches against administrativEnhet or children
     if (filterParameters.getAdministrativEnhet() != null) {
-      var enhetList = resolveEnhetIds(filterParameters.getAdministrativEnhet());
+      var enhetList = resolveIds(enhetService, "Enhet", filterParameters.getAdministrativEnhet());
       addFilter(rootBoolQueryBuilder, "administrativEnhetTransitive", enhetList);
     }
 
     // Exact matches against administrativEnhet
     if (filterParameters.getAdministrativEnhetExact() != null) {
-      var enhetList = resolveEnhetIds(filterParameters.getAdministrativEnhetExact());
+      var enhetList =
+          resolveIds(enhetService, "Enhet", filterParameters.getAdministrativEnhetExact());
       addFilter(rootBoolQueryBuilder, "administrativEnhet", enhetList);
     }
 
     // Exclude documents from given administrativEnhet or children
     if (filterParameters.getExcludeAdministrativEnhet() != null) {
-      var enhetList = resolveEnhetIds(filterParameters.getExcludeAdministrativEnhet());
+      var enhetList =
+          resolveIds(enhetService, "Enhet", filterParameters.getExcludeAdministrativEnhet());
       addMustNot(rootBoolQueryBuilder, "administrativEnhetTransitive", enhetList);
     }
 
     // Exclude documents from given administrativEnhet
     if (filterParameters.getExcludeAdministrativEnhetExact() != null) {
-      var enhetList = resolveEnhetIds(filterParameters.getExcludeAdministrativEnhetExact());
+      var enhetList =
+          resolveIds(enhetService, "Enhet", filterParameters.getExcludeAdministrativEnhetExact());
       addMustNot(rootBoolQueryBuilder, "administrativEnhet", enhetList);
     }
 
-    // Filter by parent Saksmappe or Moetemappe
-    if (filterParameters.getMappe() != null) {
-      var mappeIds = resolveMappeIds(filterParameters.getMappe());
-      addFilter(rootBoolQueryBuilder, "parent.id", mappeIds);
+    // Filter by parent Saksmappe
+    if (filterParameters.getSaksmappe() != null) {
+      var saksmappeIds = resolveIds(saksmappeService, "Saksmappe", filterParameters.getSaksmappe());
+      addFilter(rootBoolQueryBuilder, "parent.id", saksmappeIds);
+    }
+
+    // Filter by parent Moetemappe
+    if (filterParameters.getMoetemappe() != null) {
+      var moetemappeIds =
+          resolveIds(moetemappeService, "Moetemappe", filterParameters.getMoetemappe());
+      addFilter(rootBoolQueryBuilder, "parent.id", moetemappeIds);
     }
 
     // Filter by publisertDatoTo
