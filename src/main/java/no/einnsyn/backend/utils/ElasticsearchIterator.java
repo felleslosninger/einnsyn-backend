@@ -7,6 +7,7 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -67,19 +68,18 @@ public class ElasticsearchIterator<T> implements Iterator<Hit<T>> {
   }
 
   /**
-   * Fetches the next batch of documents from ES.
+   * Returns the rest of the current batch. The following batch is fetched by the next {@link
+   * #hasNext()}, so a failed fetch cannot discard hits the caller has not processed yet.
    *
-   * @return the next batch of hits
+   * @return the remaining hits of the current batch
    */
   public List<Hit<T>> nextBatch() {
     if (!hasNext()) {
       throw new NoSuchElementException("No more elements in the iterator");
     }
 
-    var currentBatch = batch;
-    batch = fetchNextBatch(batch.getLast());
-    batchIterator = batch.iterator();
-
+    var currentBatch = new ArrayList<Hit<T>>();
+    batchIterator.forEachRemaining(currentBatch::add);
     return currentBatch;
   }
 
