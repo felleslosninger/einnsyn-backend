@@ -37,8 +37,23 @@ public interface LagretSoekRepository
       """)
   Stream<String> streamBrukerIdWithLagretSoekHits();
 
+  /** Rows are locked in ID order, as in {@link #addHitByIds}, which may update the same rows. */
   @Modifying
-  @Query("UPDATE LagretSoek SET hitCount = 0 WHERE id IN :idList")
+  @Query(
+      value =
+          """
+          WITH locked AS (
+            SELECT _id FROM lagret_sok
+            WHERE _id IN (:idList)
+            ORDER BY _id
+            FOR NO KEY UPDATE
+          )
+          UPDATE lagret_sok
+          SET hit_count = 0
+          FROM locked
+          WHERE lagret_sok._id = locked._id
+          """,
+      nativeQuery = true)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   void resetHitCount(List<String> idList);
 
@@ -51,8 +66,9 @@ public interface LagretSoekRepository
   Stream<String> streamIdByBrukerId(String brukerId);
 
   /**
-   * Count one hit on each of the given LagretSoek. Rows are locked in ID order, since concurrent
-   * matchers update overlapping sets of rows and would otherwise deadlock.
+   * Count one hit on each of the given LagretSoek. Rows are locked in ID order, as in {@link
+   * #resetHitCount}, since concurrent matchers and notifications update overlapping sets of rows
+   * and would otherwise deadlock.
    *
    * @return the IDs of those whose hit should be cached for the notification
    */

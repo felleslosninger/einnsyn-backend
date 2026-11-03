@@ -16,6 +16,7 @@ import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.retry.RetryOnWriteConflict;
 import no.einnsyn.backend.common.search.SearchQueryService;
 import no.einnsyn.backend.common.search.models.SavedSearchParameters;
 import no.einnsyn.backend.common.search.models.SearchParameters;
@@ -218,10 +219,14 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    * hits per lagret soek will be temporarily saved as LagretSoekHit, and deleted after the user has
    * been notified.
    *
+   * <p>Retried on deadlock, since writers that don't lock lagret soek in ID order, like Bruker
+   * deletion, can still conflict with it.
+   *
    * @param lagretSoekIds the IDs or legacy IDs of the matching lagret soek
    * @param documentId the ID of the matched document
    */
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Transactional
+  @RetryOnWriteConflict
   public void addHits(List<String> lagretSoekIds, String documentId) {
     // Unknown legacy IDs pass through unresolved, and match no row
     var ids = proxy.resolveIds(lagretSoekIds);
@@ -285,6 +290,11 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
     var bruker = brukerService.find(brukerId);
     var lagretSoekList = repository.findLagretSoekWithHitsByBruker(brukerId);
+
+    // The hits may be gone since the bruker was listed, e.g. after unsubscribing
+    if (lagretSoekList.isEmpty()) {
+      return;
+    }
 
     // Build mail template context
     var context = new HashMap<String, Object>();
