@@ -941,39 +941,33 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * Execute a scheduled reindex of an object. This method is called by the ElasticSearchIndexQueue
    * after the object has been added to the queue.
    *
+   * <p>Not transactional: the object is read in {@link #getIndexSource}, so the Elasticsearch
+   * requests and the IndexEvent listeners run without holding that connection.
+   *
    * @param id the ID of the object to index
    * @param timestamp the timestamp when the indexing was scheduled
    */
-  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
   public void index(String id, Instant timestamp) {
-    var proxy = getProxy();
-    var object = proxy.find(id);
-    var esParent = proxy.getESParent(object, id);
+    var indexSource = getProxy().getIndexSource(id, timestamp);
+    if (indexSource == null) {
+      return;
+    }
+    var esParent = indexSource.esParent();
 
     // Insert / update document if the object exists
-    if (object instanceof Indexable indexable) {
-      // Do nothing if the object has been indexed after `scheduledTimestamp`
-      if (indexable.getLastIndexed() != null && indexable.getLastIndexed().isAfter(timestamp)) {
-        log.debug(
-            "Not indexing {} : {} , it has already been indexed after {}",
-            objectClassName,
-            id,
-            timestamp);
-        return;
-      }
-
+    if (indexSource.exists()) {
       // Set lastIndexed to the most recent of:
       //  - the row version we actually indexed (`_updated`), and
       //  - the scheduled timestamp for this indexing cycle.
       // This keeps stale detection race-safe while also preventing endless reindex loops when
       // accessibleAfter is greater than the last updated timestamp.
-      var objectUpdated = object.getUpdated();
-      var lastIndexed = indexable.getLastIndexed();
+      var objectUpdated = indexSource.updated();
+      var lastIndexed = indexSource.lastIndexed();
       var updatedSinceLastIndex =
           objectUpdated != null && (lastIndexed == null || objectUpdated.isAfter(lastIndexed));
       var lastIndexedTimestamp =
           objectUpdated != null && objectUpdated.isAfter(timestamp) ? objectUpdated : timestamp;
-      var esDocument = proxy.toLegacyES(object, esParent);
+      var esDocument = indexSource.esDocument();
 
       // If esDocument is null, remove any existing ES document and update lastIndexed
       if (esDocument == null) {
@@ -1068,6 +1062,44 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
             e);
       }
     }
+  }
+
+  /** What {@link #index} reads from the database. A null esDocument removes the document. */
+  public record IndexSource(
+      boolean exists, BaseES esDocument, String esParent, Instant lastIndexed, Instant updated) {}
+
+  /**
+   * Read what {@link #index} needs from the database.
+   *
+   * @param id the ID of the object to index
+   * @param timestamp the timestamp when the indexing was scheduled
+   * @return null if the object has been indexed after `timestamp`
+   */
+  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+  public IndexSource getIndexSource(String id, Instant timestamp) {
+    var proxy = getProxy();
+    var object = proxy.find(id);
+    var esParent = proxy.getESParent(object, id);
+    if (!(object instanceof Indexable indexable)) {
+      return new IndexSource(false, null, esParent, null, null);
+    }
+
+    // Do nothing if the object has been indexed after `scheduledTimestamp`
+    if (indexable.getLastIndexed() != null && indexable.getLastIndexed().isAfter(timestamp)) {
+      log.debug(
+          "Not indexing {} : {} , it has already been indexed after {}",
+          objectClassName,
+          id,
+          timestamp);
+      return null;
+    }
+
+    return new IndexSource(
+        true,
+        proxy.toLegacyES(object, esParent),
+        esParent,
+        indexable.getLastIndexed(),
+        object.getUpdated());
   }
 
   /**
