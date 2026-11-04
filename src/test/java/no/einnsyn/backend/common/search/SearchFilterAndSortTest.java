@@ -589,12 +589,23 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), baseDTOListType);
     var ids = result.getItems().stream().map(BaseDTO::getId).toList();
-    assertEquals(2, ids.size());
+    assertEquals(3, ids.size());
+    assertTrue(ids.contains(saksmappe2023DTO.getId()));
     assertTrue(ids.contains(journalpost1DTO.getId()));
     assertTrue(ids.contains(journalpost3DTO.getId()));
 
     // The slug is also used by a Moetemappe
     response = get("/search?saksmappe=" + SHARED_SLUG);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertEquals(3, ids.size());
+    assertTrue(ids.contains(saksmappe2023DTO.getId()));
+    assertTrue(ids.contains(journalpost1DTO.getId()));
+    assertTrue(ids.contains(journalpost3DTO.getId()));
+
+    // Only the Journalposts
+    response = get("/search?entity=Journalpost&saksmappe=" + saksmappe2023DTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), baseDTOListType);
     ids = result.getItems().stream().map(BaseDTO::getId).toList();
@@ -611,11 +622,22 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     var response = get("/search?moetemappe=" + moetemappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), baseDTOListType);
-    assertEquals(1, result.getItems().size());
-    assertEquals(moetesakDTO.getId(), result.getItems().get(0).getId());
+    var ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertEquals(2, ids.size());
+    assertTrue(ids.contains(moetemappeDTO.getId()));
+    assertTrue(ids.contains(moetesakDTO.getId()));
 
     // The slug is also used by a Saksmappe
     response = get("/search?moetemappe=" + SHARED_SLUG);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertEquals(2, ids.size());
+    assertTrue(ids.contains(moetemappeDTO.getId()));
+    assertTrue(ids.contains(moetesakDTO.getId()));
+
+    // Only the Moetesaker
+    response = get("/search?entity=Moetesak&moetemappe=" + moetemappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), baseDTOListType);
     assertEquals(1, result.getItems().size());

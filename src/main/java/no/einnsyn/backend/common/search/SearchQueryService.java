@@ -167,6 +167,27 @@ public class SearchQueryService {
   }
 
   /**
+   * Adds a filter matching the given Mappe IDs and the documents that belong to them.
+   *
+   * @param bqb the bool query builder
+   * @param mappeIds the list of Mappe IDs to filter by
+   */
+  private void addMappeFilter(BoolQuery.Builder bqb, List<String> mappeIds) {
+    if (mappeIds.isEmpty()) {
+      return;
+    }
+    var fieldValueList = mappeIds.stream().map(FieldValue::of).toList();
+    var mappeBoolQueryBuilder = new BoolQuery.Builder();
+    mappeBoolQueryBuilder.minimumShouldMatch("1");
+    for (var propertyName : List.of("id", "parent.id")) {
+      mappeBoolQueryBuilder.should(
+          TermsQuery.of(tqb -> tqb.field(propertyName).terms(tqfb -> tqfb.value(fieldValueList)))
+              ._toQuery());
+    }
+    bqb.filter(mappeBoolQueryBuilder.build()._toQuery());
+  }
+
+  /**
    * Adds a must-not clause to the bool query.
    *
    * @param bqb the bool query builder
@@ -366,17 +387,17 @@ public class SearchQueryService {
       addMustNot(rootBoolQueryBuilder, "administrativEnhet", enhetList);
     }
 
-    // Filter by parent Saksmappe
+    // Filter by Saksmappe and its Journalposts
     if (filterParameters.getSaksmappe() != null) {
       var saksmappeIds = resolveIds(saksmappeService, "Saksmappe", filterParameters.getSaksmappe());
-      addFilter(rootBoolQueryBuilder, "parent.id", saksmappeIds);
+      addMappeFilter(rootBoolQueryBuilder, saksmappeIds);
     }
 
-    // Filter by parent Moetemappe
+    // Filter by Moetemappe and its Moetesaker
     if (filterParameters.getMoetemappe() != null) {
       var moetemappeIds =
           resolveIds(moetemappeService, "Moetemappe", filterParameters.getMoetemappe());
-      addFilter(rootBoolQueryBuilder, "parent.id", moetemappeIds);
+      addMappeFilter(rootBoolQueryBuilder, moetemappeIds);
     }
 
     // Filter by publisertDatoTo
