@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -27,6 +28,7 @@ import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.tasks.events.IndexEvent;
 import org.awaitility.Awaitility;
 import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
@@ -34,14 +36,19 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
   @Autowired TaskTestService taskTestService;
+  @Autowired ApplicationEventMulticaster applicationEventMulticaster;
 
   /**
    * Test that saksmappe that fail to index on creation are reindexed.
@@ -854,6 +861,52 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     delete("/arkiv/" + arkivDTO.getId());
     captureDeletedDocuments(1);
+  }
+
+  /**
+   * Subscriptions are matched in the IndexEvent listeners. Inside the indexing transaction, every
+   * indexer would hold one connection while waiting for another.
+   */
+  @Test
+  void testIndexEventListenersRunOutsideTransaction() throws Exception {
+
+    // When an IndexEvent is published, mark whether the current thread has an active transaction.
+    var transactionActive = new ConcurrentLinkedQueue<Boolean>();
+    ApplicationListener<ApplicationEvent> listener =
+        event -> {
+          if (event instanceof IndexEvent) {
+            transactionActive.add(TransactionSynchronizationManager.isActualTransactionActive());
+          }
+        };
+    applicationEventMulticaster.addApplicationListener(listener);
+
+    try {
+      var response = post("/arkiv", getArkivJSON());
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+      response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
+      var saksmappeJSON = getSaksmappeJSON();
+      saksmappeJSON.put("journalpost", new JSONArray().put(getJournalpostJSON()));
+      response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      captureIndexedDocuments(2);
+      resetEs();
+      awaitSideEffects();
+
+      // Make sure we saw at least one IndexEvent
+      assertFalse(transactionActive.isEmpty());
+      // Make sure none of the IndexEvents were published inside a transaction
+      assertFalse(transactionActive.contains(true));
+
+      delete("/arkiv/" + arkivDTO.getId());
+      captureDeletedDocuments(2);
+    } finally {
+      applicationEventMulticaster.removeApplicationListener(listener);
+    }
   }
 
   private boolean esDocumentExists(String index, String id) throws Exception {
