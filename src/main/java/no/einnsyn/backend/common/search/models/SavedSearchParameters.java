@@ -74,6 +74,12 @@ public class SavedSearchParameters {
    */
   protected List<String> excludeAdministrativEnhetExact;
 
+  /** A list of Saksmappe IDs. Matches the Saksmapper and the Journalposts that belong to them. */
+  protected List<String> saksmappe;
+
+  /** A list of Moetemappe IDs. Matches the Moetemapper and the Moetesaker that belong to them. */
+  protected List<String> moetemappe;
+
   /** Filter by title. This is a free text search. */
   protected List<String> tittel;
 
