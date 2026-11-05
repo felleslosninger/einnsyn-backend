@@ -834,14 +834,21 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         .untilAsserted(() -> verify(javaMailSender, times(3)).send(any(MimeMessage.class)));
 
     // Check that InnsynskravSenderService sent to the integrasjonspunkt client
+    var mailCaptor = ArgumentCaptor.forClass(String.class);
     verify(ipSender, times(1))
         .sendInnsynskrav(
             any(String.class),
             any(String.class), // HandteresAv
             any(String.class), // Administrativ enhet
             eq("innsynskravepost@example.com"),
-            any(String.class) // Email text. TODO: Verify that the journalpost titles are mentioned
+            mailCaptor.capture() // Email text
             );
+    assertTrue(
+        mailCaptor
+            .getValue()
+            .contains("Dokument: " + journalpostDTO.getOffentligTittelSensitiv()));
+    assertTrue(
+        mailCaptor.getValue().contains("Sak: " + saksmappeDTO.getOffentligTittelSensitiv()));
 
     // Verify that the InnsynskravBestilling and Innsynskravs are in the DB
     assertEquals(
