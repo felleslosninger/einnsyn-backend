@@ -19,6 +19,8 @@ server:
 application:
   userSecretExpirationTime: ${USER_SECRET_EXPIRY:86400} # 24 hours
   baseUrl: ${BASE_URL:http://localhost:8080}
+  # Require an API key (or a logged in user) for GET requests, except downloads
+  requireApiKey: ${REQUIRE_API_KEY:false}
   elasticsearch:
     index: ${ELASTICSEARCH_ACTIVE_INDEX:test}
     uri: ${ELASTICSEARCH_URIS:http://localhost:9200}
