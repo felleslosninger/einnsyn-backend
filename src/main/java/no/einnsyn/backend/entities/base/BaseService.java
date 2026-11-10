@@ -73,6 +73,7 @@ import no.einnsyn.backend.tasks.handlers.index.ElasticsearchIndexQueue;
 import no.einnsyn.backend.utils.ExpandPathResolver;
 import no.einnsyn.backend.utils.TimeConverter;
 import no.einnsyn.backend.utils.id.IdUtils;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -1458,6 +1459,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var updatedPath = ExpandPathResolver.getPath(currentPath, propertyName);
     var shouldExpand = expandPaths != null && expandPaths.contains(updatedPath);
     log.trace("maybeExpand {}:{}, {}", objectClassName, obj.getId(), shouldExpand);
+    // A lazy reference may point to an object hidden from the caller, which can't be loaded
+    if (shouldExpand
+        && !Hibernate.isInitialized(obj)
+        && getRepository().findById(obj.getId()).isEmpty()) {
+      return new ExpandableField<>(obj.getId());
+    }
     var expandedObject = shouldExpand ? toDTO(obj, newDTO(), expandPaths, updatedPath) : null;
     return new ExpandableField<>(obj.getId(), expandedObject);
   }
