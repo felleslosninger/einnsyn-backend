@@ -473,6 +473,47 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
   }
 
   /**
+   * A Journalpost turns accessible with its Saksmappe, when that is later than its own
+   * accessibleAfter. An index after that must match it.
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  void testJournalpostTurningAccessibleWithSaksmappeIsCounted() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekId = gson.fromJson(response.getBody(), LagretSoekDTO.class).getId();
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    // The Journalpost has no accessibleAfter of its own, so it is accessible from now
+    var accessibleAfter = ZonedDateTime.now().plusSeconds(3);
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("offentligTittel", "foo");
+    journalpostJSON.put("offentligTittelSensitiv", "foo");
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("accessibleAfter", accessibleAfter.toString());
+    saksmappeJSON.put("journalpost", new JSONArray().put(journalpostJSON));
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var journalpostId = getJournalpostList(saksmappeDTO.getId()).getItems().getFirst().getId();
+    awaitSideEffects();
+    assertEquals(0, taskTestService.getLagretSoekHitCount(lagretSoekId));
+
+    // Reindexed after the Saksmappe turned accessible, e.g. when the Saksmappe is updated
+    Awaitility.await().until(() -> ZonedDateTime.now().isAfter(accessibleAfter));
+    journalpostService.index(journalpostId, Instant.now());
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekId));
+
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/lagretSoek/" + lagretSoekId, accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  /**
    * The reindexer can get the same ID twice, and index both at once. Only one of them may match the
    * document as newly accessible.
    */
