@@ -63,4 +63,10 @@ public class ApiKeyDTO extends BaseDTO {
    */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   protected String expiresAt;
+
+  /**
+   * Create a key with a higher rate limit. Only admins can set this, and only when the key is
+   * created.
+   */
+  protected Boolean highVolume;
 }

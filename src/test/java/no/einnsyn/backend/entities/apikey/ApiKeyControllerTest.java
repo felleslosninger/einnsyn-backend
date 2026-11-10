@@ -11,6 +11,7 @@ import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
+import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -74,6 +75,42 @@ class ApiKeyControllerTest extends EinnsynControllerTestBase {
 
     response = delete("/enhet/" + enhetDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test
+  void testHighVolumeApiKey() throws Exception {
+    var highVolumeJSON = getApiKeyJSON();
+    highVolumeJSON.put("highVolume", true);
+
+    var response = post("/enhet/" + journalenhetId + "/apiKey", highVolumeJSON);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    response = postAdmin("/enhet/" + journalenhetId + "/apiKey", highVolumeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var highVolumeDTO = gson.fromJson(response.getBody(), ApiKeyDTO.class);
+    var highVolumeSecret = highVolumeDTO.getSecretKey();
+    assertTrue(highVolumeSecret.startsWith(ApiKeyService.HIGH_VOLUME_SECRET_PREFIX + "_"));
+
+    response = get("/apiKey/" + highVolumeDTO.getId(), highVolumeSecret);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNull(gson.fromJson(response.getBody(), ApiKeyDTO.class).getHighVolume());
+
+    response = post("/enhet/" + journalenhetId + "/apiKey", getApiKeyJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var standardDTO = gson.fromJson(response.getBody(), ApiKeyDTO.class);
+    assertFalse(
+        standardDTO.getSecretKey().startsWith(ApiKeyService.HIGH_VOLUME_SECRET_PREFIX + "_"));
+
+    var updateJSON = new JSONObject();
+    updateJSON.put("highVolume", true);
+    response = patchAdmin("/apiKey/" + standardDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    updateJSON.put("highVolume", false);
+    response = patchAdmin("/apiKey/" + highVolumeDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    assertEquals(HttpStatus.OK, delete("/apiKey/" + highVolumeDTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/apiKey/" + standardDTO.getId()).getStatusCode());
   }
 
   @Test
