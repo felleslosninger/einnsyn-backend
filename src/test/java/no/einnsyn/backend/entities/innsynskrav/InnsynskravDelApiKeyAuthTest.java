@@ -252,7 +252,15 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
                   + "?expand=innsynskrav.journalpost",
               bruker1Token);
       assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
-
+      var expandedBestilling = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+      list =
+          new PaginatedList<>(
+              expandedBestilling.getInnsynskrav().stream()
+                  .map(ExpandableField::getExpandedObject)
+                  .toList());
+      assertEquals(2, list.getItems().size());
+      assertJournalpostExpanded(list, visibleJournalpostId, true);
+      assertJournalpostExpanded(list, hiddenJournalpostId, false);
       var hiddenInnsynskravId =
           list.getItems().stream()
               .filter(i -> i.getJournalpost().getId().equals(hiddenJournalpostId))
