@@ -8,6 +8,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import jakarta.mail.internet.MimeMessage;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.function.Function;
@@ -421,5 +422,47 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
       response = delete("/lagretSoek/" + lagretSoekId, accessToken);
       assertEquals(HttpStatus.OK, response.getStatusCode());
     }
+  }
+
+  /**
+   * An index scheduled before a document turned accessible can run after it did, on a busy server.
+   * It must not match the document, since the reindexer then matches it as newly accessible.
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  void testLateIndexDoesNotCountDocumentTwice() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekId = gson.fromJson(response.getBody(), LagretSoekDTO.class).getId();
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    var accessibleAfter = ZonedDateTime.now().plusSeconds(3);
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("offentligTittel", "foo");
+    journalpostJSON.put("offentligTittelSensitiv", "foo");
+    journalpostJSON.put("accessibleAfter", accessibleAfter.toString());
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("accessibleAfter", accessibleAfter.toString());
+    saksmappeJSON.put("journalpost", new JSONArray().put(journalpostJSON));
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    // The timestamp a side-effect index of this request is scheduled with
+    var scheduledAt = Instant.now();
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var journalpostId = getJournalpostList(saksmappeDTO.getId()).getItems().getFirst().getId();
+    awaitSideEffects();
+
+    Awaitility.await().until(() -> ZonedDateTime.now().isAfter(accessibleAfter));
+    journalpostService.index(journalpostId, scheduledAt);
+    taskTestService.updateOutdatedDocuments();
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekId));
+
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/lagretSoek/" + lagretSoekId, accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 }

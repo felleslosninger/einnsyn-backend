@@ -991,25 +991,22 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         return;
       }
 
-      var isInsert = false;
+      // An insert is a new document, or one that turned accessible since the last index. Judge that
+      // at lastIndexedTimestamp, which the reindexer compares with, so it is only matched once.
+      // TODO: Concurrent indexes of the same document can still both see it as an insert.
+      var isInsert = lastIndexed == null;
       var accessibleAfter = esDocument.getAccessibleAfter();
+      if (accessibleAfter != null) {
+        var accessibleAfterInstant = Instant.parse(accessibleAfter);
+        isInsert =
+            (lastIndexed == null || lastIndexed.isBefore(accessibleAfterInstant))
+                && !accessibleAfterInstant.isAfter(lastIndexedTimestamp);
+      }
       log.debug(
           "index {} : {} routing: {} lastIndexed: {}", objectClassName, id, esParent, lastIndexed);
       try {
         esClient.index(
             i -> i.index(elasticsearchIndex).id(id).document(esDocument).routing(esParent));
-
-        // Mark as insert if the object has never been indexed before
-        if (lastIndexed == null) {
-          isInsert = true;
-        }
-
-        // Mark as insert if the object has been made accessible after the last index
-        else if (accessibleAfter != null) {
-          // TODO: We should consider adding logic that checks if the object has been marked as an
-          // insert before, to avoid sending subscription email multiple times for the same document
-          isInsert = lastIndexed.isBefore(Instant.parse(accessibleAfter));
-        }
       } catch (Exception e) {
         // Don't throw in Async
         log.error("Could not index {} : {} to ElasticSearch", objectClassName, id, e);
