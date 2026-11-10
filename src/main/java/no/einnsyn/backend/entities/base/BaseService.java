@@ -993,12 +993,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
       // An insert is a new document, or one that turned accessible since the last index. Judge that
       // at lastIndexedTimestamp, which the reindexer compares with, so it is only matched once.
-      // TODO: Concurrent indexes of the same document can still both see it as an insert.
-      var isInsert = lastIndexed == null;
+      var mayBeInsert = lastIndexed == null;
       var accessibleAfter = esDocument.getAccessibleAfter();
       if (accessibleAfter != null) {
         var accessibleAfterInstant = Instant.parse(accessibleAfter);
-        isInsert =
+        mayBeInsert =
             (lastIndexed == null || lastIndexed.isBefore(accessibleAfterInstant))
                 && !accessibleAfterInstant.isAfter(lastIndexedTimestamp);
       }
@@ -1018,9 +1017,18 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
       // Update lastIndexed timestamp in the database
       try {
+        var isInsert = false;
         var repository = getRepository();
         if (repository instanceof IndexableRepository<?> indexableRepository) {
-          indexableRepository.updateLastIndexed(id, lastIndexedTimestamp);
+          if (mayBeInsert) {
+            // A concurrent index of the same document may have read the same lastIndexed
+            var updated =
+                indexableRepository.updateLastIndexedIfNewlyAccessible(id, lastIndexedTimestamp);
+            isInsert = updated > 0;
+          }
+          if (!isInsert) {
+            indexableRepository.updateLastIndexed(id, lastIndexedTimestamp);
+          }
         }
         eventPublisher.publishEvent(
             new IndexEvent(this, esDocument, isInsert, updatedSinceLastIndex));

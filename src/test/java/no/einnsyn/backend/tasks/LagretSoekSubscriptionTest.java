@@ -3,6 +3,7 @@ package no.einnsyn.backend.tasks;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -11,6 +12,11 @@ import jakarta.mail.internet.MimeMessage;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
@@ -457,6 +463,74 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
 
     Awaitility.await().until(() -> ZonedDateTime.now().isAfter(accessibleAfter));
     journalpostService.index(journalpostId, scheduledAt);
+    taskTestService.updateOutdatedDocuments();
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekId));
+
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/lagretSoek/" + lagretSoekId, accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  /**
+   * The reindexer can get the same ID twice, and index both at once. Only one of them may match the
+   * document as newly accessible.
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  void testConcurrentIndexesCountDocumentOnce() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekId = gson.fromJson(response.getBody(), LagretSoekDTO.class).getId();
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    var accessibleAfter = ZonedDateTime.now().plusSeconds(3);
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("offentligTittel", "foo");
+    journalpostJSON.put("offentligTittelSensitiv", "foo");
+    journalpostJSON.put("accessibleAfter", accessibleAfter.toString());
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("accessibleAfter", accessibleAfter.toString());
+    saksmappeJSON.put("journalpost", new JSONArray().put(journalpostJSON));
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var journalpostId = getJournalpostList(saksmappeDTO.getId()).getItems().getFirst().getId();
+    awaitSideEffects();
+    Awaitility.await().until(() -> ZonedDateTime.now().isAfter(accessibleAfter));
+
+    // Hold both indexes at the Elasticsearch request, when both have read lastIndexed
+    var indexers = ConcurrentHashMap.<Thread>newKeySet();
+    var barrier = new CyclicBarrier(2);
+    doAnswer(
+            invocation -> {
+              if (indexers.contains(Thread.currentThread())) {
+                barrier.await(10, TimeUnit.SECONDS);
+              }
+              return invocation.callRealMethod();
+            })
+        .when(esClient)
+        .index(any(Function.class));
+    var startTime = Instant.now();
+    try (var executor = Executors.newFixedThreadPool(2)) {
+      var futures = new ArrayList<Future<?>>();
+      for (var i = 0; i < 2; i++) {
+        futures.add(
+            executor.submit(
+                () -> {
+                  indexers.add(Thread.currentThread());
+                  journalpostService.index(journalpostId, startTime);
+                }));
+      }
+      for (var future : futures) {
+        future.get(30, TimeUnit.SECONDS);
+      }
+    } finally {
+      resetEs();
+    }
     taskTestService.updateOutdatedDocuments();
     assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekId));
 
