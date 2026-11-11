@@ -992,25 +992,23 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         return;
       }
 
-      var isInsert = false;
-      var accessibleAfter = esDocument.getAccessibleAfter();
+      // An insert is a new document, or one that turned accessible since the last index. Judge that
+      // at lastIndexedTimestamp, which the reindexer compares with, so it is only matched once.
+      var mayBeInsert = lastIndexed == null;
+      var accessibleAfter =
+          esDocument.getAccessibleAfter() != null
+              ? Instant.parse(esDocument.getAccessibleAfter())
+              : null;
+      if (accessibleAfter != null) {
+        mayBeInsert =
+            (lastIndexed == null || lastIndexed.isBefore(accessibleAfter))
+                && !accessibleAfter.isAfter(lastIndexedTimestamp);
+      }
       log.debug(
           "index {} : {} routing: {} lastIndexed: {}", objectClassName, id, esParent, lastIndexed);
       try {
         esClient.index(
             i -> i.index(elasticsearchIndex).id(id).document(esDocument).routing(esParent));
-
-        // Mark as insert if the object has never been indexed before
-        if (lastIndexed == null) {
-          isInsert = true;
-        }
-
-        // Mark as insert if the object has been made accessible after the last index
-        else if (accessibleAfter != null) {
-          // TODO: We should consider adding logic that checks if the object has been marked as an
-          // insert before, to avoid sending subscription email multiple times for the same document
-          isInsert = lastIndexed.isBefore(Instant.parse(accessibleAfter));
-        }
       } catch (Exception e) {
         // Don't throw in Async
         log.error("Could not index {} : {} to ElasticSearch", objectClassName, id, e);
@@ -1022,9 +1020,19 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
       // Update lastIndexed timestamp in the database
       try {
+        var isInsert = false;
         var repository = getRepository();
         if (repository instanceof IndexableRepository<?> indexableRepository) {
-          indexableRepository.updateLastIndexed(id, lastIndexedTimestamp);
+          if (mayBeInsert) {
+            // A concurrent index of the same document may have read the same lastIndexed
+            var updated =
+                indexableRepository.updateLastIndexedIfNewlyAccessible(
+                    id, accessibleAfter, lastIndexedTimestamp);
+            isInsert = updated > 0;
+          }
+          if (!isInsert) {
+            indexableRepository.updateLastIndexed(id, lastIndexedTimestamp);
+          }
         }
         eventPublisher.publishEvent(
             new IndexEvent(this, esDocument, isInsert, updatedSinceLastIndex));
