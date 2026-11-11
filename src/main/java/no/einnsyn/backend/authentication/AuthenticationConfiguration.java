@@ -3,11 +3,13 @@ package no.einnsyn.backend.authentication;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 import no.einnsyn.backend.authentication.apikey.ApiKeyFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -24,14 +26,17 @@ public class AuthenticationConfiguration {
   private final ApiKeyFilter apiKeyFilter;
   private final EInnsynAuthenticationEntryPoint eInnsynAuthenticationEntryPoint;
   private final JwtFilter jwtFilter;
+  private final boolean requireApiKey;
 
   public AuthenticationConfiguration(
       ApiKeyFilter apiKeyFilter,
       EInnsynAuthenticationEntryPoint eInnsynAuthenticationEntryPoint,
-      JwtFilter jwtFilter) {
+      JwtFilter jwtFilter,
+      @Value("${application.requireApiKey:false}") boolean requireApiKey) {
     this.apiKeyFilter = apiKeyFilter;
     this.eInnsynAuthenticationEntryPoint = eInnsynAuthenticationEntryPoint;
     this.jwtFilter = jwtFilter;
+    this.requireApiKey = requireApiKey;
   }
 
   /**
@@ -85,7 +90,9 @@ public class AuthenticationConfiguration {
 
   /**
    * This filter chain allows all requests, without setting any authentication. Authorization will
-   * be handled by the controllers.
+   * be handled by the controllers. When `requireApiKey` is enabled, GET requests are rejected,
+   * since requests reaching this chain have neither an API key nor a Bearer token. Downloads are
+   * still allowed, since they are opened directly in the browser.
    */
   @Bean
   @Order(Ordered.LOWEST_PRECEDENCE)
@@ -93,7 +100,17 @@ public class AuthenticationConfiguration {
     http.csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(
             management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
+        .authorizeHttpRequests(
+            authorize -> {
+              if (requireApiKey) {
+                authorize
+                    .requestMatchers(HttpMethod.GET, "/dokumentobjekt/*/download")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.GET)
+                    .authenticated();
+              }
+              authorize.anyRequest().permitAll();
+            })
         .exceptionHandling(
             exceptions -> exceptions.authenticationEntryPoint(eInnsynAuthenticationEntryPoint));
 
