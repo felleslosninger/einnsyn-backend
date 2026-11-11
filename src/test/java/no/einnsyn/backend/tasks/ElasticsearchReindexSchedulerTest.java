@@ -863,6 +863,44 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     captureDeletedDocuments(1);
   }
 
+  /** Only the first index after the given accessibleAfter advances lastIndexed. */
+  @Test
+  void testUpdateLastIndexedIfNewlyAccessible() throws Exception {
+    var response = post("/arkiv", getArkivJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeId = gson.fromJson(response.getBody(), SaksmappeDTO.class).getId();
+    captureIndexedDocuments(1);
+    resetEs();
+
+    var indexed = saksmappeRepository.findById(saksmappeId).orElseThrow().getLastIndexed();
+    assertNotNull(indexed);
+    var later = indexed.plusSeconds(1);
+
+    // An indexed row without a later accessibleAfter is not newly accessible
+    assertEquals(
+        0, saksmappeRepository.updateLastIndexedIfNewlyAccessible(saksmappeId, null, later));
+    assertEquals(
+        0, saksmappeRepository.updateLastIndexedIfNewlyAccessible(saksmappeId, indexed, later));
+
+    // A later accessibleAfter advances the row, but only once
+    assertEquals(
+        1, saksmappeRepository.updateLastIndexedIfNewlyAccessible(saksmappeId, later, later));
+    assertEquals(
+        0, saksmappeRepository.updateLastIndexedIfNewlyAccessible(saksmappeId, later, later));
+    assertEquals(later, saksmappeRepository.findById(saksmappeId).orElseThrow().getLastIndexed());
+
+    delete("/arkiv/" + arkivDTO.getId());
+    captureDeletedDocuments(1);
+  }
+
   /**
    * Subscriptions are matched in the IndexEvent listeners. Inside the indexing transaction, every
    * indexer would hold one connection while waiting for another.

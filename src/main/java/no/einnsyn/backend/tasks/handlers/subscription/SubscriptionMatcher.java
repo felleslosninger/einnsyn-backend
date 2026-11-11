@@ -6,7 +6,6 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
 import com.google.gson.Gson;
 import java.io.StringReader;
-import java.time.ZonedDateTime;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
@@ -75,15 +74,10 @@ public class SubscriptionMatcher {
         handleSak(mappeDocument);
       }
 
-      // Handle inserts for accessible documents or documents that just turned accessible
+      // Inserts are accessible, BaseService.index only marks a document once it is
       if (event.isInsert()) {
-        if (isAccessible(document)) {
-          log.debug("Match against search subscriptions: {}", document.getId());
-          handleSearch(document);
-        } else {
-          log.debug(
-              "Do not match against subscriptions for inaccessible document: {}", document.getId());
-        }
+        log.debug("Match against search subscriptions: {}", document.getId());
+        handleSearch(document);
       }
     }
   }
@@ -139,15 +133,5 @@ public class SubscriptionMatcher {
             "Failed to add hits for document with id: {}: {}", document.getId(), e.getMessage(), e);
       }
     }
-  }
-
-  /**
-   * Check if document is accessible.
-   *
-   * @param document the document to check
-   * @return true if the document is accessible
-   */
-  private boolean isAccessible(BaseES document) {
-    return ZonedDateTime.parse(document.getAccessibleAfter()).isBefore(ZonedDateTime.now());
   }
 }

@@ -54,6 +54,29 @@ public interface IndexableRepository<T> extends CrudRepository<T, String> {
       """)
   void updateLastIndexed(List<String> ids, Instant timestamp);
 
+  /**
+   * Advance `lastIndexed` to the given timestamp, if this marks the row as indexed for the first
+   * time, or as indexed after it turned accessible. Concurrent callers wait for each other's row
+   * lock and re-check the condition, so only one of them can succeed.
+   *
+   * @param id ID of the row to update
+   * @param accessibleAfter when the indexed document turns accessible, not after `timestamp`. It
+   *     can be later than the row's own, e.g. for a Journalpost in a Saksmappe that turns
+   *     accessible later. Null if it always was.
+   * @param timestamp the `lastIndexed` value to advance to
+   * @return 1 if this call made the row indexed and accessible, else 0
+   */
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Modifying
+  @Query(
+      """
+      UPDATE #{#entityName} e
+      SET e.lastIndexed = :timestamp
+      WHERE e.id = :id
+      AND (e.lastIndexed IS NULL OR e.lastIndexed < :accessibleAfter)
+      """)
+  int updateLastIndexedIfNewlyAccessible(String id, Instant accessibleAfter, Instant timestamp);
+
   abstract Stream<String> streamUnIndexed(Instant schemaVersion);
 
   abstract List<String> findNonExistingIds(String[] ids);
