@@ -23,19 +23,20 @@ public class LagretSoekHit extends Base {
   @NotNull
   private LagretSoek lagretSoek;
 
+  // Lazy, since loading a document hidden from the caller throws instead of returning null
   @JoinColumn
-  @ManyToOne(fetch = FetchType.EAGER)
+  @ManyToOne(fetch = FetchType.LAZY)
   private Saksmappe saksmappe;
 
   @JoinColumn
-  @ManyToOne(fetch = FetchType.EAGER)
+  @ManyToOne(fetch = FetchType.LAZY)
   private Journalpost journalpost;
 
   @JoinColumn
-  @ManyToOne(fetch = FetchType.EAGER)
+  @ManyToOne(fetch = FetchType.LAZY)
   private Moetemappe moetemappe;
 
   @JoinColumn
-  @ManyToOne(fetch = FetchType.EAGER)
+  @ManyToOne(fetch = FetchType.LAZY)
   private Moetesak moetesak;
 }
