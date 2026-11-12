@@ -18,6 +18,7 @@ import no.einnsyn.backend.entities.bruker.models.Bruker;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
+import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -194,6 +195,118 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
         delete("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), bruker1Token)
             .getStatusCode());
     deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+  }
+
+  @Test
+  void testListInnsynskravWithHiddenJournalpost() throws Exception {
+    var visibleJournalpostId =
+        getJournalpostList(saksmappeDTO.getId()).getItems().getFirst().getId();
+    var hiddenJournalpostJSON = getJournalpostJSON();
+    hiddenJournalpostJSON.put("journalenhet", journalenhet2Id);
+    var response =
+        postAdmin("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", hiddenJournalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var hiddenJournalpostId = gson.fromJson(response.getBody(), JournalpostDTO.class).getId();
+
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    innsynskravBestillingJSON.put(
+        "innsynskrav",
+        new JSONArray()
+            .put(getInnsynskravJSON().put("journalpost", visibleJournalpostId))
+            .put(getInnsynskravJSON().put("journalpost", hiddenJournalpostId)));
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON, bruker1Token);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var type = new TypeToken<PaginatedList<InnsynskravDTO>>() {}.getType();
+
+    var journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
+    journalenhet2.setSkjult(true);
+    enhetRepository.saveAndFlush(journalenhet2);
+    try {
+      // The Bruker still sees both Innsynskrav, but only the visible Journalpost is expanded
+      response =
+          get("/bruker/" + bruker1.getId() + "/innsynskrav?expand=journalpost", bruker1Token);
+      assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
+      PaginatedList<InnsynskravDTO> list = gson.fromJson(response.getBody(), type);
+      assertEquals(2, list.getItems().size());
+      assertJournalpostExpanded(list, visibleJournalpostId, true);
+      assertJournalpostExpanded(list, hiddenJournalpostId, false);
+
+      response =
+          get(
+              "/innsynskravBestilling/"
+                  + innsynskravBestillingDTO.getId()
+                  + "/innsynskrav?expand=journalpost",
+              bruker1Token);
+      assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
+      list = gson.fromJson(response.getBody(), type);
+      assertEquals(2, list.getItems().size());
+      assertJournalpostExpanded(list, visibleJournalpostId, true);
+      assertJournalpostExpanded(list, hiddenJournalpostId, false);
+
+      response =
+          get(
+              "/innsynskravBestilling/"
+                  + innsynskravBestillingDTO.getId()
+                  + "?expand=innsynskrav.journalpost",
+              bruker1Token);
+      assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
+      var expandedBestilling = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+      list =
+          new PaginatedList<>(
+              expandedBestilling.getInnsynskrav().stream()
+                  .map(ExpandableField::getExpandedObject)
+                  .toList());
+      assertEquals(2, list.getItems().size());
+      assertJournalpostExpanded(list, visibleJournalpostId, true);
+      assertJournalpostExpanded(list, hiddenJournalpostId, false);
+      var hiddenInnsynskravId =
+          list.getItems().stream()
+              .filter(i -> i.getJournalpost().getId().equals(hiddenJournalpostId))
+              .findFirst()
+              .orElseThrow()
+              .getId();
+      response = get("/innsynskrav/" + hiddenInnsynskravId + "?expand=journalpost", bruker1Token);
+      assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
+      var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+      assertEquals(hiddenJournalpostId, innsynskravDTO.getJournalpost().getId());
+      assertFalse(innsynskravDTO.getJournalpost().isExpanded());
+
+      // The hidden Enhet and admins still see the Journalpost
+      response =
+          get("/enhet/" + journalenhet2Id + "/innsynskrav?expand=journalpost", journalenhet2Key);
+      assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
+      list = gson.fromJson(response.getBody(), type);
+      assertJournalpostExpanded(list, hiddenJournalpostId, true);
+
+      response = getAdmin("/bruker/" + bruker1.getId() + "/innsynskrav?expand=journalpost");
+      assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
+      list = gson.fromJson(response.getBody(), type);
+      assertJournalpostExpanded(list, hiddenJournalpostId, true);
+    } finally {
+      journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
+      journalenhet2.setSkjult(false);
+      enhetRepository.saveAndFlush(journalenhet2);
+      assertEquals(
+          HttpStatus.OK,
+          delete("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), bruker1Token)
+              .getStatusCode());
+      deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+      assertEquals(
+          HttpStatus.OK, deleteAdmin("/journalpost/" + hiddenJournalpostId).getStatusCode());
+    }
+  }
+
+  private void assertJournalpostExpanded(
+      PaginatedList<InnsynskravDTO> list, String journalpostId, boolean expanded) {
+    var journalpost =
+        list.getItems().stream()
+            .map(InnsynskravDTO::getJournalpost)
+            .filter(j -> j.getId().equals(journalpostId))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(expanded, journalpost.isExpanded());
   }
 
   @Test

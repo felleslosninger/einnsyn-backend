@@ -1,7 +1,9 @@
 package no.einnsyn.backend.entities.lagretsak;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
@@ -253,5 +255,62 @@ class LagretSakControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappe1DTO.getId()).getStatusCode());
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappe2DTO.getId()).getStatusCode());
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappe3DTO.getId()).getStatusCode());
+  }
+
+  @Test
+  void testLagretSakWithHiddenSaksmappe() throws Exception {
+    var response =
+        post(
+            "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe",
+            getSaksmappeJSON(),
+            journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var hiddenSaksmappeId = gson.fromJson(response.getBody(), SaksmappeDTO.class).getId();
+
+    var lagretSakJSON = getLagretSakJSON();
+    lagretSakJSON.put("saksmappe", hiddenSaksmappeId);
+    response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretSakJSON, accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSakId = gson.fromJson(response.getBody(), LagretSakDTO.class).getId();
+
+    response = get("/lagretSak/" + lagretSakId + "?expand=saksmappe", accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertTrue(gson.fromJson(response.getBody(), LagretSakDTO.class).getSaksmappe().isExpanded());
+
+    var journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
+    journalenhet2.setSkjult(true);
+    enhetRepository.saveAndFlush(journalenhet2);
+    try {
+      // The Bruker still sees the LagretSak, but the hidden Saksmappe is not expanded
+      response = get("/bruker/" + brukerDTO.getId() + "/lagretSak?expand=saksmappe", accessToken);
+      assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
+      var type = new TypeToken<PaginatedList<LagretSakDTO>>() {}.getType();
+      PaginatedList<LagretSakDTO> list = gson.fromJson(response.getBody(), type);
+      var saksmappe =
+          list.getItems().stream()
+              .filter(l -> l.getId().equals(lagretSakId))
+              .findFirst()
+              .orElseThrow()
+              .getSaksmappe();
+      assertEquals(hiddenSaksmappeId, saksmappe.getId());
+      assertFalse(saksmappe.isExpanded());
+
+      response = get("/lagretSak/" + lagretSakId + "?expand=saksmappe", accessToken);
+      assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
+      saksmappe = gson.fromJson(response.getBody(), LagretSakDTO.class).getSaksmappe();
+      assertEquals(hiddenSaksmappeId, saksmappe.getId());
+      assertFalse(saksmappe.isExpanded());
+
+      response = delete("/lagretSak/" + lagretSakId, accessToken);
+      assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
+    } finally {
+      journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
+      journalenhet2.setSkjult(false);
+      enhetRepository.saveAndFlush(journalenhet2);
+      deleteAdmin("/lagretSak/" + lagretSakId);
+      assertEquals(
+          HttpStatus.OK,
+          delete("/saksmappe/" + hiddenSaksmappeId, journalenhet2Key).getStatusCode());
+    }
   }
 }

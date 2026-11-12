@@ -2,6 +2,7 @@ package no.einnsyn.backend.entities.lagretsak.models;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
@@ -26,9 +27,14 @@ public class LagretSak extends Base {
   @NotNull
   private Bruker bruker;
 
-  @JoinColumn @ManyToOne private Saksmappe saksmappe;
+  // Lazy, since loading a mappe hidden from the caller throws instead of returning null
+  @JoinColumn
+  @ManyToOne(fetch = FetchType.LAZY)
+  private Saksmappe saksmappe;
 
-  @JoinColumn @ManyToOne private Moetemappe moetemappe;
+  @JoinColumn
+  @ManyToOne(fetch = FetchType.LAZY)
+  private Moetemappe moetemappe;
 
   @JoinColumn @ManyToOne private Enhet enhet;
 
