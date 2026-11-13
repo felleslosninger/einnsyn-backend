@@ -2268,4 +2268,30 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
       assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeId).getStatusCode());
     }
   }
+
+  @Test
+  void useFallbackIriIfExternalIdIsNotAnIri() throws Exception {
+
+    var saksmappeResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe);
+
+    var journalpostJSON = getJournalpostJSON();
+    var externalId = "this-is-not-an-iri";
+    journalpostJSON.put("externalId", externalId);
+    var journalpostResponse =
+        post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
+    assertNotNull(journalpostDTO);
+    assertEquals(externalId, journalpostDTO.getExternalId());
+
+    var journalpost = journalpostRepository.findById(journalpostDTO.getId()).orElseThrow();
+
+    assertEquals("http://" + journalpost.getId(), journalpost.getLegacyIri());
+
+    delete("/saksmappe/" + saksmappe.getId());
+  }
 }
