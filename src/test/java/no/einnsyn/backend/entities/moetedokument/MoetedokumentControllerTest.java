@@ -547,4 +547,29 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
     response = delete("/moetemappe/" + moetemappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
+
+  @Test
+  void useFallbackIriIfExternalIdIsNotAnIri() throws Exception {
+
+    var moetemappeResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, moetemappeResponse.getStatusCode());
+    var moetemappeDTO = gson.fromJson(moetemappeResponse.getBody(), MoetemappeDTO.class);
+    assertNotNull(moetemappeDTO);
+
+    var moetedokumentJSON = getMoetedokumentJSON();
+    var externalId = "this-is-not-an-iri";
+    moetedokumentJSON.put("externalId", externalId);
+    var moetedokumentResponse =
+        post("/moetemappe/" + moetemappeDTO.getId() + "/moetedokument", moetedokumentJSON);
+    assertEquals(HttpStatus.CREATED, moetedokumentResponse.getStatusCode());
+    var moetedokumentDTO = gson.fromJson(moetedokumentResponse.getBody(), MoetedokumentDTO.class);
+    assertNotNull(moetedokumentDTO);
+
+    assertEquals(externalId, moetedokumentDTO.getExternalId());
+    var moetedokument = moetedokumentRepository.findById(moetedokumentDTO.getId()).orElseThrow();
+    assertEquals("http://" + moetedokument.getId(), moetedokument.getLegacyIri());
+
+    delete("/moetemappe/" + moetemappeDTO.getId());
+  }
 }

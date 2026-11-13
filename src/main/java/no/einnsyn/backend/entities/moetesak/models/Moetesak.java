@@ -215,8 +215,8 @@ public class Moetesak extends Registrering implements Indexable {
   protected void preUpdate() {
     super.preUpdate();
 
-    // Keep moetesakIri in sync with externalId
-    if (externalId != null && !externalId.equals(legacyIri)) {
+    // Keep moetesakIri in sync with externalId as long as the latter is an IRI
+    if (externalId != null && !externalId.equals(legacyIri) && IRIMatcher.matches(externalId)) {
       legacyIri = externalId;
     }
 

@@ -959,4 +959,29 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     moetesak.setMoetesakssekvensnummer(42);
     assertEquals("2020-42-tittel", moetesakService.getSlugBase(moetesak));
   }
+
+  @Test
+  void useFallbackIriIfExternalIdIsNotAnIri() throws Exception {
+
+    var moetemappeResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, moetemappeResponse.getStatusCode());
+    var moetemappe1DTO = gson.fromJson(moetemappeResponse.getBody(), MoetemappeDTO.class);
+    assertNotNull(moetemappe1DTO);
+
+    var moetesakJSON = getMoetesakJSON();
+    var externalId = "this-is-not-an-iri";
+    moetesakJSON.put("externalId", externalId);
+    var moetesakResponse =
+        post("/moetemappe/" + moetemappe1DTO.getId() + "/moetesak", moetesakJSON);
+    assertEquals(HttpStatus.CREATED, moetesakResponse.getStatusCode());
+    var moetesakDTO = gson.fromJson(moetesakResponse.getBody(), MoetesakDTO.class);
+    assertNotNull(moetesakDTO);
+
+    assertEquals(externalId, moetesakDTO.getExternalId());
+    var moetesak = moetesakRepository.findById(moetesakDTO.getId()).orElseThrow();
+    assertEquals("http://" + moetesak.getId(), moetesak.getLegacyIri());
+
+    delete("/moetemappe/" + moetemappe1DTO.getId());
+  }
 }
