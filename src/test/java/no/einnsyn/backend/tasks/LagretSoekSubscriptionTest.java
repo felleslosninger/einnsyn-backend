@@ -3,12 +3,20 @@ package no.einnsyn.backend.tasks;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import jakarta.mail.internet.MimeMessage;
+import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
@@ -192,6 +200,53 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
 
   @SuppressWarnings("unchecked")
   @Test
+  void testMatchingLagretSoekBySaksmappe() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var otherSaksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, times(2)).index(any(Function.class)));
+    resetEs();
+
+    // Create a LagretSoek that follows the first Saksmappe
+    var lagretSoekJSON = getLagretSoekJSON();
+    lagretSoekJSON.put(
+        "searchParameters",
+        new JSONObject().put("saksmappe", new JSONArray().put(saksmappeDTO.getId())));
+    response = post("/bruker/" + brukerDTO.getId() + "/lagretSoek", lagretSoekJSON, accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    Awaitility.await().untilAsserted(() -> verify(esClient, times(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    // A Journalpost in the other Saksmappe doesn't match
+    response =
+        post("/saksmappe/" + otherSaksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    Awaitility.await().untilAsserted(() -> verify(esClient, times(2)).index(any(Function.class)));
+    resetEs();
+    assertEquals(0, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+
+    // A Journalpost in the followed Saksmappe matches
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId())));
+
+    response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/saksmappe/" + otherSaksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
   void testReindexDocumentThatTurnsAccessible() throws Exception {
     // Add Arkiv, Saksmappe with Journalposts that is not accessible
     var response = post("/arkiv", getArkivJSON());
@@ -313,6 +368,216 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
 
     // Delete saksmappe
     response = delete("/saksmappe/" + saksmappeId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  /**
+   * Documents that turn accessible together are matched by parallel reindexers, which add hits to
+   * the same LagretSoek at once. None of the hits may be lost.
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  void testDocumentsTurningAccessibleTogetherAreCountedOnEveryLagretSoek() throws Exception {
+    var lagretSoekIds = new ArrayList<String>();
+    for (var i = 0; i < 5; i++) {
+      var response =
+          post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      lagretSoekIds.add(gson.fromJson(response.getBody(), LagretSoekDTO.class).getId());
+    }
+    Awaitility.await().untilAsserted(() -> verify(esClient, times(5)).index(any(Function.class)));
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    // Journalposts matching "foo", that are not accessible until 3 seconds from now
+    var accessibleAfter = ZonedDateTime.now().plusSeconds(3).toString();
+    var journalpostList = new JSONArray();
+    for (var i = 0; i < 30; i++) {
+      var journalpostJSON = getJournalpostJSON();
+      journalpostJSON.put("offentligTittel", "foo");
+      journalpostJSON.put("offentligTittelSensitiv", "foo");
+      journalpostJSON.put("accessibleAfter", accessibleAfter);
+      journalpostList.put(journalpostJSON);
+    }
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("accessibleAfter", accessibleAfter);
+    saksmappeJSON.put("journalpost", journalpostList);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var journalpostDTO = getJournalpostList(saksmappeDTO.getId()).getItems().getFirst();
+    awaitSideEffects();
+
+    // Wait until the journalposts are accessible, and let the reindexer match them
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              var journalpostResponse = getAnon("/journalpost/" + journalpostDTO.getId());
+              assertEquals(HttpStatus.OK, journalpostResponse.getStatusCode());
+            });
+    taskTestService.updateOutdatedDocuments();
+
+    // Every LagretSoek has counted every journalpost, and cached the first ten
+    for (var lagretSoekId : lagretSoekIds) {
+      assertEquals(30, taskTestService.getLagretSoekHitCount(lagretSoekId));
+      assertEquals(10, taskTestService.getLagretSoekHitIds(lagretSoekId).size());
+    }
+
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    for (var lagretSoekId : lagretSoekIds) {
+      response = delete("/lagretSoek/" + lagretSoekId, accessToken);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+  }
+
+  /**
+   * An index scheduled before a document turned accessible can run after it did, on a busy server.
+   * It must not match the document, since the reindexer then matches it as newly accessible.
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  void testLateIndexDoesNotCountDocumentTwice() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekId = gson.fromJson(response.getBody(), LagretSoekDTO.class).getId();
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    var accessibleAfter = ZonedDateTime.now().plusSeconds(3);
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("offentligTittel", "foo");
+    journalpostJSON.put("offentligTittelSensitiv", "foo");
+    journalpostJSON.put("accessibleAfter", accessibleAfter.toString());
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("accessibleAfter", accessibleAfter.toString());
+    saksmappeJSON.put("journalpost", new JSONArray().put(journalpostJSON));
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    // The timestamp a side-effect index of this request is scheduled with
+    var scheduledAt = Instant.now();
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var journalpostId = getJournalpostList(saksmappeDTO.getId()).getItems().getFirst().getId();
+    awaitSideEffects();
+
+    Awaitility.await().until(() -> ZonedDateTime.now().isAfter(accessibleAfter));
+    journalpostService.index(journalpostId, scheduledAt);
+    taskTestService.updateOutdatedDocuments();
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekId));
+
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/lagretSoek/" + lagretSoekId, accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  /**
+   * A Journalpost turns accessible with its Saksmappe, when that is later than its own
+   * accessibleAfter. An index after that must match it.
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  void testJournalpostTurningAccessibleWithSaksmappeIsCounted() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekId = gson.fromJson(response.getBody(), LagretSoekDTO.class).getId();
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    // The Journalpost has no accessibleAfter of its own, so it is accessible from now
+    var accessibleAfter = ZonedDateTime.now().plusSeconds(3);
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("offentligTittel", "foo");
+    journalpostJSON.put("offentligTittelSensitiv", "foo");
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("accessibleAfter", accessibleAfter.toString());
+    saksmappeJSON.put("journalpost", new JSONArray().put(journalpostJSON));
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var journalpostId = getJournalpostList(saksmappeDTO.getId()).getItems().getFirst().getId();
+    awaitSideEffects();
+    assertEquals(0, taskTestService.getLagretSoekHitCount(lagretSoekId));
+
+    // Reindexed after the Saksmappe turned accessible, e.g. when the Saksmappe is updated
+    Awaitility.await().until(() -> ZonedDateTime.now().isAfter(accessibleAfter));
+    journalpostService.index(journalpostId, Instant.now());
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekId));
+
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/lagretSoek/" + lagretSoekId, accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  /**
+   * The reindexer can get the same ID twice, and index both at once. Only one of them may match the
+   * document as newly accessible.
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  void testConcurrentIndexesCountDocumentOnce() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekId = gson.fromJson(response.getBody(), LagretSoekDTO.class).getId();
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    var accessibleAfter = ZonedDateTime.now().plusSeconds(3);
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("offentligTittel", "foo");
+    journalpostJSON.put("offentligTittelSensitiv", "foo");
+    journalpostJSON.put("accessibleAfter", accessibleAfter.toString());
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("accessibleAfter", accessibleAfter.toString());
+    saksmappeJSON.put("journalpost", new JSONArray().put(journalpostJSON));
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var journalpostId = getJournalpostList(saksmappeDTO.getId()).getItems().getFirst().getId();
+    awaitSideEffects();
+    Awaitility.await().until(() -> ZonedDateTime.now().isAfter(accessibleAfter));
+
+    // Hold both indexes at the Elasticsearch request, when both have read lastIndexed
+    var indexers = ConcurrentHashMap.<Thread>newKeySet();
+    var barrier = new CyclicBarrier(2);
+    doAnswer(
+            invocation -> {
+              if (indexers.contains(Thread.currentThread())) {
+                barrier.await(10, TimeUnit.SECONDS);
+              }
+              return invocation.callRealMethod();
+            })
+        .when(esClient)
+        .index(any(Function.class));
+    var startTime = Instant.now();
+    try (var executor = Executors.newFixedThreadPool(2)) {
+      var futures = new ArrayList<Future<?>>();
+      for (var i = 0; i < 2; i++) {
+        futures.add(
+            executor.submit(
+                () -> {
+                  indexers.add(Thread.currentThread());
+                  journalpostService.index(journalpostId, startTime);
+                }));
+      }
+      for (var future : futures) {
+        future.get(30, TimeUnit.SECONDS);
+      }
+    } finally {
+      resetEs();
+    }
+    taskTestService.updateOutdatedDocuments();
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekId));
+
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/lagretSoek/" + lagretSoekId, accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 }

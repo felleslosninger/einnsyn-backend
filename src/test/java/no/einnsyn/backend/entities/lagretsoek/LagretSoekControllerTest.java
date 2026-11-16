@@ -9,8 +9,16 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import javax.sql.DataSource;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -21,6 +29,7 @@ import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.tasks.TaskTestService;
+import org.awaitility.Awaitility;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -29,6 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.shaded.com.google.common.reflect.TypeToken;
 
@@ -37,6 +47,8 @@ import org.testcontainers.shaded.com.google.common.reflect.TypeToken;
 class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
 
   @Autowired TaskTestService taskTestService;
+  @Autowired DataSource dataSource;
+  @Autowired JdbcTemplate jdbcTemplate;
 
   BrukerDTO brukerDTO;
   ArkivDTO arkivDTO;
@@ -378,27 +390,83 @@ class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
     assertEquals(lagretSoekDTO.getId(), found.getId());
 
     // Hits can also be registered on the legacy id
-    lagretSoekService.incrementHitCount(legacyId.toString(), saksmappeDTO.getId());
+    lagretSoekService.addHits(List.of(legacyId.toString()), saksmappeDTO.getId());
     assertEquals(1, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
 
     // Moetemappe hits are also cached
-    lagretSoekService.incrementHitCount(legacyId.toString(), moetemappeDTO.getId());
+    lagretSoekService.addHits(List.of(legacyId.toString()), moetemappeDTO.getId());
     assertEquals(2, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
     assertEquals(2, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
 
-    // An unknown legacy id is logged and ignored, neither counted nor cached
-    lagretSoekService.incrementHitCount(UUID.randomUUID().toString(), saksmappeDTO.getId());
+    // An unknown legacy id is ignored, neither counted nor cached
+    lagretSoekService.addHits(List.of(UUID.randomUUID().toString()), saksmappeDTO.getId());
     assertEquals(2, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
     assertEquals(2, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
 
     // A document with an unknown entity type is counted, but not cached
-    lagretSoekService.incrementHitCount(lagretSoekDTO.getId(), "unknown-document-id");
+    lagretSoekService.addHits(List.of(lagretSoekDTO.getId()), "unknown-document-id");
     assertEquals(3, lagretSoekService.find(lagretSoekDTO.getId()).getHitCount());
     assertEquals(2, taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId()).size());
 
     // Clean up
     response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  /**
+   * A transaction locking two LagretSoek in the reverse of the ID order addHits uses deadlocks with
+   * it. Postgres rolls back addHits, which waited first, and the retry must still count the hits.
+   */
+  @Test
+  void testAddHitsRetriesAfterDeadlock() throws Exception {
+    var lagretSoekIds = new ArrayList<String>();
+    for (var i = 0; i < 2; i++) {
+      var response =
+          post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      lagretSoekIds.add(gson.fromJson(response.getBody(), LagretSoekDTO.class).getId());
+    }
+    Collections.sort(lagretSoekIds);
+    awaitSideEffects();
+
+    try (var connection = dataSource.getConnection()) {
+      connection.setAutoCommit(false);
+      lockLagretSoek(connection, lagretSoekIds.getLast());
+
+      // addHits locks the first row, then waits for the last
+      var addHits =
+          CompletableFuture.runAsync(
+              () -> lagretSoekService.addHits(lagretSoekIds, saksmappeDTO.getId()));
+      Awaitility.await()
+          .until(
+              () ->
+                  jdbcTemplate.queryForObject(
+                          """
+                          SELECT count(*) FROM pg_stat_activity
+                          WHERE wait_event_type = 'Lock' AND query LIKE '%FOR NO KEY UPDATE%'
+                          """,
+                          Integer.class)
+                      > 0);
+
+      // Waiting for the first row closes the cycle
+      lockLagretSoek(connection, lagretSoekIds.getFirst());
+      connection.commit();
+      addHits.get(30, TimeUnit.SECONDS);
+    }
+
+    for (var lagretSoekId : lagretSoekIds) {
+      assertEquals(1, lagretSoekService.find(lagretSoekId).getHitCount());
+      var response = delete("/lagretSoek/" + lagretSoekId, accessToken);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+  }
+
+  private void lockLagretSoek(Connection connection, String id) throws SQLException {
+    try (var statement =
+        connection.prepareStatement("SELECT 1 FROM lagret_sok WHERE _id = ? FOR UPDATE")) {
+      statement.setString(1, id);
+      statement.executeQuery();
+    }
   }
 
   /** Corrupt legacy searchParameters must not break the API responses for a LagretSoek. */
@@ -433,5 +501,40 @@ class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
     var longTitle = "x".repeat(80);
     var truncated = lagretSoekService.truncate(longTitle);
     assertEquals("x".repeat(60) + "...", truncated);
+  }
+
+  @Test
+  void testDeleteLagretSoekWithHiddenHit() throws Exception {
+    var response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdelId = gson.fromJson(response.getBody(), ArkivdelDTO.class).getId();
+    response = post("/arkivdel/" + arkivdelId + "/saksmappe", getSaksmappeJSON(), journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var hiddenSaksmappeId = gson.fromJson(response.getBody(), SaksmappeDTO.class).getId();
+
+    response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekId = gson.fromJson(response.getBody(), LagretSoekDTO.class).getId();
+    lagretSoekService.addHits(List.of(lagretSoekId), hiddenSaksmappeId);
+    assertEquals(1, taskTestService.getLagretSoekHitIds(lagretSoekId).size());
+
+    // The Enhet is hidden before the Bruker has been notified about the hit
+    var journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
+    journalenhet2.setSkjult(true);
+    enhetRepository.saveAndFlush(journalenhet2);
+    try {
+      response = delete("/lagretSoek/" + lagretSoekId, accessToken);
+      assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
+    } finally {
+      journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
+      journalenhet2.setSkjult(false);
+      enhetRepository.saveAndFlush(journalenhet2);
+      deleteAdmin("/lagretSoek/" + lagretSoekId);
+      assertEquals(
+          HttpStatus.OK,
+          delete("/saksmappe/" + hiddenSaksmappeId, journalenhet2Key).getStatusCode());
+      assertEquals(HttpStatus.OK, delete("/arkivdel/" + arkivdelId).getStatusCode());
+    }
   }
 }

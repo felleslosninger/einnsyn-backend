@@ -73,6 +73,7 @@ import no.einnsyn.backend.tasks.handlers.index.ElasticsearchIndexQueue;
 import no.einnsyn.backend.utils.ExpandPathResolver;
 import no.einnsyn.backend.utils.TimeConverter;
 import no.einnsyn.backend.utils.id.IdUtils;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -941,39 +942,33 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * Execute a scheduled reindex of an object. This method is called by the ElasticSearchIndexQueue
    * after the object has been added to the queue.
    *
+   * <p>Not transactional: the object is read in {@link #getIndexSource}, so the Elasticsearch
+   * requests and the IndexEvent listeners run without holding that connection.
+   *
    * @param id the ID of the object to index
    * @param timestamp the timestamp when the indexing was scheduled
    */
-  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
   public void index(String id, Instant timestamp) {
-    var proxy = getProxy();
-    var object = proxy.find(id);
-    var esParent = proxy.getESParent(object, id);
+    var indexSource = getProxy().getIndexSource(id, timestamp);
+    if (indexSource == null) {
+      return;
+    }
+    var esParent = indexSource.esParent();
 
     // Insert / update document if the object exists
-    if (object instanceof Indexable indexable) {
-      // Do nothing if the object has been indexed after `scheduledTimestamp`
-      if (indexable.getLastIndexed() != null && indexable.getLastIndexed().isAfter(timestamp)) {
-        log.debug(
-            "Not indexing {} : {} , it has already been indexed after {}",
-            objectClassName,
-            id,
-            timestamp);
-        return;
-      }
-
+    if (indexSource.exists()) {
       // Set lastIndexed to the most recent of:
       //  - the row version we actually indexed (`_updated`), and
       //  - the scheduled timestamp for this indexing cycle.
       // This keeps stale detection race-safe while also preventing endless reindex loops when
       // accessibleAfter is greater than the last updated timestamp.
-      var objectUpdated = object.getUpdated();
-      var lastIndexed = indexable.getLastIndexed();
+      var objectUpdated = indexSource.updated();
+      var lastIndexed = indexSource.lastIndexed();
       var updatedSinceLastIndex =
           objectUpdated != null && (lastIndexed == null || objectUpdated.isAfter(lastIndexed));
       var lastIndexedTimestamp =
           objectUpdated != null && objectUpdated.isAfter(timestamp) ? objectUpdated : timestamp;
-      var esDocument = proxy.toLegacyES(object, esParent);
+      var esDocument = indexSource.esDocument();
 
       // If esDocument is null, remove any existing ES document and update lastIndexed
       if (esDocument == null) {
@@ -997,25 +992,23 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         return;
       }
 
-      var isInsert = false;
-      var accessibleAfter = esDocument.getAccessibleAfter();
+      // An insert is a new document, or one that turned accessible since the last index. Judge that
+      // at lastIndexedTimestamp, which the reindexer compares with, so it is only matched once.
+      var mayBeInsert = lastIndexed == null;
+      var accessibleAfter =
+          esDocument.getAccessibleAfter() != null
+              ? Instant.parse(esDocument.getAccessibleAfter())
+              : null;
+      if (accessibleAfter != null) {
+        mayBeInsert =
+            (lastIndexed == null || lastIndexed.isBefore(accessibleAfter))
+                && !accessibleAfter.isAfter(lastIndexedTimestamp);
+      }
       log.debug(
           "index {} : {} routing: {} lastIndexed: {}", objectClassName, id, esParent, lastIndexed);
       try {
         esClient.index(
             i -> i.index(elasticsearchIndex).id(id).document(esDocument).routing(esParent));
-
-        // Mark as insert if the object has never been indexed before
-        if (lastIndexed == null) {
-          isInsert = true;
-        }
-
-        // Mark as insert if the object has been made accessible after the last index
-        else if (accessibleAfter != null) {
-          // TODO: We should consider adding logic that checks if the object has been marked as an
-          // insert before, to avoid sending subscription email multiple times for the same document
-          isInsert = lastIndexed.isBefore(Instant.parse(accessibleAfter));
-        }
       } catch (Exception e) {
         // Don't throw in Async
         log.error("Could not index {} : {} to ElasticSearch", objectClassName, id, e);
@@ -1027,9 +1020,19 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
       // Update lastIndexed timestamp in the database
       try {
+        var isInsert = false;
         var repository = getRepository();
         if (repository instanceof IndexableRepository<?> indexableRepository) {
-          indexableRepository.updateLastIndexed(id, lastIndexedTimestamp);
+          if (mayBeInsert) {
+            // A concurrent index of the same document may have read the same lastIndexed
+            var updated =
+                indexableRepository.updateLastIndexedIfNewlyAccessible(
+                    id, accessibleAfter, lastIndexedTimestamp);
+            isInsert = updated > 0;
+          }
+          if (!isInsert) {
+            indexableRepository.updateLastIndexed(id, lastIndexedTimestamp);
+          }
         }
         eventPublisher.publishEvent(
             new IndexEvent(this, esDocument, isInsert, updatedSinceLastIndex));
@@ -1068,6 +1071,44 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
             e);
       }
     }
+  }
+
+  /** What {@link #index} reads from the database. A null esDocument removes the document. */
+  public record IndexSource(
+      boolean exists, BaseES esDocument, String esParent, Instant lastIndexed, Instant updated) {}
+
+  /**
+   * Read what {@link #index} needs from the database.
+   *
+   * @param id the ID of the object to index
+   * @param timestamp the timestamp when the indexing was scheduled
+   * @return null if the object has been indexed after `timestamp`
+   */
+  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+  public IndexSource getIndexSource(String id, Instant timestamp) {
+    var proxy = getProxy();
+    var object = proxy.find(id);
+    var esParent = proxy.getESParent(object, id);
+    if (!(object instanceof Indexable indexable)) {
+      return new IndexSource(false, null, esParent, null, null);
+    }
+
+    // Do nothing if the object has been indexed after `scheduledTimestamp`
+    if (indexable.getLastIndexed() != null && indexable.getLastIndexed().isAfter(timestamp)) {
+      log.debug(
+          "Not indexing {} : {} , it has already been indexed after {}",
+          objectClassName,
+          id,
+          timestamp);
+      return null;
+    }
+
+    return new IndexSource(
+        true,
+        proxy.toLegacyES(object, esParent),
+        esParent,
+        indexable.getLastIndexed(),
+        object.getUpdated());
   }
 
   /**
@@ -1426,6 +1467,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var updatedPath = ExpandPathResolver.getPath(currentPath, propertyName);
     var shouldExpand = expandPaths != null && expandPaths.contains(updatedPath);
     log.trace("maybeExpand {}:{}, {}", objectClassName, obj.getId(), shouldExpand);
+    // A lazy reference may point to an object hidden from the caller, which can't be loaded
+    if (shouldExpand
+        && !Hibernate.isInitialized(obj)
+        && getRepository().findById(obj.getId()).isEmpty()) {
+      return new ExpandableField<>(obj.getId());
+    }
     var expandedObject = shouldExpand ? toDTO(obj, newDTO(), expandPaths, updatedPath) : null;
     return new ExpandableField<>(obj.getId(), expandedObject);
   }
