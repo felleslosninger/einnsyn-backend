@@ -1,8 +1,5 @@
 package no.einnsyn.backend.tasks.handlers.linkcheck;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.LinkedHashSet;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -15,10 +12,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 /**
- * Continuously checks the links to fulltext files (Dokumentobjekt). Each run checks a batch of
- * links: first failed links that haven't been rechecked recently, then the links that were checked
- * longest ago. Since the oldest checks are always picked next, the checker starts over from the
- * beginning once every link has been checked, without keeping track of its position.
+ * Continuously checks the links to fulltext files (Dokumentobjekt). Each run checks the batch of
+ * links that were checked longest ago, whether they failed or not, so a large number of failed
+ * links can't keep the others from being checked. Since the oldest checks are always picked next,
+ * the checker starts over from the beginning once every link has been checked, without keeping
+ * track of its position.
  */
 @Service
 @Slf4j
@@ -30,9 +28,6 @@ public class FulltextLinkCheckScheduler {
 
   @Value("${application.linkCheck.batchSize:1000}")
   private int batchSize;
-
-  @Value("${application.linkCheck.recheckFailedAfter:P1D}")
-  private Duration recheckFailedAfter;
 
   public FulltextLinkCheckScheduler(
       DokumentobjektRepository dokumentobjektRepository,
@@ -54,15 +49,7 @@ public class FulltextLinkCheckScheduler {
       return;
     }
 
-    var ids = new LinkedHashSet<String>();
-    ids.addAll(
-        dokumentobjektRepository.findIdsWithFailedLinkCheckedBefore(
-            Instant.now().minus(recheckFailedAfter), PageRequest.of(0, batchSize)));
-    if (ids.size() < batchSize) {
-      ids.addAll(
-          dokumentobjektRepository.findIdsByOldestLinkCheck(
-              PageRequest.of(0, batchSize - ids.size())));
-    }
+    var ids = dokumentobjektRepository.findIdsByOldestLinkCheck(PageRequest.of(0, batchSize));
 
     // ParallelRunner logs any failure, so failed futures are ignored here
     var futures =

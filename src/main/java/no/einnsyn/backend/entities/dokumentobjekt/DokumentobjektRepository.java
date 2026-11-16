@@ -15,15 +15,6 @@ public interface DokumentobjektRepository extends ArkivBaseRepository<Dokumentob
   @Query(
       """
       SELECT o.id FROM Dokumentobjekt o
-      WHERE o.linkFailedSince IS NOT NULL
-      AND o.linkCheckedAt < :checkedBefore
-      ORDER BY o.linkCheckedAt ASC
-      """)
-  List<String> findIdsWithFailedLinkCheckedBefore(Instant checkedBefore, Pageable pageable);
-
-  @Query(
-      """
-      SELECT o.id FROM Dokumentobjekt o
       WHERE o.referanseDokumentfil IS NOT NULL
       ORDER BY o.linkCheckedAt ASC NULLS FIRST
       """)

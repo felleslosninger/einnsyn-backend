@@ -804,16 +804,18 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void linkCheckSchedulerShouldCheckFailedLinksFirst() throws Exception {
-    // A link that has never been checked would otherwise be picked first
+  void linkCheckSchedulerShouldCheckOldestLinksFirstEvenIfOthersFailed() throws Exception {
+    // Failed links must not be prioritized, or many failures could starve the other links
     var response =
         post(
             "/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId() + "/dokumentobjekt",
             getDokumentobjektJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var uncheckedDTO = gson.fromJson(response.getBody(), DokumentobjektDTO.class);
+    var okDTO = gson.fromJson(response.getBody(), DokumentobjektDTO.class);
 
-    var failedCheckedAt = Instant.now().minus(2, ChronoUnit.DAYS);
+    var okCheckedAt = Instant.now().minus(3, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+    var failedCheckedAt = Instant.now().minus(2, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+    dokumentobjektRepository.setLinkOk(okDTO.getId(), okCheckedAt);
     dokumentobjektRepository.setLinkFailed(dokumentobjektDTO.getId(), failedCheckedAt);
 
     var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
@@ -825,9 +827,35 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       ReflectionTestUtils.setField(target, "batchSize", 1000);
     }
 
-    assertTrue(getDokumentobjekt().getLinkCheckedAt().isAfter(failedCheckedAt));
+    var ok = dokumentobjektRepository.findById(okDTO.getId()).orElseThrow();
+    assertTrue(ok.getLinkCheckedAt().isAfter(okCheckedAt));
+    assertEquals(failedCheckedAt, getDokumentobjekt().getLinkCheckedAt());
+  }
+
+  @Test
+  void linkCheckSchedulerShouldCheckUncheckedLinksFirst() throws Exception {
+    var response =
+        post(
+            "/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId() + "/dokumentobjekt",
+            getDokumentobjektJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var uncheckedDTO = gson.fromJson(response.getBody(), DokumentobjektDTO.class);
+
+    var checkedAt = Instant.now().minus(2, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+    dokumentobjektRepository.setLinkOk(dokumentobjektDTO.getId(), checkedAt);
+
+    var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
+    ReflectionTestUtils.setField(target, "batchSize", 1);
+    try {
+      useUnavailableProxy();
+      fulltextLinkCheckScheduler.checkLinks();
+    } finally {
+      ReflectionTestUtils.setField(target, "batchSize", 1000);
+    }
+
     var unchecked = dokumentobjektRepository.findById(uncheckedDTO.getId()).orElseThrow();
-    assertNull(unchecked.getLinkCheckedAt());
+    assertNotNull(unchecked.getLinkCheckedAt());
+    assertEquals(checkedAt, getDokumentobjekt().getLinkCheckedAt());
   }
 
   @Test
