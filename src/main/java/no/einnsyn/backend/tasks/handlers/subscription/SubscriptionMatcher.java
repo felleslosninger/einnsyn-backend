@@ -2,10 +2,10 @@ package no.einnsyn.backend.tasks.handlers.subscription;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
 import com.google.gson.Gson;
 import java.io.StringReader;
-import java.time.ZonedDateTime;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
@@ -55,6 +55,12 @@ public class SubscriptionMatcher {
     var document = event.getDocument();
     if (document instanceof ArkivBaseES arkivBaseDocument) {
 
+      // Most reindexed documents match nothing, spare them the hidden-Enhet lookup
+      var isUpdatedMappe = document instanceof MappeES && event.isUpdatedSinceLastIndex();
+      if (!isUpdatedMappe && !event.isInsert()) {
+        return;
+      }
+
       // Don't match documents from hidden Enhets
       if (enhetService.isSkjult(arkivBaseDocument.getAdministrativEnhet())) {
         log.debug(
@@ -68,15 +74,10 @@ public class SubscriptionMatcher {
         handleSak(mappeDocument);
       }
 
-      // Handle inserts for accessible documents or documents that just turned accessible
+      // Inserts are accessible, BaseService.index only marks a document once it is
       if (event.isInsert()) {
-        if (isAccessible(document)) {
-          log.debug("Match against search subscriptions: {}", document.getId());
-          handleSearch(document);
-        } else {
-          log.debug(
-              "Do not match against subscriptions for inaccessible document: {}", document.getId());
-        }
+        log.debug("Match against search subscriptions: {}", document.getId());
+        handleSearch(document);
       }
     }
   }
@@ -120,26 +121,17 @@ public class SubscriptionMatcher {
         new ElasticsearchIterator<Void>(
             esClient, percolatorIndex, 1000, query, List.of("id", "_doc"), Void.class);
 
-    // Create new LagretSoekTreff for each hit
+    // One transaction per page of matching LagretSoek
     while (iterator.hasNext()) {
-      var hit = iterator.next();
+      var lagretSoekIds = iterator.nextBatch().stream().map(Hit::id).toList();
       try {
-        log.info("Adding hit for document: {}: {}", document.getId(), hit.id());
-        lagretSoekService.incrementHitCount(hit.id(), document.getId());
+        log.info(
+            "Adding hit for document {} to {} LagretSoek", document.getId(), lagretSoekIds.size());
+        lagretSoekService.addHits(lagretSoekIds, document.getId());
       } catch (Exception e) {
         log.error(
-            "Failed to add hit for document with id: {}: {}", document.getId(), e.getMessage(), e);
+            "Failed to add hits for document with id: {}: {}", document.getId(), e.getMessage(), e);
       }
     }
-  }
-
-  /**
-   * Check if document is accessible.
-   *
-   * @param document the document to check
-   * @return true if the document is accessible
-   */
-  private boolean isAccessible(BaseES document) {
-    return ZonedDateTime.parse(document.getAccessibleAfter()).isBefore(ZonedDateTime.now());
   }
 }

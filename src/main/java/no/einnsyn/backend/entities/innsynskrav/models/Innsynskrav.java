@@ -51,7 +51,8 @@ public class Innsynskrav extends Base implements Indexable {
   @JoinColumn(name = "innsynskrav_id", referencedColumnName = "id")
   private InnsynskravBestilling innsynskravBestilling;
 
-  @ManyToOne(optional = true)
+  // Lazy, since loading a Journalpost hidden from the caller throws instead of returning null
+  @ManyToOne(fetch = FetchType.LAZY, optional = true)
   @JoinColumn
   private Journalpost journalpost;
 

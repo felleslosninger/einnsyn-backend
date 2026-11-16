@@ -42,6 +42,9 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
   private static final String EXTERNAL_ID_1 = "ext-alpha-001";
   private static final String EXTERNAL_ID_2 = "ext-beta-002";
 
+  // Used by both a Saksmappe and a Moetemappe
+  private static final String SHARED_SLUG = "search-filter-shared-slug";
+
   ArkivDTO arkivDTO;
   ArkivdelDTO arkivdelDTO;
 
@@ -76,6 +79,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     saksmappeJSON.put("saksaar", "2023");
     saksmappeJSON.put("sakssekvensnummer", "100");
     saksmappeJSON.put("offentligTittel", "Saksmappe Alpha");
+    saksmappeJSON.put("slug", SHARED_SLUG);
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     saksmappe2023DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
@@ -203,6 +207,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     var moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.put("moetedato", "2024-05-10T09:00:00Z");
     moetemappeJSON.put("offentligTittel", "Møtemappe May 2024");
+    moetemappeJSON.put("slug", SHARED_SLUG);
     moetemappeJSON.remove("moetesak"); // We'll add it separately
     moetemappeJSON.remove("moetedokument"); // Remove default moetedokuments
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
@@ -576,6 +581,70 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     assertTrue(ids.contains(journalpost3DTO.getId()));
     assertTrue(ids.contains(journalpost4DTO.getId()));
     assertTrue(ids.contains(journalpost5DTO.getId()));
+  }
+
+  @Test
+  void testFilterBySaksmappe() throws Exception {
+    var response = get("/search?saksmappe=" + saksmappe2023DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), baseDTOListType);
+    var ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertEquals(3, ids.size());
+    assertTrue(ids.contains(saksmappe2023DTO.getId()));
+    assertTrue(ids.contains(journalpost1DTO.getId()));
+    assertTrue(ids.contains(journalpost3DTO.getId()));
+
+    // The slug is also used by a Moetemappe
+    response = get("/search?saksmappe=" + SHARED_SLUG);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertEquals(3, ids.size());
+    assertTrue(ids.contains(saksmappe2023DTO.getId()));
+    assertTrue(ids.contains(journalpost1DTO.getId()));
+    assertTrue(ids.contains(journalpost3DTO.getId()));
+
+    // Only the Journalposts
+    response = get("/search?entity=Journalpost&saksmappe=" + saksmappe2023DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertEquals(2, ids.size());
+    assertTrue(ids.contains(journalpost1DTO.getId()));
+    assertTrue(ids.contains(journalpost3DTO.getId()));
+
+    response = get("/search?saksmappe=" + moetemappeDTO.getId());
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
+
+  @Test
+  void testFilterByMoetemappe() throws Exception {
+    var response = get("/search?moetemappe=" + moetemappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), baseDTOListType);
+    var ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertEquals(2, ids.size());
+    assertTrue(ids.contains(moetemappeDTO.getId()));
+    assertTrue(ids.contains(moetesakDTO.getId()));
+
+    // The slug is also used by a Saksmappe
+    response = get("/search?moetemappe=" + SHARED_SLUG);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertEquals(2, ids.size());
+    assertTrue(ids.contains(moetemappeDTO.getId()));
+    assertTrue(ids.contains(moetesakDTO.getId()));
+
+    // Only the Moetesaker
+    response = get("/search?entity=Moetesak&moetemappe=" + moetemappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(1, result.getItems().size());
+    assertEquals(moetesakDTO.getId(), result.getItems().get(0).getId());
+
+    response = get("/search?moetemappe=" + saksmappe2023DTO.getId());
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
   }
 
   @Test
