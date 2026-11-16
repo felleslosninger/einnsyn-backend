@@ -69,6 +69,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
   private static final String SOURCE_URL = "http://example.com/dokument.pdf";
   private static final String HTTPS_SOURCE_URL = "https://example.com/dokument.pdf";
+  private static final String REFERENCE_URL = "http://reference.example.com/robots.txt";
   private static final int DEFAULT_DOWNLOAD_PROXY_PORT = 3128;
 
   @Value("${application.baseUrl}")
@@ -89,6 +90,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   @BeforeEach
   void setup() throws Exception {
     setDownloadProxy("", DEFAULT_DOWNLOAD_PROXY_PORT);
+    setReferenceUrls();
 
     var response = post("/arkiv", getArkivJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -697,6 +699,59 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void checkLinkShouldMarkLinkAsFailedWhenReferenceUrlWorks() throws Exception {
+    useHttpsSource();
+    setReferenceUrls(REFERENCE_URL);
+    try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable", "HTTP/1.1 200 OK")) {
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+      assertEquals(
+          List.of("CONNECT example.com:443 HTTP/1.1", "GET " + REFERENCE_URL + " HTTP/1.1"),
+          proxy.requests());
+    }
+
+    assertNotNull(getDokumentobjekt().getLinkFailedSince());
+  }
+
+  @Test
+  void checkLinkShouldNotMarkLinkAsFailedWhenReferenceUrlAlsoFails() throws Exception {
+    // When the reference URLs can't be reached either, our network is down, not the source
+    useHttpsSource();
+    setReferenceUrls(REFERENCE_URL);
+    try (var _ = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+    }
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNotNull(dokumentobjekt.getLinkCheckedAt());
+    assertNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
+  void checkLinkShouldReuseReferenceUrlResult() throws Exception {
+    useHttpsSource();
+    setReferenceUrls(REFERENCE_URL);
+    try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+      var referenceRequests =
+          proxy.requests().stream().filter(request -> request.startsWith("GET ")).count();
+      assertEquals(1, referenceRequests);
+    }
+  }
+
+  @Test
+  void downloadShouldNotMarkLinkAsFailedWhenReferenceUrlAlsoFails() throws Exception {
+    useHttpsSource();
+    setReferenceUrls(REFERENCE_URL);
+    try (var _ = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.BAD_GATEWAY, response.getStatusCode());
+    }
+
+    assertNull(getDokumentobjekt().getLinkFailedSince());
+  }
+
+  @Test
   void checkLinkShouldMarkLinkAsFailedWhenProxyCannotReachSource() throws Exception {
     // A gateway error from the proxy means the source is unreachable
     useHttpsSource();
@@ -895,6 +950,15 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
    * doesn't support CONNECT.
    */
   private StartedTunnelProxy startTunnelProxy(String statusLine) throws Exception {
+    return startTunnelProxy(statusLine, statusLine);
+  }
+
+  /**
+   * Like startTunnelProxy(String), but answers plain HTTP requests (e.g. to the reference URLs)
+   * with their own status line.
+   */
+  private StartedTunnelProxy startTunnelProxy(String connectStatusLine, String httpStatusLine)
+      throws Exception {
     var serverSocket = new ServerSocket(0);
     List<String> requests = Collections.synchronizedList(new ArrayList<>());
     Thread.ofVirtual()
@@ -905,7 +969,12 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
                   var reader =
                       new BufferedReader(
                           new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-                  requests.add(reader.readLine());
+                  var request = reader.readLine();
+                  requests.add(request);
+                  var statusLine =
+                      request != null && request.startsWith("CONNECT ")
+                          ? connectStatusLine
+                          : httpStatusLine;
                   // Skip the request headers
                   var line = reader.readLine();
                   while (line != null && !line.isEmpty()) {
@@ -1011,6 +1080,13 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     setDownloadProxy("localhost", server.getAddress().getPort());
 
     return new StartedProxy(server, executor, requests);
+  }
+
+  /** Set the reference URLs, and forget any earlier result of checking them. */
+  private void setReferenceUrls(String... urls) {
+    var target = AopTestUtils.getTargetObject(dokumentobjektService);
+    ReflectionTestUtils.setField(target, "referenceUrls", List.of(urls));
+    ReflectionTestUtils.setField(target, "proxyStatus", null);
   }
 
   private void setDownloadProxy(String host, int port) {

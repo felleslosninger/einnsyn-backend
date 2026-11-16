@@ -48,6 +48,8 @@ application:
     initialDelay: ${LINK_CHECK_INITIAL_DELAY:PT5M}
     batchSize: ${LINK_CHECK_BATCH_SIZE:1000}
     concurrency: ${LINK_CHECK_CONCURRENCY:10}
+    # When a link can't be reached and none of these work either, the failure is on our side
+    referenceUrls: ${LINK_CHECK_REFERENCE_URLS:https://www.google.com/robots.txt,https://www.microsoft.com/robots.txt}
   legacyLagretSoekConversion:
     dryRun: ${LEGACY_LAGRET_SOEK_CONVERSION_DRY_RUN:true}
     interval: ${LEGACY_LAGRET_SOEK_CONVERSION_INTERVAL:PT1H}
@@ -217,6 +219,9 @@ application:
     reindexer:
       getBatchSize: 20
       indexBatchSize: 20
+  linkCheck:
+    # Tests set their own reference URLs
+    referenceUrls: ""
   innsynskrav:
     anonymousMaxAge: 1
     verificationQuarantineLimit: 10
