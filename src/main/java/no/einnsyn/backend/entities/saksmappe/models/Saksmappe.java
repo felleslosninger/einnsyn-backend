@@ -107,8 +107,8 @@ public class Saksmappe extends Mappe implements Indexable {
   protected void preUpdate() {
     super.preUpdate();
 
-    // Keep saksmappeIri in sync with externalId
-    if (externalId != null && !externalId.equals(legacyIri)) {
+    // Keep saksmappeIri in sync with externalId as long as the latter is an IRI
+    if (externalId != null && !externalId.equals(legacyIri) && IRIMatcher.matches(externalId)) {
       legacyIri = externalId;
     }
 

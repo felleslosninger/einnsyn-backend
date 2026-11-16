@@ -179,8 +179,8 @@ public class Moetemappe extends Mappe implements Indexable {
   protected void preUpdate() {
     super.preUpdate();
 
-    // Keep moetemappeIri in sync with externalId
-    if (externalId != null && !externalId.equals(legacyIri)) {
+    // Keep moetemappeIri in sync with externalId as long as the latter is an IRI
+    if (externalId != null && !externalId.equals(legacyIri) && IRIMatcher.matches(externalId)) {
       legacyIri = externalId;
     }
 
