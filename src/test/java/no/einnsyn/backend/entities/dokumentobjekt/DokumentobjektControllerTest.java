@@ -90,7 +90,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   @BeforeEach
   void setup() throws Exception {
     setDownloadProxy("", DEFAULT_DOWNLOAD_PROXY_PORT);
-    setReferenceUrls();
+    setReferenceUrls(REFERENCE_URL);
 
     var response = post("/arkiv", getArkivJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -633,7 +633,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
       var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
       assertEquals(HttpStatus.BAD_GATEWAY, response.getStatusCode());
-      assertEquals(1, proxy.requests().size());
+      assertEquals(2, proxy.requests().size());
     }
 
     assertNotNull(getDokumentobjekt().getLinkFailedSince());
@@ -692,17 +692,14 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     useSource("https://example.com:443/dokument.pdf");
     try (var proxy = startTunnelProxy("HTTP/1.1 403 Forbidden")) {
       dokumentobjektService.checkLink(dokumentobjektDTO.getId());
-      assertEquals(List.of("CONNECT example.com:443 HTTP/1.1"), proxy.requests());
+      assertEquals("CONNECT example.com:443 HTTP/1.1", proxy.requests().getFirst());
     }
-
-    assertNull(getDokumentobjekt().getLinkFailedSince());
   }
 
   @Test
   void checkLinkShouldMarkLinkAsFailedWhenReferenceUrlWorks() throws Exception {
     useHttpsSource();
-    setReferenceUrls(REFERENCE_URL);
-    try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable", "HTTP/1.1 200 OK")) {
+    try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
       dokumentobjektService.checkLink(dokumentobjektDTO.getId());
       assertEquals(
           List.of("CONNECT example.com:443 HTTP/1.1", "GET " + REFERENCE_URL + " HTTP/1.1"),
@@ -716,8 +713,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   void checkLinkShouldNotMarkLinkAsFailedWhenReferenceUrlAlsoFails() throws Exception {
     // When the reference URLs can't be reached either, our network is down, not the source
     useHttpsSource();
-    setReferenceUrls(REFERENCE_URL);
-    try (var _ = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+    try (var _ =
+        startTunnelProxy("HTTP/1.1 503 Service Unavailable", "HTTP/1.1 503 Service Unavailable")) {
       dokumentobjektService.checkLink(dokumentobjektDTO.getId());
     }
 
@@ -729,7 +726,6 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   @Test
   void checkLinkShouldReuseReferenceUrlResult() throws Exception {
     useHttpsSource();
-    setReferenceUrls(REFERENCE_URL);
     try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
       dokumentobjektService.checkLink(dokumentobjektDTO.getId());
       dokumentobjektService.checkLink(dokumentobjektDTO.getId());
@@ -742,40 +738,13 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   @Test
   void downloadShouldNotMarkLinkAsFailedWhenReferenceUrlAlsoFails() throws Exception {
     useHttpsSource();
-    setReferenceUrls(REFERENCE_URL);
-    try (var _ = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+    try (var _ =
+        startTunnelProxy("HTTP/1.1 503 Service Unavailable", "HTTP/1.1 503 Service Unavailable")) {
       var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
       assertEquals(HttpStatus.BAD_GATEWAY, response.getStatusCode());
     }
 
     assertNull(getDokumentobjekt().getLinkFailedSince());
-  }
-
-  @Test
-  void checkLinkShouldMarkLinkAsFailedWhenProxyCannotReachSource() throws Exception {
-    // A gateway error from the proxy means the source is unreachable
-    useHttpsSource();
-    try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
-      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
-      assertEquals(List.of("CONNECT example.com:443 HTTP/1.1"), proxy.requests());
-    }
-
-    var dokumentobjekt = getDokumentobjekt();
-    assertNotNull(dokumentobjekt.getLinkCheckedAt());
-    assertNotNull(dokumentobjekt.getLinkFailedSince());
-  }
-
-  @Test
-  void checkLinkShouldNotMarkLinkAsFailedWhenProxyDeniesAccess() throws Exception {
-    // Access denied by our own proxy policy says nothing about the source
-    useHttpsSource();
-    try (var _ = startTunnelProxy("HTTP/1.1 403 Forbidden")) {
-      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
-    }
-
-    var dokumentobjekt = getDokumentobjekt();
-    assertNotNull(dokumentobjekt.getLinkCheckedAt());
-    assertNull(dokumentobjekt.getLinkFailedSince());
   }
 
   @Test
@@ -850,7 +819,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     useHttpsSource();
     try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
       fulltextLinkCheckScheduler.checkLinks();
-      assertEquals(1, proxy.requests().size());
+      assertEquals(2, proxy.requests().size());
     }
 
     var dokumentobjekt = getDokumentobjekt();
@@ -950,12 +919,12 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
    * doesn't support CONNECT.
    */
   private StartedTunnelProxy startTunnelProxy(String statusLine) throws Exception {
-    return startTunnelProxy(statusLine, statusLine);
+    return startTunnelProxy(statusLine, "HTTP/1.1 200 OK");
   }
 
   /**
    * Like startTunnelProxy(String), but answers plain HTTP requests (e.g. to the reference URLs)
-   * with their own status line.
+   * with the given status line instead of 200 OK.
    */
   private StartedTunnelProxy startTunnelProxy(String connectStatusLine, String httpStatusLine)
       throws Exception {

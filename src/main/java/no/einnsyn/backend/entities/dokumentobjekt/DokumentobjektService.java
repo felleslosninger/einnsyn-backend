@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URLConnection;
 import java.time.Duration;
@@ -12,7 +11,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
@@ -50,13 +48,6 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
 
   // Some sources allowlist this value, it is inherited from the legacy eInnsyn API.
   private static final String DOWNLOAD_USER_AGENT = "eInnsyn";
-
-  // The status line in HttpURLConnection's message when an HTTPS tunnel through the proxy fails
-  private static final Pattern TUNNEL_STATUS_PATTERN =
-      Pattern.compile("Unable to tunnel through proxy\\. Proxy returns \"HTTP/\\S+ (\\d{3})");
-
-  // Statuses from the proxy that mean it couldn't reach the source
-  private static final Set<Integer> GATEWAY_STATUSES = Set.of(502, 503, 504);
 
   // How long the result of checking the reference URLs is reused
   private static final Duration PROXY_STATUS_TTL = Duration.ofMinutes(1);
@@ -285,9 +276,9 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
       if (connection != null) {
         connection.disconnect();
       }
-      // Only mark the link as failed when the failure is external, or the link isn't HTTPS on 443.
+      // Only mark the link as failed when the proxy works, or the link isn't HTTPS on 443.
       // Failures on our side (proxy, network) say nothing about the link.
-      if (!isHttpsOnDefaultPort(sourceUri) || isExternalFailure(e)) {
+      if (!isHttpsOnDefaultPort(sourceUri) || isProxyWorking()) {
         recordLinkStatus(id, false);
       }
       // Don't expose source URL in the message, as it will be sent to the client.
@@ -306,10 +297,10 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    * Check whether the source of a Dokumentobjekt responds successfully, without downloading the
    * file, and record the result.
    *
-   * <p>The link is only marked as failed when the failure is external (see {@link
-   * #isExternalFailure}), or the source URL is invalid or not HTTPS on port 443. Such links are
-   * marked without a request. Failures on our side only update the check timestamp, so the link is
-   * moved to the back of the queue without being marked as failed.
+   * <p>Links that aren't HTTPS on port 443 are marked as failed without a request. Other failures
+   * are only marked when the reference URLs work (see {@link #isProxyWorking}). Otherwise the
+   * failure is on our side, and only the check timestamp is updated, so the link is moved to the
+   * back of the queue without being marked as failed.
    *
    * @param id dokumentobjekt id
    */
@@ -320,12 +311,13 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     try {
       var sourceUri = getProxy().getSourceUri(id);
       if (!isHttpsOnDefaultPort(sourceUri)) {
-        throw new SourceStatusException("Source URL is not HTTPS on port 443: " + sourceUri);
+        repository.setLinkFailed(id, checkedAt);
+        return;
       }
       connection = openDownloadConnection(sourceUri);
       repository.setLinkOk(id, checkedAt);
     } catch (Exception e) {
-      if (e instanceof NotFoundException || isExternalFailure(e)) {
+      if (isProxyWorking()) {
         log.debug("Link check failed for Dokumentobjekt {}: {}", id, e.getMessage());
         repository.setLinkFailed(id, checkedAt);
       } else {
@@ -346,30 +338,15 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   }
 
   /**
-   * Whether a failure to reach the source is on the source's side. An error status from the source
-   * always is. When the proxy can't reach the source or the request times out, it could also be our
-   * network that is down, so the reference URLs decide: if none of them work either, the failure is
-   * on our side. Other failures (e.g. the proxy itself is unavailable) are on our side.
-   */
-  private boolean isExternalFailure(Exception e) {
-    if (e instanceof SourceStatusException) {
-      return true;
-    }
-    if (e instanceof GatewayException || e instanceof SocketTimeoutException) {
-      return isProxyWorking();
-    }
-    return false;
-  }
-
-  /**
-   * Whether any of the reference URLs can be reached through the proxy. The result is reused for a
-   * short while, so an outage on our side doesn't add a reference check to every failed link.
-   * Without reference URLs, the proxy is assumed to work.
+   * Whether any of the reference URLs can be reached through the proxy. When a link fails and they
+   * work, the failure is on the source's side. Without reference URLs, we can't tell, so the
+   * failure is assumed to be on our side. The result is reused for a short while, so an outage on
+   * our side doesn't add a reference check to every failed link.
    */
   private boolean isProxyWorking() {
     var status = proxyStatus;
     if (status == null || status.checkedAt().isBefore(Instant.now().minus(PROXY_STATUS_TTL))) {
-      var working = referenceUrls.isEmpty() || referenceUrls.stream().anyMatch(this::isReachable);
+      var working = referenceUrls.stream().anyMatch(this::isReachable);
       status = new ProxyStatus(working, Instant.now());
       proxyStatus = status;
     }
@@ -517,27 +494,13 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     connection.setConnectTimeout(DOWNLOAD_CONNECT_TIMEOUT_MS);
     connection.setReadTimeout(DOWNLOAD_READ_TIMEOUT_MS);
     connection.setInstanceFollowRedirects(true);
+    connection.connect();
 
-    int statusCode;
-    try {
-      connection.connect();
-      statusCode = connection.getResponseCode();
-    } catch (IOException e) {
-      // For HTTPS sources, the proxy's response to CONNECT is only available in the exception
-      // message. A gateway error means the proxy couldn't reach the source.
-      var tunnelMatcher = TUNNEL_STATUS_PATTERN.matcher(String.valueOf(e.getMessage()));
-      if (tunnelMatcher.find()
-          && GATEWAY_STATUSES.contains(Integer.parseInt(tunnelMatcher.group(1)))) {
-        throw new GatewayException(
-            "Proxy could not reach source " + sourceUri + ": " + e.getMessage());
-      }
-      throw e;
-    }
-
+    var statusCode = connection.getResponseCode();
     if (statusCode < 200 || statusCode >= 300) {
       var message = connection.getResponseMessage();
       connection.disconnect();
-      throw new SourceStatusException(
+      throw new IOException(
           "Source returned HTTP "
               + statusCode
               + (StringUtils.hasText(message) ? " (" + message + ")" : "")
@@ -580,23 +543,6 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
       return guessed;
     }
     return "application/octet-stream";
-  }
-
-  /** Thrown when the source responds with a non-2xx status, i.e. the failure is external. */
-  private static class SourceStatusException extends IOException {
-    SourceStatusException(String message) {
-      super(message);
-    }
-  }
-
-  /**
-   * Thrown when the proxy couldn't reach the source. The failure is external unless our network is
-   * down, see {@link #isExternalFailure}.
-   */
-  private static class GatewayException extends IOException {
-    GatewayException(String message) {
-      super(message);
-    }
   }
 
   private record ProxyStatus(boolean working, Instant checkedAt) {}
