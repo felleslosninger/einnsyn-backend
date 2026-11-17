@@ -940,6 +940,20 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void downloadShouldNotMarkLinkAsFailedWhenSourceIsRateLimited() throws Exception {
+    useHttpsSource();
+    try (var _ = startHttpsSourceProxy("HTTP/1.1 429 Too Many Requests")) {
+      fulltextLinkCheckScheduler.checkReferenceUrls();
+      var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.BAD_GATEWAY, response.getStatusCode());
+    }
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNull(dokumentobjekt.getLinkCheckedAt());
+    assertNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
   void checkLinkShouldSkipLinkWhenSourceIsRateLimited() throws Exception {
     // The link is moved to the back of the queue without being marked as failed
     useHttpsSource();

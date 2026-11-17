@@ -275,8 +275,9 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
         connection.disconnect();
       }
       // Only mark the link as failed when the proxy works, or the link isn't HTTPS on 443.
-      // Failures on our side (proxy, network) say nothing about the link.
-      if (!isHttpsOnDefaultPort(sourceUri) || isProxyWorking()) {
+      // Failures on our side (proxy, network) say nothing about the link, and neither does 429.
+      if (!(e instanceof TooManyRequestsException)
+          && (!isHttpsOnDefaultPort(sourceUri) || isProxyWorking())) {
         recordLinkStatus(id, false);
       }
       // Don't expose source URL in the message, as it will be sent to the client.
