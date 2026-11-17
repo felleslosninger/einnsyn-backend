@@ -49,6 +49,13 @@ public class FulltextLinkCheckScheduler {
       return;
     }
 
+    // When none of the reference URLs work, every check would fail on our side, so the job is
+    // paused until one of them works again
+    if (!dokumentobjektService.isProxyWorking()) {
+      log.warn("Reference URLs can't be reached, skipping fulltext link check.");
+      return;
+    }
+
     var ids = dokumentobjektRepository.findIdsByOldestLinkCheck(PageRequest.of(0, batchSize));
 
     // ParallelRunner logs any failure, so failed futures are ignored here

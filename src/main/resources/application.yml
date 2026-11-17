@@ -48,8 +48,9 @@ application:
     initialDelay: ${LINK_CHECK_INITIAL_DELAY:PT5M}
     batchSize: ${LINK_CHECK_BATCH_SIZE:1000}
     concurrency: ${LINK_CHECK_CONCURRENCY:10}
-    # When a link can't be reached and none of these work either, the failure is on our side
-    referenceUrls: ${LINK_CHECK_REFERENCE_URLS:https://www.google.com/robots.txt,https://www.microsoft.com/robots.txt}
+    # When a link can't be reached and none of these work either, the failure is on our side, and
+    # the link check is paused until one of them works again
+    referenceUrls: ${LINK_CHECK_REFERENCE_URLS:https://cp.cloudflare.com/generate_204,https://detectportal.firefox.com/success.txt}
   legacyLagretSoekConversion:
     dryRun: ${LEGACY_LAGRET_SOEK_CONVERSION_DRY_RUN:true}
     interval: ${LEGACY_LAGRET_SOEK_CONVERSION_INTERVAL:PT1H}

@@ -11,12 +11,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.sun.net.httpserver.HttpServer;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.KeyStore;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -29,6 +31,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.TrustManagerFactory;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.exceptions.models.NetworkException;
 import no.einnsyn.backend.common.statistics.models.StatisticsResponse;
@@ -844,8 +851,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
     var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
     ReflectionTestUtils.setField(target, "batchSize", 1);
-    try {
-      useUnavailableProxy();
+    try (var _ = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
       fulltextLinkCheckScheduler.checkLinks();
     } finally {
       ReflectionTestUtils.setField(target, "batchSize", 1000);
@@ -870,8 +876,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
     var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
     ReflectionTestUtils.setField(target, "batchSize", 1);
-    try {
-      useUnavailableProxy();
+    try (var _ = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
       fulltextLinkCheckScheduler.checkLinks();
     } finally {
       ReflectionTestUtils.setField(target, "batchSize", 1000);
@@ -880,6 +885,43 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var unchecked = dokumentobjektRepository.findById(uncheckedDTO.getId()).orElseThrow();
     assertNotNull(unchecked.getLinkCheckedAt());
     assertEquals(checkedAt, getDokumentobjekt().getLinkCheckedAt());
+  }
+
+  @Test
+  void linkCheckSchedulerShouldPauseWhenReferenceUrlsFail() throws Exception {
+    useHttpsSource();
+    try (var proxy = startTunnelProxy("HTTP/1.1 200 OK", "HTTP/1.1 503 Service Unavailable")) {
+      fulltextLinkCheckScheduler.checkLinks();
+      assertEquals(List.of("GET " + REFERENCE_URL + " HTTP/1.1"), proxy.requests());
+    }
+
+    assertNull(getDokumentobjekt().getLinkCheckedAt());
+  }
+
+  @Test
+  void checkLinkShouldMarkLinkAsOkWhenHttpsSourceResponds() throws Exception {
+    useHttpsSource();
+    try (var _ = startHttpsSourceProxy("HTTP/1.1 200 OK")) {
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+    }
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNotNull(dokumentobjekt.getLinkCheckedAt());
+    assertNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
+  void checkLinkShouldSkipLinkWhenSourceIsRateLimited() throws Exception {
+    // The link is moved to the back of the queue without being marked as failed
+    useHttpsSource();
+    try (var proxy = startHttpsSourceProxy("HTTP/1.1 429 Too Many Requests")) {
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+      assertEquals(List.of("CONNECT example.com:443 HTTP/1.1"), proxy.requests());
+    }
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNotNull(dokumentobjekt.getLinkCheckedAt());
+    assertNull(dokumentobjekt.getLinkFailedSince());
   }
 
   @Test
@@ -928,6 +970,69 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
    */
   private StartedTunnelProxy startTunnelProxy(String connectStatusLine, String httpStatusLine)
       throws Exception {
+    return startTunnelProxy(connectStatusLine, httpStatusLine, null);
+  }
+
+  /**
+   * Start a proxy that opens HTTPS tunnels to a source answering with the given status line, like a
+   * source responding through the proxy. The source's certificate is self-signed for example.com,
+   * and trusted until the proxy is closed. Plain HTTP requests (e.g. to the reference URLs) are
+   * answered with 200 OK.
+   */
+  private StartedTunnelProxy startHttpsSourceProxy(String sourceStatusLine) throws Exception {
+    var keyStoreFile = Files.createTempDirectory("source").resolve("source.p12");
+    var keytool = Path.of(System.getProperty("java.home"), "bin", "keytool").toString();
+    var keytoolProcess =
+        new ProcessBuilder(
+                keytool,
+                "-genkeypair",
+                "-keyalg",
+                "RSA",
+                "-alias",
+                "source",
+                "-validity",
+                "1",
+                "-dname",
+                "CN=example.com",
+                "-ext",
+                "SAN=dns:example.com",
+                "-storetype",
+                "PKCS12",
+                "-keystore",
+                keyStoreFile.toString(),
+                "-storepass",
+                "changeit")
+            .redirectErrorStream(true)
+            .start();
+    keytoolProcess.getInputStream().readAllBytes();
+    assertEquals(0, keytoolProcess.waitFor());
+    var keyStore = KeyStore.getInstance(keyStoreFile.toFile(), "changeit".toCharArray());
+
+    var keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+    keyManagerFactory.init(keyStore, "changeit".toCharArray());
+    var trustManagerFactory =
+        TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+    trustManagerFactory.init(keyStore);
+    var sslContext = SSLContext.getInstance("TLS");
+    sslContext.init(
+        keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
+
+    var defaultSocketFactory = HttpsURLConnection.getDefaultSSLSocketFactory();
+    HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+    var proxy = startTunnelProxy(sourceStatusLine, "HTTP/1.1 200 OK", sslContext);
+    return new StartedTunnelProxy(
+        proxy.serverSocket(),
+        proxy.requests(),
+        () -> HttpsURLConnection.setDefaultSSLSocketFactory(defaultSocketFactory));
+  }
+
+  /**
+   * Without a tunnelSslContext, CONNECT requests are answered with connectStatusLine. With it, the
+   * tunnel is opened, and the request inside it is answered with connectStatusLine over TLS.
+   */
+  private StartedTunnelProxy startTunnelProxy(
+      String connectStatusLine, String httpStatusLine, SSLContext tunnelSslContext)
+      throws Exception {
     var serverSocket = new ServerSocket(0);
     List<String> requests = Collections.synchronizedList(new ArrayList<>());
     Thread.ofVirtual()
@@ -935,23 +1040,23 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
             () -> {
               while (!serverSocket.isClosed()) {
                 try (var socket = serverSocket.accept()) {
-                  var reader =
-                      new BufferedReader(
-                          new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-                  var request = reader.readLine();
+                  var request = readRequest(socket);
                   requests.add(request);
-                  var statusLine =
-                      request != null && request.startsWith("CONNECT ")
-                          ? connectStatusLine
-                          : httpStatusLine;
-                  // Skip the request headers
-                  var line = reader.readLine();
-                  while (line != null && !line.isEmpty()) {
-                    line = reader.readLine();
+                  var isConnect = request != null && request.startsWith("CONNECT ");
+                  if (isConnect && tunnelSslContext != null) {
+                    respond(socket, "HTTP/1.1 200 Connection established");
+                    try (var tlsSocket =
+                        (SSLSocket)
+                            tunnelSslContext
+                                .getSocketFactory()
+                                .createSocket(socket, null, socket.getPort(), false)) {
+                      tlsSocket.setUseClientMode(false);
+                      readRequest(tlsSocket);
+                      respond(tlsSocket, connectStatusLine);
+                    }
+                  } else {
+                    respond(socket, isConnect ? connectStatusLine : httpStatusLine);
                   }
-                  var response = statusLine + "\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
-                  socket.getOutputStream().write(response.getBytes(StandardCharsets.UTF_8));
-                  socket.getOutputStream().flush();
                 } catch (IOException _) {
                   // The server socket was closed
                 }
@@ -960,6 +1065,36 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
     setDownloadProxy("localhost", serverSocket.getLocalPort());
     return new StartedTunnelProxy(serverSocket, requests);
+  }
+
+  /** Read a request, and return its request line. The headers are skipped. */
+  private static String readRequest(Socket socket) throws IOException {
+    // Read byte by byte, so nothing after the headers (e.g. a TLS handshake) is consumed
+    var input = socket.getInputStream();
+    var requestLine = (String) null;
+    var line = new StringBuilder();
+    int b;
+    while ((b = input.read()) != -1) {
+      if (b == '\n') {
+        var text = line.toString().strip();
+        if (text.isEmpty()) {
+          break;
+        }
+        if (requestLine == null) {
+          requestLine = text;
+        }
+        line.setLength(0);
+      } else {
+        line.append((char) b);
+      }
+    }
+    return requestLine;
+  }
+
+  private static void respond(Socket socket, String statusLine) throws IOException {
+    var response = statusLine + "\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+    socket.getOutputStream().write(response.getBytes(StandardCharsets.UTF_8));
+    socket.getOutputStream().flush();
   }
 
   private StartedProxy startPdfProxy() throws Exception {
@@ -1100,11 +1235,16 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     }
   }
 
-  private record StartedTunnelProxy(ServerSocket serverSocket, List<String> requests)
-      implements AutoCloseable {
+  private record StartedTunnelProxy(
+      ServerSocket serverSocket, List<String> requests, Runnable onClose) implements AutoCloseable {
+    StartedTunnelProxy(ServerSocket serverSocket, List<String> requests) {
+      this(serverSocket, requests, () -> {});
+    }
+
     @Override
     public void close() throws IOException {
       serverSocket.close();
+      onClose.run();
     }
   }
 

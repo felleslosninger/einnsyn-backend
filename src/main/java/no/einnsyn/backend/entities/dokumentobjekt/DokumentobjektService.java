@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -300,7 +301,8 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    * <p>Links that aren't HTTPS on port 443 are marked as failed without a request. Other failures
    * are only marked when the reference URLs work (see {@link #isProxyWorking}). Otherwise the
    * failure is on our side, and only the check timestamp is updated, so the link is moved to the
-   * back of the queue without being marked as failed.
+   * back of the queue without being marked as failed. The same goes for 429 Too Many Requests, so a
+   * rate limited source isn't asked again until the next round.
    *
    * @param id dokumentobjekt id
    */
@@ -316,6 +318,9 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
       }
       connection = openDownloadConnection(sourceUri);
       repository.setLinkOk(id, checkedAt);
+    } catch (TooManyRequestsException e) {
+      log.debug("Link check for Dokumentobjekt {} was rate limited: {}", id, e.getMessage());
+      repository.setLinkChecked(id, checkedAt);
     } catch (Exception e) {
       if (isProxyWorking()) {
         log.debug("Link check failed for Dokumentobjekt {}: {}", id, e.getMessage());
@@ -343,7 +348,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    * failure is assumed to be on our side. The result is reused for a short while, so an outage on
    * our side doesn't add a reference check to every failed link.
    */
-  private boolean isProxyWorking() {
+  public boolean isProxyWorking() {
     var status = proxyStatus;
     if (status == null || status.checkedAt().isBefore(Instant.now().minus(PROXY_STATUS_TTL))) {
       var working = referenceUrls.stream().anyMatch(this::isReachable);
@@ -497,6 +502,10 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     connection.connect();
 
     var statusCode = connection.getResponseCode();
+    if (statusCode == HttpStatus.TOO_MANY_REQUESTS.value()) {
+      connection.disconnect();
+      throw new TooManyRequestsException("Source returned HTTP 429 for " + sourceUri);
+    }
     if (statusCode < 200 || statusCode >= 300) {
       var message = connection.getResponseMessage();
       connection.disconnect();
@@ -546,4 +555,11 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   }
 
   private record ProxyStatus(boolean working, Instant checkedAt) {}
+
+  /** Thrown when the source responds with 429 Too Many Requests. */
+  private static class TooManyRequestsException extends IOException {
+    TooManyRequestsException(String message) {
+      super(message);
+    }
+  }
 }
