@@ -1,6 +1,7 @@
 package no.einnsyn.backend.tasks.handlers.linkcheck;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import no.einnsyn.backend.entities.dokumentobjekt.DokumentobjektRepository;
@@ -38,6 +39,17 @@ public class FulltextLinkCheckScheduler {
     this.dokumentobjektService = dokumentobjektService;
   }
 
+  /**
+   * Check the reference URLs every minute, independent of the link checks. Not locked, since every
+   * instance downloads files through the proxy, and needs to know whether it works.
+   */
+  @Scheduled(fixedRate = 1, timeUnit = TimeUnit.MINUTES)
+  public void checkReferenceUrls() {
+    if (dokumentobjektService.isDownloadProxyConfigured()) {
+      dokumentobjektService.checkReferenceUrls();
+    }
+  }
+
   @Scheduled(
       fixedDelayString = "${application.linkCheck.interval:PT1M}",
       initialDelayString = "${application.linkCheck.initialDelay:PT5M}")
@@ -49,8 +61,8 @@ public class FulltextLinkCheckScheduler {
       return;
     }
 
-    // When none of the reference URLs work, every check would fail on our side, so the job is
-    // paused until one of them works again
+    // When none of the reference URLs worked in the latest check, every check would fail on our
+    // side, so the job is paused until one of them works again
     if (!dokumentobjektService.isProxyWorking()) {
       log.warn("Reference URLs can't be reached, skipping fulltext link check.");
       return;

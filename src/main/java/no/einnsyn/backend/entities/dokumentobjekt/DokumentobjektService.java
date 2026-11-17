@@ -6,7 +6,6 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URI;
 import java.net.URLConnection;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
@@ -50,9 +49,6 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   // Some sources allowlist this value, it is inherited from the legacy eInnsyn API.
   private static final String DOWNLOAD_USER_AGENT = "eInnsyn";
 
-  // How long the result of checking the reference URLs is reused
-  private static final Duration PROXY_STATUS_TTL = Duration.ofMinutes(1);
-
   @Getter(onMethod_ = @Override)
   private final DokumentobjektRepository repository;
 
@@ -69,7 +65,8 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   @Value("${application.linkCheck.referenceUrls:}")
   private List<String> referenceUrls;
 
-  private volatile ProxyStatus proxyStatus;
+  // Updated every minute by FulltextLinkCheckScheduler, see checkReferenceUrls()
+  private volatile boolean proxyWorking;
 
   @URL
   @Value("${application.baseUrl}")
@@ -299,7 +296,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    * file, and record the result.
    *
    * <p>Links that aren't HTTPS on port 443 are marked as failed without a request. Other failures
-   * are only marked when the reference URLs work (see {@link #isProxyWorking}). Otherwise the
+   * are only marked when the reference URLs work (see {@link #checkReferenceUrls}). Otherwise the
    * failure is on our side, and only the check timestamp is updated, so the link is moved to the
    * back of the queue without being marked as failed. The same goes for 429 Too Many Requests, so a
    * rate limited source isn't asked again until the next round.
@@ -343,19 +340,18 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   }
 
   /**
-   * Whether any of the reference URLs can be reached through the proxy. When a link fails and they
-   * work, the failure is on the source's side. Without reference URLs, we can't tell, so the
-   * failure is assumed to be on our side. The result is reused for a short while, so an outage on
-   * our side doesn't add a reference check to every failed link.
+   * Check whether any of the reference URLs can be reached through the proxy. This runs on a fixed
+   * schedule, independent of the link checks. When a link fails and the reference URLs work, the
+   * failure is on the source's side. Without reference URLs, or before the first check, we can't
+   * tell, so the failure is assumed to be on our side.
    */
+  public void checkReferenceUrls() {
+    proxyWorking = referenceUrls.stream().anyMatch(this::isReachable);
+  }
+
+  /** The result of the latest {@link #checkReferenceUrls}. */
   public boolean isProxyWorking() {
-    var status = proxyStatus;
-    if (status == null || status.checkedAt().isBefore(Instant.now().minus(PROXY_STATUS_TTL))) {
-      var working = referenceUrls.stream().anyMatch(this::isReachable);
-      status = new ProxyStatus(working, Instant.now());
-      proxyStatus = status;
-    }
-    return status.working();
+    return proxyWorking;
   }
 
   private boolean isReachable(String url) {
@@ -553,8 +549,6 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     }
     return "application/octet-stream";
   }
-
-  private record ProxyStatus(boolean working, Instant checkedAt) {}
 
   /** Thrown when the source responds with 429 Too Many Requests. */
   private static class TooManyRequestsException extends IOException {

@@ -638,6 +638,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   void downloadShouldMarkLinkAsFailedWhenProxyCannotReachSource() throws Exception {
     useHttpsSource();
     try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      fulltextLinkCheckScheduler.checkReferenceUrls();
       var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
       assertEquals(HttpStatus.BAD_GATEWAY, response.getStatusCode());
       assertEquals(2, proxy.requests().size());
@@ -651,6 +652,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     // The proxy is unavailable, so the failure is on our side and says nothing about the link
     useHttpsSource();
     useUnavailableProxy();
+    fulltextLinkCheckScheduler.checkReferenceUrls();
     var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
     assertEquals(HttpStatus.BAD_GATEWAY, response.getStatusCode());
 
@@ -707,9 +709,10 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   void checkLinkShouldMarkLinkAsFailedWhenReferenceUrlWorks() throws Exception {
     useHttpsSource();
     try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      fulltextLinkCheckScheduler.checkReferenceUrls();
       dokumentobjektService.checkLink(dokumentobjektDTO.getId());
       assertEquals(
-          List.of("CONNECT example.com:443 HTTP/1.1", "GET " + REFERENCE_URL + " HTTP/1.1"),
+          List.of("GET " + REFERENCE_URL + " HTTP/1.1", "CONNECT example.com:443 HTTP/1.1"),
           proxy.requests());
     }
 
@@ -722,6 +725,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     useHttpsSource();
     try (var _ =
         startTunnelProxy("HTTP/1.1 503 Service Unavailable", "HTTP/1.1 503 Service Unavailable")) {
+      fulltextLinkCheckScheduler.checkReferenceUrls();
       dokumentobjektService.checkLink(dokumentobjektDTO.getId());
     }
 
@@ -731,9 +735,11 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void checkLinkShouldReuseReferenceUrlResult() throws Exception {
+  void checkLinkShouldNotRequestReferenceUrls() throws Exception {
+    // The reference URLs are only checked on their own schedule, not when a link fails
     useHttpsSource();
     try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      fulltextLinkCheckScheduler.checkReferenceUrls();
       dokumentobjektService.checkLink(dokumentobjektDTO.getId());
       dokumentobjektService.checkLink(dokumentobjektDTO.getId());
       var referenceRequests =
@@ -747,6 +753,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     useHttpsSource();
     try (var _ =
         startTunnelProxy("HTTP/1.1 503 Service Unavailable", "HTTP/1.1 503 Service Unavailable")) {
+      fulltextLinkCheckScheduler.checkReferenceUrls();
       var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
       assertEquals(HttpStatus.BAD_GATEWAY, response.getStatusCode());
     }
@@ -759,6 +766,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     // The proxy is unavailable, so the link is only marked as checked
     useHttpsSource();
     useUnavailableProxy();
+    fulltextLinkCheckScheduler.checkReferenceUrls();
     dokumentobjektService.checkLink(dokumentobjektDTO.getId());
 
     var dokumentobjekt = getDokumentobjekt();
@@ -825,6 +833,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   void linkCheckSchedulerShouldCheckLinks() throws Exception {
     useHttpsSource();
     try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      fulltextLinkCheckScheduler.checkReferenceUrls();
       fulltextLinkCheckScheduler.checkLinks();
       assertEquals(2, proxy.requests().size());
     }
@@ -852,6 +861,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
     ReflectionTestUtils.setField(target, "batchSize", 1);
     try (var _ = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      fulltextLinkCheckScheduler.checkReferenceUrls();
       fulltextLinkCheckScheduler.checkLinks();
     } finally {
       ReflectionTestUtils.setField(target, "batchSize", 1000);
@@ -877,6 +887,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
     ReflectionTestUtils.setField(target, "batchSize", 1);
     try (var _ = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      fulltextLinkCheckScheduler.checkReferenceUrls();
       fulltextLinkCheckScheduler.checkLinks();
     } finally {
       ReflectionTestUtils.setField(target, "batchSize", 1000);
@@ -891,11 +902,29 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   void linkCheckSchedulerShouldPauseWhenReferenceUrlsFail() throws Exception {
     useHttpsSource();
     try (var proxy = startTunnelProxy("HTTP/1.1 200 OK", "HTTP/1.1 503 Service Unavailable")) {
+      fulltextLinkCheckScheduler.checkReferenceUrls();
       fulltextLinkCheckScheduler.checkLinks();
       assertEquals(List.of("GET " + REFERENCE_URL + " HTTP/1.1"), proxy.requests());
     }
 
     assertNull(getDokumentobjekt().getLinkCheckedAt());
+  }
+
+  @Test
+  void linkCheckSchedulerShouldResumeWhenReferenceUrlWorksAgain() throws Exception {
+    useHttpsSource();
+    try (var _ =
+        startTunnelProxy("HTTP/1.1 503 Service Unavailable", "HTTP/1.1 503 Service Unavailable")) {
+      fulltextLinkCheckScheduler.checkReferenceUrls();
+      fulltextLinkCheckScheduler.checkLinks();
+    }
+    assertNull(getDokumentobjekt().getLinkCheckedAt());
+
+    try (var _ = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      fulltextLinkCheckScheduler.checkReferenceUrls();
+      fulltextLinkCheckScheduler.checkLinks();
+    }
+    assertNotNull(getDokumentobjekt().getLinkFailedSince());
   }
 
   @Test
@@ -1190,7 +1219,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   private void setReferenceUrls(String... urls) {
     var target = AopTestUtils.getTargetObject(dokumentobjektService);
     ReflectionTestUtils.setField(target, "referenceUrls", List.of(urls));
-    ReflectionTestUtils.setField(target, "proxyStatus", null);
+    ReflectionTestUtils.setField(target, "proxyWorking", false);
   }
 
   private void setDownloadProxy(String host, int port) {
