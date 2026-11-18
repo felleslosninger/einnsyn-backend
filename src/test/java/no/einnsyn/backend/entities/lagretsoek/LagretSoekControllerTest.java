@@ -502,4 +502,39 @@ class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
     var truncated = lagretSoekService.truncate(longTitle);
     assertEquals("x".repeat(60) + "...", truncated);
   }
+
+  @Test
+  void testDeleteLagretSoekWithHiddenHit() throws Exception {
+    var response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdelId = gson.fromJson(response.getBody(), ArkivdelDTO.class).getId();
+    response = post("/arkivdel/" + arkivdelId + "/saksmappe", getSaksmappeJSON(), journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var hiddenSaksmappeId = gson.fromJson(response.getBody(), SaksmappeDTO.class).getId();
+
+    response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekId = gson.fromJson(response.getBody(), LagretSoekDTO.class).getId();
+    lagretSoekService.addHits(List.of(lagretSoekId), hiddenSaksmappeId);
+    assertEquals(1, taskTestService.getLagretSoekHitIds(lagretSoekId).size());
+
+    // The Enhet is hidden before the Bruker has been notified about the hit
+    var journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
+    journalenhet2.setSkjult(true);
+    enhetRepository.saveAndFlush(journalenhet2);
+    try {
+      response = delete("/lagretSoek/" + lagretSoekId, accessToken);
+      assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
+    } finally {
+      journalenhet2 = enhetRepository.findById(journalenhet2Id).orElseThrow();
+      journalenhet2.setSkjult(false);
+      enhetRepository.saveAndFlush(journalenhet2);
+      deleteAdmin("/lagretSoek/" + lagretSoekId);
+      assertEquals(
+          HttpStatus.OK,
+          delete("/saksmappe/" + hiddenSaksmappeId, journalenhet2Key).getStatusCode());
+      assertEquals(HttpStatus.OK, delete("/arkivdel/" + arkivdelId).getStatusCode());
+    }
+  }
 }
