@@ -237,8 +237,7 @@ public class SearchQueryService {
 
     // Exclude hidden enhets and unaccessible documents
     if (!uncensored) {
-      var authenticatedEnhetId = authenticationService.getEnhetId();
-      var authenticatedSubtreeIdList = enhetService.getSubtreeIdList(authenticatedEnhetId);
+      var authenticatedSubtreeIdList = authenticationService.getEnhetSubtreeIdList();
 
       // Filter hidden enhets that the user is not authenticated for
       var hiddenEnhetList = enhetService.findHidden();
@@ -254,7 +253,7 @@ public class SearchQueryService {
 
     // Exclude unaccessible documents
     if (!uncensored) {
-      var authenticatedEnhetId = authenticationService.getEnhetId();
+      var authenticatedSubtreeIdList = authenticationService.getEnhetSubtreeIdList();
       var accessibleAfterBoolQueryBuilder = new BoolQuery.Builder();
       accessibleAfterBoolQueryBuilder.minimumShouldMatch("1");
 
@@ -263,8 +262,9 @@ public class SearchQueryService {
           RangeQuery.of(r -> r.date(d -> d.field("accessibleAfter").lte("now")))._toQuery());
 
       // If logged in, allow documents with a valid administrativEnhet
-      if (authenticatedEnhetId != null) {
-        var authenticatedEnhetFieldValues = List.of(FieldValue.of(authenticatedEnhetId));
+      if (!authenticatedSubtreeIdList.isEmpty()) {
+        var authenticatedEnhetFieldValues =
+            authenticatedSubtreeIdList.stream().map(FieldValue::of).toList();
         accessibleAfterBoolQueryBuilder.should(
             new TermsQuery.Builder()
                 .field("administrativEnhetTransitive")

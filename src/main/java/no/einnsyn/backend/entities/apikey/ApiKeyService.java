@@ -139,10 +139,9 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
       return;
     }
 
-    var loggedInAs = authenticationService.getEnhetId();
     if (params instanceof ListByEnhetParameters p
         && p.getEnhetId() != null
-        && enhetService.isAncestorOf(loggedInAs, p.getEnhetId())) {
+        && authenticationService.hasEnhetAccess(enhetService.resolveId(p.getEnhetId()))) {
       return;
     }
 
@@ -161,7 +160,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   private boolean isOwnerOf(ApiKey apiKey) {
     var apiKeyEnhet = apiKey.getEnhet();
     if (apiKeyEnhet != null) {
-      return enhetService.isAncestorOf(authenticationService.getEnhetId(), apiKeyEnhet.getId());
+      return authenticationService.hasEnhetAccess(apiKeyEnhet.getId());
     }
 
     var apiKeyBruker = apiKey.getBruker();
@@ -230,7 +229,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
       throw new AuthorizationException("EnhetId is required");
     }
 
-    if (!enhetService.isAncestorOf(loggedInAs, apiKeyEnhetId)) {
+    if (!authenticationService.hasEnhetAccess(enhetService.resolveId(apiKeyEnhetId))) {
       throw new AuthorizationException("Not authorized to add ApiKey");
     }
 
@@ -251,12 +250,10 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
       return;
     }
 
-    var loggedInAs = authenticationService.getEnhetId();
-
     // Make sure we're not changing the Enhet to one we're not authorized to
     if (dto != null
         && dto.getEnhet() != null
-        && !enhetService.isAncestorOf(loggedInAs, dto.getEnhet().getId())) {
+        && !authenticationService.hasEnhetAccess(enhetService.resolveId(dto.getEnhet().getId()))) {
       throw new AuthorizationException("Not authorized to set Enhet to " + dto.getEnhet().getId());
     }
 

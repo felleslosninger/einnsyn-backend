@@ -91,8 +91,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
       var wantedJournalenhet =
           enhetService.findOrThrow(dto.getJournalenhet().getId(), AuthorizationException.class);
 
-      if (!enhetService.isAncestorOf(
-          authenticationService.getEnhetId(), wantedJournalenhet.getId())) {
+      if (!authenticationService.hasEnhetAccess(wantedJournalenhet.getId())) {
         throw new AuthorizationException(
             "Not authorized to set journalenhet to " + wantedJournalenhet.getId());
       }
@@ -190,17 +189,9 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    */
   @Transactional(readOnly = true, propagation = Propagation.MANDATORY)
   public boolean isOwnerOf(O object) {
-    var loggedInAs = authenticationService.getEnhetId();
-    if (loggedInAs == null) {
-      return false;
-    }
-
+    // The authentication already holds the logged-in Enhets' subtrees, no lookup needed
     var journalenhet = object.getJournalenhet();
-    if (journalenhet == null) {
-      return false;
-    }
-
-    return enhetService.isAncestorOf(loggedInAs, journalenhet.getId());
+    return journalenhet != null && authenticationService.hasEnhetAccess(journalenhet.getId());
   }
 
   /** Authorize the list operation. By default, anybody can list ArkivBase objects. */
@@ -239,12 +230,11 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    */
   @Override
   protected void authorizeUpdate(String id, D dto) throws EInnsynException {
-    var loggedInAs = authenticationService.getEnhetId();
-    if (loggedInAs == null) {
+    if (authenticationService.getEnhetId() == null) {
       throw new AuthorizationException("Not authenticated to update " + objectClassName + ".");
     }
     var wantsToUpdate = getProxy().findOrThrow(id);
-    if (!enhetService.isAncestorOf(loggedInAs, wantsToUpdate.getJournalenhet().getId())) {
+    if (!isOwnerOf(wantsToUpdate)) {
       throw new AuthorizationException("Not authorized to update " + id);
     }
   }
@@ -262,8 +252,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    */
   @Override
   public void authorizeDelete(String id) throws EInnsynException {
-    var loggedInAs = authenticationService.getEnhetId();
-    if (loggedInAs == null) {
+    if (authenticationService.getEnhetId() == null) {
       throw new AuthorizationException(
           "Not authenticated to delete "
               + objectClassName
@@ -272,7 +261,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
               + " without a journalenhet. (Not logged in?)");
     }
     var wantsToDelete = getProxy().findOrThrow(id);
-    if (!enhetService.isAncestorOf(loggedInAs, wantsToDelete.getJournalenhet().getId())) {
+    if (!isOwnerOf(wantsToDelete)) {
       throw new AuthorizationException("Not authorized to delete " + objectClassName + " : " + id);
     }
   }
