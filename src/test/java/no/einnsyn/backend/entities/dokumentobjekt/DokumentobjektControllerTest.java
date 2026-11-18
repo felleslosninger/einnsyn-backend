@@ -641,7 +641,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       fulltextLinkCheckScheduler.checkReferenceUrls();
       var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
       assertEquals(HttpStatus.BAD_GATEWAY, response.getStatusCode());
-      assertEquals(2, proxy.requests().size());
+      // Scheduled reference check, the download, and the reference check after no response
+      assertEquals(3, proxy.requests().size());
     }
 
     assertNotNull(getDokumentobjekt().getLinkFailedSince());
@@ -712,7 +713,10 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       fulltextLinkCheckScheduler.checkReferenceUrls();
       dokumentobjektService.checkLink(dokumentobjektDTO.getId());
       assertEquals(
-          List.of("GET " + REFERENCE_URL + " HTTP/1.1", "CONNECT example.com:443 HTTP/1.1"),
+          List.of(
+              "GET " + REFERENCE_URL + " HTTP/1.1",
+              "CONNECT example.com:443 HTTP/1.1",
+              "GET " + REFERENCE_URL + " HTTP/1.1"),
           proxy.requests());
     }
 
@@ -735,17 +739,36 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void checkLinkShouldNotRequestReferenceUrls() throws Exception {
-    // The reference URLs are only checked on their own schedule, not when a link fails
+  void checkLinkShouldNotCheckReferenceUrlsAgainWhenSourceResponds() throws Exception {
+    // A response from the source proves that the proxy works
     useHttpsSource();
-    try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+    try (var proxy = startHttpsSourceProxy("HTTP/1.1 404 Not Found")) {
       fulltextLinkCheckScheduler.checkReferenceUrls();
-      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
       dokumentobjektService.checkLink(dokumentobjektDTO.getId());
       var referenceRequests =
           proxy.requests().stream().filter(request -> request.startsWith("GET ")).count();
       assertEquals(1, referenceRequests);
     }
+
+    assertNotNull(getDokumentobjekt().getLinkFailedSince());
+  }
+
+  @Test
+  void checkLinkShouldNotMarkLinkAsFailedWhenProxyFailsAfterReferenceCheck() throws Exception {
+    // The scheduled check may be up to a minute old, so it is checked again without a response
+    useHttpsSource();
+    try (var _ = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      fulltextLinkCheckScheduler.checkReferenceUrls();
+    }
+    try (var _ =
+        startTunnelProxy("HTTP/1.1 503 Service Unavailable", "HTTP/1.1 503 Service Unavailable")) {
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+    }
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNotNull(dokumentobjekt.getLinkCheckedAt());
+    assertNull(dokumentobjekt.getLinkFailedSince());
+    assertTrue(dokumentobjektService.isProxyWorking());
   }
 
   @Test
@@ -835,7 +858,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
       fulltextLinkCheckScheduler.checkReferenceUrls();
       fulltextLinkCheckScheduler.checkLinks();
-      assertEquals(2, proxy.requests().size());
+      // Scheduled reference check, the link check, and the reference check after no response
+      assertEquals(3, proxy.requests().size());
     }
 
     var dokumentobjekt = getDokumentobjekt();
