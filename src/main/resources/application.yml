@@ -48,8 +48,8 @@ application:
     initialDelay: ${LINK_CHECK_INITIAL_DELAY:PT5M}
     batchSize: ${LINK_CHECK_BATCH_SIZE:1000}
     concurrency: ${LINK_CHECK_CONCURRENCY:10}
-    # Checked every minute. When none of these work, failures are on our side, and the link check
-    # is paused until one of them works again
+    # Checked when a link fails without a response. When none of these work, the failure is on our
+    # side, and the link check is paused until one of them works again (checked every minute)
     referenceUrls: ${LINK_CHECK_REFERENCE_URLS:https://cp.cloudflare.com/generate_204,https://detectportal.firefox.com/success.txt}
   legacyLagretSoekConversion:
     dryRun: ${LEGACY_LAGRET_SOEK_CONVERSION_DRY_RUN:true}

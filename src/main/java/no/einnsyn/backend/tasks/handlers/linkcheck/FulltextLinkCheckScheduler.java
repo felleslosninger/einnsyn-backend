@@ -40,12 +40,12 @@ public class FulltextLinkCheckScheduler {
   }
 
   /**
-   * Check the reference URLs every minute, independent of the link checks. Not locked, since every
-   * instance downloads files through the proxy, and needs to know whether it works.
+   * While the proxy is down, check every minute whether it works again. Not locked, since every
+   * instance keeps its own proxy status.
    */
   @Scheduled(fixedRate = 1, timeUnit = TimeUnit.MINUTES)
-  public void checkReferenceUrls() {
-    if (dokumentobjektService.isDownloadProxyConfigured()) {
+  public void checkProxyWhileDown() {
+    if (!dokumentobjektService.isProxyWorking()) {
       dokumentobjektService.checkReferenceUrls();
     }
   }
@@ -61,8 +61,7 @@ public class FulltextLinkCheckScheduler {
       return;
     }
 
-    // When none of the reference URLs worked in the latest check, every check would fail on our
-    // side, so the job is paused until one of them works again
+    // When a link failed on our side, the job is paused until the proxy works again
     if (!dokumentobjektService.isProxyWorking()) {
       log.warn("Reference URLs can't be reached, skipping fulltext link check.");
       return;

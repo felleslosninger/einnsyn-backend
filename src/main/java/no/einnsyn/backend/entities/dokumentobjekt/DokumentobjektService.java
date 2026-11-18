@@ -65,8 +65,8 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   @Value("${application.linkCheck.referenceUrls:}")
   private List<String> referenceUrls;
 
-  // Updated every minute by FulltextLinkCheckScheduler, see checkReferenceUrls()
-  private volatile boolean proxyWorking;
+  // Assumed to work until a link fails without a response, see isLinkFailure()
+  private volatile boolean proxyWorking = true;
 
   @URL
   @Value("${application.baseUrl}")
@@ -295,15 +295,18 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    * file, and record the result.
    *
    * <p>Links that aren't HTTPS on port 443 are marked as failed without a request. Other failures
-   * are only marked when they are on the source's side (see {@link #isLinkFailure}). Otherwise only
-   * the check timestamp is updated, so the link is moved to the back of the queue without being
-   * marked as failed. The same goes for 429 Too Many Requests, so a rate limited source isn't asked
-   * again until the next round.
+   * are only marked when they are on the source's side (see {@link #isLinkFailure}). On 429 Too
+   * Many Requests, only the check timestamp is updated, so a rate limited source isn't asked again
+   * until the next round. Failures on our side, and links checked while the proxy is down, are left
+   * as they are, so they are checked first when the proxy works again.
    *
    * @param id dokumentobjekt id
    */
   @Transactional(propagation = Propagation.NEVER)
   public void checkLink(String id) {
+    if (!isProxyWorking()) {
+      return;
+    }
     var checkedAt = Instant.now();
     HttpURLConnection connection = null;
     try {
@@ -316,10 +319,10 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
       repository.setLinkOk(id, checkedAt);
     } catch (Exception e) {
       log.debug("Link check failed for Dokumentobjekt {}: {}", id, e.getMessage());
-      if (isLinkFailure(e)) {
-        repository.setLinkFailed(id, checkedAt);
-      } else {
+      if (isRateLimited(e)) {
         repository.setLinkChecked(id, checkedAt);
+      } else if (isLinkFailure(e)) {
+        repository.setLinkFailed(id, checkedAt);
       }
     } finally {
       if (connection != null) {
@@ -334,35 +337,38 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   }
 
   /**
-   * Check whether any of the reference URLs can be reached through the proxy. This runs on a fixed
-   * schedule, independent of the link checks. When a link fails and the reference URLs work, the
-   * failure is on the source's side. Without reference URLs, or before the first check, we can't
-   * tell, so the failure is assumed to be on our side.
+   * Check whether any of the reference URLs can be reached through the proxy. When they can't, the
+   * proxy is considered down, and the link check is paused until they can be reached again. Without
+   * reference URLs, a failure without a response is always assumed to be on our side.
    */
   public void checkReferenceUrls() {
-    proxyWorking = isAnyReferenceUrlReachable();
+    proxyWorking = referenceUrls.stream().anyMatch(this::isReachable);
   }
 
-  /** The result of the latest {@link #checkReferenceUrls}. */
+  /** Whether the proxy works, according to the latest {@link #checkReferenceUrls}. */
   public boolean isProxyWorking() {
     return proxyWorking;
   }
 
   /**
    * Whether a failed request means that the link doesn't work. A response from the source proves
-   * that the proxy works, but 429 only means that the source is rate limited. Without a response,
-   * the reference URLs are checked again, since the scheduled check may be up to a minute old. That
-   * check doesn't update the scheduled result, so a failing link never pauses the link check.
+   * that the proxy works, except 429, which only means that the source is rate limited. Without a
+   * response, the reference URLs are checked, to tell whether the failure is on our side.
    */
   private boolean isLinkFailure(Exception e) {
-    if (e instanceof SourceStatusException sourceStatus) {
-      return sourceStatus.statusCode != HttpStatus.TOO_MANY_REQUESTS.value();
+    if (e instanceof SourceStatusException) {
+      return !isRateLimited(e);
     }
-    return isProxyWorking() && isAnyReferenceUrlReachable();
+    if (!isProxyWorking()) {
+      return false;
+    }
+    checkReferenceUrls();
+    return isProxyWorking();
   }
 
-  private boolean isAnyReferenceUrlReachable() {
-    return referenceUrls.stream().anyMatch(this::isReachable);
+  private static boolean isRateLimited(Exception e) {
+    return e instanceof SourceStatusException sourceStatus
+        && sourceStatus.statusCode == HttpStatus.TOO_MANY_REQUESTS.value();
   }
 
   private boolean isReachable(String url) {
