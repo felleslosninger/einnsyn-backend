@@ -47,7 +47,8 @@ class SearchSortingConsistencyTest {
             moetemappeService,
             moetesakService,
             searchQueryService,
-            request);
+            request,
+            null);
 
     // Set test values for the SearchService properties
     ReflectionTestUtils.setField(searchService, "elasticsearchIndex", "test-index");
