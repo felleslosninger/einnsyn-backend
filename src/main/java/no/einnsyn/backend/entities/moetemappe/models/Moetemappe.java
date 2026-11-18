@@ -19,6 +19,7 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.indexable.Indexable;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
+import no.einnsyn.backend.entities.lagretsak.models.LagretSak;
 import no.einnsyn.backend.entities.mappe.models.Mappe;
 import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
@@ -94,6 +95,12 @@ public class Moetemappe extends Mappe implements Indexable {
   @OrderBy("id ASC")
   @Getter(AccessLevel.NONE)
   private List<Matrikkelnummer> matrikkelnummer;
+
+  // The logged-in Bruker's own LagretSak
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "moetemappe")
+  @Filter(name = "brukerFilter")
+  @OrderBy("id ASC")
+  private List<LagretSak> lagretSak;
 
   @Override
   public List<Matrikkelnummer> getMatrikkelnummer() {
