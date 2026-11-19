@@ -865,10 +865,21 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void linkCheckSchedulerShouldStopWhenShuttingDown() throws Exception {
+    assertLinkCheckSkippedOnShutdown(true);
+  }
+
+  @Test
+  void linkCheckSchedulerShouldNotStartCheckWhenShutdownStartsWhileWaitingForSlot()
+      throws Exception {
+    // The loop sees no shutdown, but the shutdown starts before the check gets a free slot
+    assertLinkCheckSkippedOnShutdown(false, true);
+  }
+
+  private void assertLinkCheckSkippedOnShutdown(Boolean first, Boolean... next) throws Exception {
     useHttpsSource();
     var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
     var shutdownListener = mock(ApplicationShutdownListenerService.class);
-    when(shutdownListener.isShuttingDown()).thenReturn(true);
+    when(shutdownListener.isShuttingDown()).thenReturn(first, next);
     var originalShutdownListener =
         ReflectionTestUtils.getField(target, "applicationShutdownListenerService");
     ReflectionTestUtils.setField(target, "applicationShutdownListenerService", shutdownListener);

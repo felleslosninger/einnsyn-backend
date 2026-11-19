@@ -74,15 +74,21 @@ public class FulltextLinkCheckScheduler {
 
     var ids = dokumentobjektRepository.findIdsByOldestLinkCheck(PageRequest.of(0, batchSize));
 
-    // ParallelRunner waits for a free slot before starting the next check, so stopping here on
-    // shutdown leaves the remaining links unchecked. They are picked first by the next run.
+    // On shutdown no new checks are started. The remaining links are picked first by the next run.
     var futures = new ArrayList<CompletableFuture<Void>>();
     for (var id : ids) {
       if (applicationShutdownListenerService.isShuttingDown()) {
         log.warn("Application is shutting down. Aborting fulltext link check.");
         break;
       }
-      futures.add(parallelRunner.run(() -> dokumentobjektService.checkLink(id)));
+      futures.add(
+          parallelRunner.run(
+              () -> {
+                // ParallelRunner may wait for a free slot after the check above, so check again
+                if (!applicationShutdownListenerService.isShuttingDown()) {
+                  dokumentobjektService.checkLink(id);
+                }
+              }));
     }
 
     // ParallelRunner logs any failure, so failed futures are ignored here
