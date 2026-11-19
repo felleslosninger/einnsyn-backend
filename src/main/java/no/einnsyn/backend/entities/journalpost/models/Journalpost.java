@@ -228,8 +228,8 @@ public class Journalpost extends Registrering implements Indexable {
   protected void preUpdate() {
     super.preUpdate();
 
-    // Keep journalpostIri in sync with externalId
-    if (externalId != null && !externalId.equals(legacyIri)) {
+    // Keep journalpostIri in sync with externalId as long as the latter is an IRI
+    if (externalId != null && !externalId.equals(legacyIri) && IRIMatcher.matches(externalId)) {
       legacyIri = externalId;
     }
 
