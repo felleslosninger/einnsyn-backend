@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URI;
 import java.net.URLConnection;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
@@ -44,7 +45,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, DokumentobjektDTO> {
   private static final String DEFAULT_DOWNLOAD_FILE_NAME = "einnsyn-download";
   private static final int DOWNLOAD_CONNECT_TIMEOUT_MS = 10_000;
-  private static final int DOWNLOAD_READ_TIMEOUT_MS = 30_000;
+  private static final Duration DOWNLOAD_READ_TIMEOUT = Duration.ofSeconds(30);
 
   // Some sources allowlist this value, it is inherited from the legacy eInnsyn API.
   private static final String DOWNLOAD_USER_AGENT = "eInnsyn";
@@ -64,6 +65,10 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   // URLs that should always work through the proxy. When they don't, the failure is on our side.
   @Value("${application.linkCheck.referenceUrls:}")
   private List<String> referenceUrls;
+
+  // Can be set shorter than for downloads, so sources that don't respond don't hold up the job
+  @Value("${application.linkCheck.readTimeout:PT30S}")
+  private Duration linkCheckReadTimeout;
 
   // Assumed to work until a link fails without a response, see isLinkFailure()
   private volatile boolean proxyWorking = true;
@@ -254,7 +259,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     DownloadResponseBase downloadResponse;
 
     try {
-      connection = openDownloadConnection(sourceUri);
+      connection = openDownloadConnection(sourceUri, DOWNLOAD_READ_TIMEOUT);
       var contentType = resolveContentType(connection.getContentType(), sourceUri);
 
       // Redirect HTML content
@@ -315,7 +320,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
         repository.setLinkFailed(id, checkedAt);
         return;
       }
-      connection = openDownloadConnection(sourceUri);
+      connection = openDownloadConnection(sourceUri, linkCheckReadTimeout);
       repository.setLinkOk(id, checkedAt);
     } catch (Exception e) {
       log.debug("Link check failed for Dokumentobjekt {}: {}", id, e.getMessage());
@@ -373,7 +378,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
 
   private boolean isReachable(String url) {
     try {
-      openDownloadConnection(URI.create(url)).disconnect();
+      openDownloadConnection(URI.create(url), linkCheckReadTimeout).disconnect();
       return true;
     } catch (Exception e) {
       log.debug("Reference URL {} could not be reached: {}", url, e.getMessage());
@@ -504,13 +509,14 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    * Open a connection to the source URI through the configured download proxy. SSRF protection and
    * scheme enforcement are delegated to the proxy.
    */
-  private HttpURLConnection openDownloadConnection(URI sourceUri) throws IOException {
+  private HttpURLConnection openDownloadConnection(URI sourceUri, Duration readTimeout)
+      throws IOException {
     var proxyAddress = new InetSocketAddress(downloadProxyHost, downloadProxyPort);
     var httpProxy = new Proxy(Proxy.Type.HTTP, proxyAddress);
     var connection = (HttpURLConnection) sourceUri.toURL().openConnection(httpProxy);
     connection.setRequestProperty(HttpHeaders.USER_AGENT, DOWNLOAD_USER_AGENT);
     connection.setConnectTimeout(DOWNLOAD_CONNECT_TIMEOUT_MS);
-    connection.setReadTimeout(DOWNLOAD_READ_TIMEOUT_MS);
+    connection.setReadTimeout((int) readTimeout.toMillis());
     connection.setInstanceFollowRedirects(true);
     connection.connect();
 

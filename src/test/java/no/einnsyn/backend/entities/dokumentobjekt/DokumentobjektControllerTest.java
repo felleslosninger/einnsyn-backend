@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -976,6 +977,43 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var dokumentobjekt = getDokumentobjekt();
     assertNotNull(dokumentobjekt.getLinkCheckedAt());
     assertNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
+  void checkLinkShouldUseLinkCheckReadTimeout() throws Exception {
+    // A proxy that accepts connections, but never responds
+    useHttpsSource();
+    var target = AopTestUtils.getTargetObject(dokumentobjektService);
+    try (var silentProxy = new ServerSocket(0)) {
+      List<Socket> sockets = Collections.synchronizedList(new ArrayList<>());
+      Thread.ofVirtual()
+          .start(
+              () -> {
+                while (!silentProxy.isClosed()) {
+                  try {
+                    sockets.add(silentProxy.accept());
+                  } catch (IOException _) {
+                    // The server socket was closed
+                  }
+                }
+              });
+      setDownloadProxy("localhost", silentProxy.getLocalPort());
+      ReflectionTestUtils.setField(target, "linkCheckReadTimeout", Duration.ofMillis(200));
+
+      var start = Instant.now();
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+      // The link check and the reference URL time out, far below the download timeout
+      assertTrue(Duration.between(start, Instant.now()).toSeconds() < 5);
+      for (var socket : sockets) {
+        socket.close();
+      }
+    } finally {
+      ReflectionTestUtils.setField(target, "linkCheckReadTimeout", Duration.ofSeconds(30));
+    }
+
+    // The reference URL timed out too, so the failure is on our side
+    assertNull(getDokumentobjekt().getLinkFailedSince());
+    assertFalse(dokumentobjektService.isProxyWorking());
   }
 
   @Test
