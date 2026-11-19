@@ -44,7 +44,7 @@ application:
         port: ${DOKUMENTOBJEKT_DOWNLOAD_PROXY_PORT:3128}
         host: ${DOKUMENTOBJEKT_DOWNLOAD_PROXY_HOST:}
   linkCheck:
-    interval: ${LINK_CHECK_INTERVAL:PT1M}
+    interval: ${LINK_CHECK_INTERVAL:PT30S}
     initialDelay: ${LINK_CHECK_INITIAL_DELAY:PT5M}
     batchSize: ${LINK_CHECK_BATCH_SIZE:1000}
     concurrency: ${LINK_CHECK_CONCURRENCY:10}

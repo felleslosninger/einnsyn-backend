@@ -9,6 +9,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
@@ -53,6 +54,7 @@ import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.tasks.TaskTestService;
 import no.einnsyn.backend.tasks.handlers.linkcheck.FulltextLinkCheckScheduler;
+import no.einnsyn.backend.utils.ApplicationShutdownListenerService;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -859,6 +861,27 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var dokumentobjekt = getDokumentobjekt();
     assertNotNull(dokumentobjekt.getLinkCheckedAt());
     assertNotNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
+  void linkCheckSchedulerShouldStopWhenShuttingDown() throws Exception {
+    useHttpsSource();
+    var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
+    var shutdownListener = mock(ApplicationShutdownListenerService.class);
+    when(shutdownListener.isShuttingDown()).thenReturn(true);
+    var originalShutdownListener =
+        ReflectionTestUtils.getField(target, "applicationShutdownListenerService");
+    ReflectionTestUtils.setField(target, "applicationShutdownListenerService", shutdownListener);
+    try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      fulltextLinkCheckScheduler.checkLinks();
+      assertEquals(List.of(), proxy.requests());
+    } finally {
+      ReflectionTestUtils.setField(
+          target, "applicationShutdownListenerService", originalShutdownListener);
+    }
+
+    // The link is left for the next run
+    assertNull(getDokumentobjekt().getLinkCheckedAt());
   }
 
   @Test

@@ -1,11 +1,13 @@
 package no.einnsyn.backend.tasks.handlers.linkcheck;
 
+import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import no.einnsyn.backend.entities.dokumentobjekt.DokumentobjektRepository;
 import no.einnsyn.backend.entities.dokumentobjekt.DokumentobjektService;
+import no.einnsyn.backend.utils.ApplicationShutdownListenerService;
 import no.einnsyn.backend.utils.ParallelRunner;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +27,7 @@ public class FulltextLinkCheckScheduler {
 
   private final DokumentobjektRepository dokumentobjektRepository;
   private final DokumentobjektService dokumentobjektService;
+  private final ApplicationShutdownListenerService applicationShutdownListenerService;
   private final ParallelRunner parallelRunner;
 
   @Value("${application.linkCheck.batchSize:1000}")
@@ -33,10 +36,12 @@ public class FulltextLinkCheckScheduler {
   public FulltextLinkCheckScheduler(
       DokumentobjektRepository dokumentobjektRepository,
       DokumentobjektService dokumentobjektService,
+      ApplicationShutdownListenerService applicationShutdownListenerService,
       @Value("${application.linkCheck.concurrency:10}") int concurrency) {
     this.parallelRunner = new ParallelRunner(concurrency);
     this.dokumentobjektRepository = dokumentobjektRepository;
     this.dokumentobjektService = dokumentobjektService;
+    this.applicationShutdownListenerService = applicationShutdownListenerService;
   }
 
   /**
@@ -51,7 +56,7 @@ public class FulltextLinkCheckScheduler {
   }
 
   @Scheduled(
-      fixedDelayString = "${application.linkCheck.interval:PT1M}",
+      fixedDelayString = "${application.linkCheck.interval:PT30S}",
       initialDelayString = "${application.linkCheck.initialDelay:PT5M}")
   @SchedulerLock(name = "FulltextLinkCheck", lockAtLeastFor = "PT10S")
   public void checkLinks() {
@@ -69,12 +74,21 @@ public class FulltextLinkCheckScheduler {
 
     var ids = dokumentobjektRepository.findIdsByOldestLinkCheck(PageRequest.of(0, batchSize));
 
+    // ParallelRunner waits for a free slot before starting the next check, so stopping here on
+    // shutdown leaves the remaining links unchecked. They are picked first by the next run.
+    var futures = new ArrayList<CompletableFuture<Void>>();
+    for (var id : ids) {
+      if (applicationShutdownListenerService.isShuttingDown()) {
+        log.warn("Application is shutting down. Aborting fulltext link check.");
+        break;
+      }
+      futures.add(parallelRunner.run(() -> dokumentobjektService.checkLink(id)));
+    }
+
     // ParallelRunner logs any failure, so failed futures are ignored here
-    var futures =
-        ids.stream()
-            .map(id -> parallelRunner.run(() -> dokumentobjektService.checkLink(id)))
-            .toArray(CompletableFuture[]::new);
-    CompletableFuture.allOf(futures).exceptionally(_ -> null).join();
-    log.info("Finished checking {} fulltext links.", ids.size());
+    CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+        .exceptionally(_ -> null)
+        .join();
+    log.info("Finished checking {} fulltext links.", futures.size());
   }
 }
