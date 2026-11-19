@@ -457,10 +457,39 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
         }
         """;
     var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertNotNull(result.getJournalposttype());
-    assertEquals(2, result.getJournalposttype().size());
-    assertTrue(result.getJournalposttype().contains("Inngående dokument"));
-    assertTrue(result.getJournalposttype().contains("Utgående dokument"));
+    assertEquals(List.of("inngaaende_dokument", "utgaaende_dokument"), result.getJournalposttype());
+  }
+
+  @Test
+  void testConvertTermQueryFilterJournalposttypeIri() throws EInnsynException {
+    var legacyQueryJson =
+        """
+        {
+          "appliedFilters": [
+            {
+              "type": "termQueryFilter",
+              "fieldName": "journalposttype",
+              "fieldValue": [
+                "http://www.arkivverket.no/standarder/noark5/arkivstruktur/inngåendeDokument",
+                "http://www.arkivverket.no/standarder/noark5/arkivstruktur/innkommendeDokument",
+                "http://www.arkivverket.no/standarder/noark5/arkivstruktur/organinterntDokumentForOppfølging",
+                "http://www.arkivverket.no/standarder/noark5/arkivstruktur/organinterntDokumentUtenOppfølging",
+                "http://www.arkivverket.no/standarder/noark5/arkivstruktur/saksframlegg",
+                "http://www.arkivverket.no/standarder/noark5/arkivstruktur/somethingElse"
+              ]
+            }
+          ]
+        }
+        """;
+    var result = converter.convertLegacyQuery(legacyQueryJson);
+    assertEquals(
+        List.of(
+            "inngaaende_dokument",
+            "organinternt_dokument_for_oppfoelging",
+            "organinternt_dokument_uten_oppfoelging",
+            "saksframlegg",
+            "ukjent"),
+        result.getJournalposttype());
   }
 
   @ParameterizedTest(name = "Range filter for {0}")
@@ -677,9 +706,7 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
     assertEquals("desc", result.getSortOrder());
     assertEquals("2023-01-01", result.getJournaldatoFrom());
     assertEquals("2023-12-31", result.getJournaldatoTo());
-    assertNotNull(result.getJournalposttype());
-    assertEquals(1, result.getJournalposttype().size());
-    assertTrue(result.getJournalposttype().contains("Inngående dokument"));
+    assertEquals(List.of("inngaaende_dokument"), result.getJournalposttype());
   }
 
   @Test
@@ -1159,9 +1186,7 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
 
     var result = converter.convertLegacyQuery(legacyQueryJson);
 
-    assertNotNull(result.getJournalposttype());
-    assertEquals(1, result.getJournalposttype().size());
-    assertTrue(result.getJournalposttype().contains("Inngående dokument"));
+    assertEquals(List.of("inngaaende_dokument"), result.getJournalposttype());
   }
 
   @Test

@@ -15,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.search.models.SearchParameters;
 import no.einnsyn.backend.entities.enhet.EnhetService;
+import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO.JournalposttypeEnum;
+import no.einnsyn.backend.entities.journalpost.models.JournalposttypeResolver;
 import no.einnsyn.backend.entities.lagretsoek.models.LegacyQuery;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -414,8 +416,18 @@ public class LegacyQueryConverter {
     if (fieldName.equals("type") || fieldName.equals("type_filter")) {
       searchParameters.setEntity(values);
     } else if (fieldName.equals("journalposttype") || fieldName.equals("journalposttype_filter")) {
-      searchParameters.setJournalposttype(values);
+      searchParameters.setJournalposttype(
+          values.stream().map(this::mapJournalposttype).distinct().toList());
     }
+  }
+
+  /** Maps a legacy journalposttype (an IRI) to the enum value used by the new API. */
+  private String mapJournalposttype(String legacyJournalposttype) {
+    var journalposttype = JournalposttypeResolver.resolve(legacyJournalposttype);
+    if (journalposttype == JournalposttypeEnum.UKJENT) {
+      log.warn("Unknown legacy journalposttype: {}", legacyJournalposttype);
+    }
+    return journalposttype.toString();
   }
 
   private void processRangeQueryFilter(
