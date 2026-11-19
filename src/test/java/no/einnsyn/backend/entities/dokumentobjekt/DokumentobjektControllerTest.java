@@ -636,16 +636,31 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void downloadShouldMarkLinkAsFailedWhenProxyCannotReachSource() throws Exception {
+  void downloadShouldMarkLinkAsFailedWhenSourceRespondsWithError() throws Exception {
+    useHttpsSource();
+    try (var _ = startHttpsSourceProxy("HTTP/1.1 404 Not Found")) {
+      var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.BAD_GATEWAY, response.getStatusCode());
+    }
+
+    assertNotNull(getDokumentobjekt().getLinkFailedSince());
+  }
+
+  @Test
+  void downloadShouldNotCheckReferenceUrlsWithoutResponseFromSource() throws Exception {
+    // The client shouldn't wait for a check of the reference URLs, so the link is left for the
+    // link check
     useHttpsSource();
     try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
       var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
       assertEquals(HttpStatus.BAD_GATEWAY, response.getStatusCode());
-      // The download, and the reference check after no response
-      assertEquals(2, proxy.requests().size());
+      assertEquals(List.of("CONNECT example.com:443 HTTP/1.1"), proxy.requests());
     }
 
-    assertNotNull(getDokumentobjekt().getLinkFailedSince());
+    var dokumentobjekt = getDokumentobjekt();
+    assertNull(dokumentobjekt.getLinkCheckedAt());
+    assertNull(dokumentobjekt.getLinkFailedSince());
+    assertTrue(dokumentobjektService.isProxyWorking());
   }
 
   @Test
@@ -747,18 +762,6 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void downloadShouldNotMarkLinkAsFailedWhenReferenceUrlAlsoFails() throws Exception {
-    useHttpsSource();
-    try (var _ =
-        startTunnelProxy("HTTP/1.1 503 Service Unavailable", "HTTP/1.1 503 Service Unavailable")) {
-      var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
-      assertEquals(HttpStatus.BAD_GATEWAY, response.getStatusCode());
-    }
-
-    assertNull(getDokumentobjekt().getLinkFailedSince());
-  }
-
-  @Test
   void checkLinkShouldNotMarkLinkAsFailedWhenProxyIsUnavailable() throws Exception {
     // The proxy is unavailable, so the link is left as it is
     useHttpsSource();
@@ -789,7 +792,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
         .executeWithoutResult(
             _ -> {
               var dokumentobjekt = getDokumentobjekt();
-              dokumentobjektRepository.setLinkFailed(dokumentobjektDTO.getId(), Instant.now());
+              dokumentobjektRepository.setLinkFailed(
+                  dokumentobjektDTO.getId(), SOURCE_URL, Instant.now());
               dokumentobjekt.setDokumentFormat("application/pdf");
             });
 
@@ -809,6 +813,24 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var dokumentobjekt = getDokumentobjekt();
     assertNull(dokumentobjekt.getLinkCheckedAt());
     assertNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
+  void linkStatusShouldNotBeRecordedForAnOldUrl() throws Exception {
+    // A check of the old URL finishes after the URL was changed, and must not touch the new one
+    useHttpsSource();
+    var checkedAt = Instant.now();
+    dokumentobjektRepository.setLinkFailed(dokumentobjektDTO.getId(), SOURCE_URL, checkedAt);
+    dokumentobjektRepository.setLinkChecked(dokumentobjektDTO.getId(), SOURCE_URL, checkedAt);
+    dokumentobjektRepository.setLinkOk(dokumentobjektDTO.getId(), SOURCE_URL, checkedAt);
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNull(dokumentobjekt.getLinkCheckedAt());
+    assertNull(dokumentobjekt.getLinkFailedSince());
+
+    // The status of the URL that is stored is recorded as usual
+    dokumentobjektRepository.setLinkFailed(dokumentobjektDTO.getId(), HTTPS_SOURCE_URL, checkedAt);
+    assertNotNull(getDokumentobjekt().getLinkFailedSince());
   }
 
   @Test
@@ -851,8 +873,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
     var okCheckedAt = Instant.now().minus(3, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
     var failedCheckedAt = Instant.now().minus(2, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
-    dokumentobjektRepository.setLinkOk(okDTO.getId(), okCheckedAt);
-    dokumentobjektRepository.setLinkFailed(dokumentobjektDTO.getId(), failedCheckedAt);
+    dokumentobjektRepository.setLinkOk(okDTO.getId(), HTTPS_SOURCE_URL, okCheckedAt);
+    dokumentobjektRepository.setLinkFailed(dokumentobjektDTO.getId(), SOURCE_URL, failedCheckedAt);
 
     var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
     ReflectionTestUtils.setField(target, "batchSize", 1);
@@ -877,7 +899,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var uncheckedDTO = gson.fromJson(response.getBody(), DokumentobjektDTO.class);
 
     var checkedAt = Instant.now().minus(2, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
-    dokumentobjektRepository.setLinkOk(dokumentobjektDTO.getId(), checkedAt);
+    dokumentobjektRepository.setLinkOk(dokumentobjektDTO.getId(), SOURCE_URL, checkedAt);
 
     var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
     ReflectionTestUtils.setField(target, "batchSize", 1);

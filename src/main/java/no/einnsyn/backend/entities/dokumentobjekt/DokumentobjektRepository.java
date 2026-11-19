@@ -21,6 +21,8 @@ public interface DokumentobjektRepository extends ArkivBaseRepository<Dokumentob
   List<String> findIdsByOldestLinkCheck(Pageable pageable);
 
   // The link updates below are bulk updates, so `_updated` is not touched and nothing is reindexed.
+  // They only apply when the stored URL is still the one that was checked, so a check of an old URL
+  // can't overwrite the status of a new one.
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Modifying
@@ -30,9 +32,9 @@ public interface DokumentobjektRepository extends ArkivBaseRepository<Dokumentob
       SET
         o.linkCheckedAt = :checkedAt,
         o.linkFailedSince = NULL
-      WHERE o.id = :id
+      WHERE o.id = :id AND o.referanseDokumentfil = :url
       """)
-  void setLinkOk(String id, Instant checkedAt);
+  void setLinkOk(String id, String url, Instant checkedAt);
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Modifying
@@ -42,14 +44,19 @@ public interface DokumentobjektRepository extends ArkivBaseRepository<Dokumentob
       SET
         o.linkCheckedAt = :checkedAt,
         o.linkFailedSince = COALESCE(o.linkFailedSince, :checkedAt)
-      WHERE o.id = :id
+      WHERE o.id = :id AND o.referanseDokumentfil = :url
       """)
-  void setLinkFailed(String id, Instant checkedAt);
+  void setLinkFailed(String id, String url, Instant checkedAt);
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Modifying
-  @Query("UPDATE Dokumentobjekt o SET o.linkCheckedAt = :checkedAt WHERE o.id = :id")
-  void setLinkChecked(String id, Instant checkedAt);
+  @Query(
+      """
+      UPDATE Dokumentobjekt o
+      SET o.linkCheckedAt = :checkedAt
+      WHERE o.id = :id AND o.referanseDokumentfil = :url
+      """)
+  void setLinkChecked(String id, String url, Instant checkedAt);
 
   // Runs in the caller's transaction, so the reset is rolled back if the update fails
   @Modifying

@@ -253,7 +253,8 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    */
   @Transactional(propagation = Propagation.NEVER)
   public DownloadResponseBase download(String id) throws EInnsynException {
-    var sourceUri = getProxy().getSourceUri(id);
+    var sourceUrl = getProxy().getSourceUrl(id);
+    var sourceUri = toSourceUri(id, sourceUrl);
     var fileName = getProxy().generateDownloadFileName(id, sourceUri);
     HttpURLConnection connection = null;
     DownloadResponseBase downloadResponse;
@@ -279,9 +280,10 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
       if (connection != null) {
         connection.disconnect();
       }
-      // Failures on our side (proxy, network) say nothing about the link, and neither does 429
-      if (!isHttpsOnDefaultPort(sourceUri) || isLinkFailure(e)) {
-        recordLinkStatus(id, false);
+      // Only failures that are certain are recorded. A failure without a response is left for
+      // the link check, so the client doesn't wait for a check of the reference URLs.
+      if (!isHttpsOnDefaultPort(sourceUri) || isSourceFailure(e)) {
+        recordLinkStatus(id, sourceUrl, false);
       }
       // Don't expose source URL in the message, as it will be sent to the client.
       throw new NetworkException("Could not prepare download from source", e, null);
@@ -290,7 +292,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     // Recorded outside the try block: the download has already succeeded at this point, and a
     // failure to record statistics must not be reported to the client as a download failure.
     recordDownload(id);
-    recordLinkStatus(id, isHttpsOnDefaultPort(sourceUri));
+    recordLinkStatus(id, sourceUrl, isHttpsOnDefaultPort(sourceUri));
 
     return downloadResponse;
   }
@@ -313,21 +315,35 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
       return;
     }
     var checkedAt = Instant.now();
+    // Deleted, or the link was removed since the batch was fetched
+    var sourceUrl =
+        repository.findById(id).map(Dokumentobjekt::getReferanseDokumentfil).orElse(null);
+    if (sourceUrl == null) {
+      return;
+    }
+    URI sourceUri;
+    try {
+      sourceUri = toSourceUri(id, sourceUrl);
+    } catch (NotFoundException _) {
+      // An invalid URL doesn't work
+      repository.setLinkFailed(id, sourceUrl, checkedAt);
+      return;
+    }
+    if (!isHttpsOnDefaultPort(sourceUri)) {
+      repository.setLinkFailed(id, sourceUrl, checkedAt);
+      return;
+    }
+
     HttpURLConnection connection = null;
     try {
-      var sourceUri = getProxy().getSourceUri(id);
-      if (!isHttpsOnDefaultPort(sourceUri)) {
-        repository.setLinkFailed(id, checkedAt);
-        return;
-      }
       connection = openDownloadConnection(sourceUri, linkCheckReadTimeout);
-      repository.setLinkOk(id, checkedAt);
+      repository.setLinkOk(id, sourceUrl, checkedAt);
     } catch (Exception e) {
       log.debug("Link check failed for Dokumentobjekt {}: {}", id, e.getMessage());
       if (isRateLimited(e)) {
-        repository.setLinkChecked(id, checkedAt);
+        repository.setLinkChecked(id, sourceUrl, checkedAt);
       } else if (isLinkFailure(e)) {
-        repository.setLinkFailed(id, checkedAt);
+        repository.setLinkFailed(id, sourceUrl, checkedAt);
       }
     } finally {
       if (connection != null) {
@@ -362,13 +378,18 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    */
   private boolean isLinkFailure(Exception e) {
     if (e instanceof SourceStatusException) {
-      return !isRateLimited(e);
+      return isSourceFailure(e);
     }
     if (!isProxyWorking()) {
       return false;
     }
     checkReferenceUrls();
     return isProxyWorking();
+  }
+
+  /** Whether the source responded with an error, other than 429 Too Many Requests. */
+  private static boolean isSourceFailure(Exception e) {
+    return e instanceof SourceStatusException && !isRateLimited(e);
   }
 
   private static boolean isRateLimited(Exception e) {
@@ -391,14 +412,15 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    * statistics, this is a best-effort side effect that must not change the response to the client.
    *
    * @param id dokumentobjekt id
+   * @param sourceUrl the URL that was downloaded, as stored
    * @param ok whether the link works
    */
-  private void recordLinkStatus(String id, boolean ok) {
+  private void recordLinkStatus(String id, String sourceUrl, boolean ok) {
     try {
       if (ok) {
-        repository.setLinkOk(id, Instant.now());
+        repository.setLinkOk(id, sourceUrl, Instant.now());
       } else {
-        repository.setLinkFailed(id, Instant.now());
+        repository.setLinkFailed(id, sourceUrl, Instant.now());
       }
     } catch (Exception e) {
       log.error("Could not record link status for Dokumentobjekt {}", id, e);
@@ -423,21 +445,32 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   }
 
   /**
-   * Look up the source URI for a Dokumentobjekt.
+   * Look up the source URL for a Dokumentobjekt, as stored.
    *
    * @param id the dokumentobjekt id
-   * @return the source URI
-   * @throws EInnsynException if the object is not found or has no valid source URL
+   * @return the source URL
+   * @throws EInnsynException if the object is not found or has no source URL
    */
   @Transactional(readOnly = true)
-  public URI getSourceUri(String id) throws EInnsynException {
+  public String getSourceUrl(String id) throws EInnsynException {
     authorizeGet(id);
     var dokumentobjekt = getProxy().findOrThrow(id, NotFoundException.class);
     var sourceUrl = dokumentobjekt.getReferanseDokumentfil();
     if (sourceUrl == null || sourceUrl.isBlank()) {
       throw new NotFoundException("No source found for " + id);
     }
+    return sourceUrl;
+  }
 
+  /**
+   * Convert a stored source URL to a URI.
+   *
+   * @param id the dokumentobjekt id, for the error message
+   * @param sourceUrl the source URL, as stored
+   * @return the source URI
+   * @throws NotFoundException if the source URL is invalid
+   */
+  private static URI toSourceUri(String id, String sourceUrl) throws NotFoundException {
     try {
       // Preserve already-encoded source URLs exactly as stored.
       return URI.create(sourceUrl);
