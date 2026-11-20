@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.base.models.BaseES;
@@ -190,7 +191,12 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEquals(journalpostDTO.getJournaldato(), journalpostES.getJournaldato());
     assertEquals(journalpostDTO.getDokumentetsDato(), journalpostES.getDokumentetsDato());
     assertEquals(journalpostDTO.getJournalpostnummer() + "", journalpostES.getJournalpostnummer());
-    assertEquals(journalpostDTO.getJournalposttype(), journalpostES.getJournalposttype());
+    assertEquals(
+        Stream.of(journalpostDTO.getLegacyJournalposttype(), journalpostDTO.getJournalposttype())
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList(),
+        journalpostES.getJournalposttype());
     assertEquals(journalpostDTO.getJournalaar() + "", journalpostES.getJournalaar());
     assertEquals(
         journalpostDTO.getJournalsekvensnummer() + "", journalpostES.getJournalsekvensnummer());

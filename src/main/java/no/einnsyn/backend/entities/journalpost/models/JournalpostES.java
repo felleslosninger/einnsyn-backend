@@ -15,7 +15,7 @@ public class JournalpostES extends RegistreringES {
   private String journaldato;
   private String dokumentetsDato;
   private String journalpostnummer;
-  private String journalposttype;
+  private List<String> journalposttype;
   private String journalaar;
   private String journalsekvensnummer;
   private String saksaar;

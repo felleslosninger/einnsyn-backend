@@ -109,7 +109,11 @@ class SearchPaginationTest extends EinnsynControllerTestBase {
     journalpostJSON.put("administrativEnhetObjekt", journalenhet2Id);
     journalpostJSON.put("journalsekvensnummer", "2");
     journalpostJSON.put("journalpostnummer", 102);
-    journalpostJSON.put("journalposttype", "utgaaende_dokument");
+    // A legacy type, indexed along with the "utgaaende_dokument" it resolves to
+    journalpostJSON.put("journalposttype", "ukjent");
+    journalpostJSON.put(
+        "legacyJournalposttype",
+        "http://www.arkivverket.no/standarder/noark5/arkivstruktur/utgåendeDokument");
     journalpostJSON.put("journaldato", "2023-02-20");
     journalpostJSON.put("dokumentetsDato", "2023-02-15");
     journalpostJSON.put(
@@ -441,8 +445,24 @@ class SearchPaginationTest extends EinnsynControllerTestBase {
   @ParameterizedTest(name = "sortOrder={0}")
   @ValueSource(strings = {"desc", "asc"})
   void testEndingBeforeWithMissingSortValues(String sortOrder) throws Exception {
+    assertPagingBackwardsReproducesPages("/search?limit=2&sortBy=moetedato&sortOrder=" + sortOrder);
+  }
+
+  /**
+   * A Journalpost with a legacy type has two values in journalposttype. Paging backwards must sort
+   * on the same one as paging forwards did.
+   */
+  @ParameterizedTest(name = "sortOrder={0}")
+  @ValueSource(strings = {"desc", "asc"})
+  void testEndingBeforeWithLegacyJournalposttype(String sortOrder) throws Exception {
+    assertPagingBackwardsReproducesPages(
+        "/search?entity=Journalpost&limit=1&sortBy=journalposttype&sortOrder=" + sortOrder);
+  }
+
+  /** Walks forward through every page of the search, then back again by the previous links. */
+  private void assertPagingBackwardsReproducesPages(String firstUrl) throws Exception {
     var pages = new ArrayList<List<String>>();
-    var url = "/search?limit=2&sortBy=moetedato&sortOrder=" + sortOrder;
+    var url = firstUrl;
     while (url != null) {
       var response = get(url);
       assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -453,7 +473,7 @@ class SearchPaginationTest extends EinnsynControllerTestBase {
     assertTrue(pages.size() >= 3, "Expected several pages, got " + pages.size());
 
     // Walk back from the last page using the previous links, comparing page by page
-    var response = get("/search?limit=2&sortBy=moetedato&sortOrder=" + sortOrder);
+    var response = get(firstUrl);
     PaginatedList<BaseDTO> page = gson.fromJson(response.getBody(), jptype);
     for (var i = 1; i < pages.size(); i++) {
       response = get(page.getNext());
