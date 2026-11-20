@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.sun.net.httpserver.HttpServer;
+import com.zaxxer.hikari.HikariDataSource;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -38,6 +39,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
+import javax.sql.DataSource;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.exceptions.models.NetworkException;
 import no.einnsyn.backend.common.statistics.models.StatisticsResponse;
@@ -55,6 +57,7 @@ import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.tasks.TaskTestService;
 import no.einnsyn.backend.tasks.handlers.linkcheck.FulltextLinkCheckScheduler;
 import no.einnsyn.backend.utils.ApplicationShutdownListenerService;
+import org.awaitility.Awaitility;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,6 +70,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -89,6 +93,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   @Autowired private TaskTestService taskTestService;
   @Autowired private FulltextLinkCheckScheduler fulltextLinkCheckScheduler;
   @Autowired private PlatformTransactionManager transactionManager;
+  @Autowired private DataSource dataSource;
 
   private ArkivDTO arkivDTO;
   private ArkivdelDTO arkivdelDTO;
@@ -400,6 +405,54 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var statisticsResponse = getJournalpostStatistics();
     assertEquals(expectedDownloads, statisticsResponse.getSummary().getDownloadCount());
     assertEquals(expectedDownloads, sumDownloadCount(statisticsResponse));
+  }
+
+  @Test
+  void downloadShouldNotHoldConnectionWhileWaitingForSource() throws Exception {
+    var downloads = 3;
+    var received = new CountDownLatch(downloads);
+    var release = new CountDownLatch(1);
+    var pool = dataSource.unwrap(HikariDataSource.class).getHikariPoolMXBean();
+    var futures = new ArrayList<Future<ResponseEntity<String>>>();
+    Runnable stall =
+        () -> {
+          received.countDown();
+          try {
+            release.await(30, TimeUnit.SECONDS);
+          } catch (InterruptedException _) {
+            Thread.currentThread().interrupt();
+          }
+        };
+
+    try (var _ =
+            startProxyServer(
+                HttpStatus.OK.value(),
+                "application/pdf",
+                "pdf-body".getBytes(StandardCharsets.UTF_8),
+                null,
+                null,
+                stall);
+        var executor = Executors.newFixedThreadPool(downloads)) {
+      try {
+        for (var i = 0; i < downloads; i++) {
+          futures.add(
+              executor.submit(
+                  () -> getAnon("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download")));
+        }
+        assertTrue(received.await(10, TimeUnit.SECONDS));
+
+        // Each held connection would also need a second one for the inner transactions
+        Awaitility.await()
+            .atMost(5, TimeUnit.SECONDS)
+            .until(() -> pool.getActiveConnections() == 0);
+      } finally {
+        release.countDown();
+      }
+
+      for (var future : futures) {
+        assertEquals(HttpStatus.OK, future.get(30, TimeUnit.SECONDS).getStatusCode());
+      }
+    }
   }
 
   @Test
@@ -1295,6 +1348,23 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       String returnContentDisposition,
       String returnLocation)
       throws Exception {
+    return startProxyServer(
+        returnStatusCode,
+        returnContentType,
+        returnBody,
+        returnContentDisposition,
+        returnLocation,
+        () -> {});
+  }
+
+  private StartedProxy startProxyServer(
+      int returnStatusCode,
+      String returnContentType,
+      byte[] returnBody,
+      String returnContentDisposition,
+      String returnLocation,
+      Runnable beforeResponse)
+      throws Exception {
     List<ProxyRequest> requests = Collections.synchronizedList(new ArrayList<>());
     var server = HttpServer.create(new InetSocketAddress(0), 0);
     // Without an executor, handlers run on the single dispatcher thread, which would serialize
@@ -1310,6 +1380,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
                   exchange.getRequestURI().toString(),
                   exchange.getRequestHeaders().getFirst("Host"),
                   exchange.getRequestHeaders().getFirst("User-Agent")));
+          beforeResponse.run();
 
           if (returnContentType != null) {
             exchange.getResponseHeaders().set("Content-Type", returnContentType);

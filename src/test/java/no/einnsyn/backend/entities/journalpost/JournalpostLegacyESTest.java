@@ -16,6 +16,7 @@ import no.einnsyn.backend.entities.journalpost.models.JournalpostES;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES;
 import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -98,6 +99,72 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     assertTrue(journalpostDTO.getDeleted());
 
     // Should have deleted the Journalpost
+    captureDeletedDocuments(1);
+  }
+
+  /** The legacy API reads the legacy value, the new API filters on the enum value. */
+  @Test
+  void testJournalpostWithLegacyJournalposttype() throws Exception {
+    var legacyJournalposttype =
+        "http://www.arkivverket.no/standarder/noark5/arkivstruktur/inngåendeDokument";
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("journalposttype", "ukjent");
+    journalpostJSON.put("legacyJournalposttype", legacyJournalposttype);
+    var response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    var documentMap = captureIndexedDocuments(2);
+    resetEs();
+    var journalpostES = (JournalpostES) documentMap.get(journalpostDTO.getId());
+    assertEquals(
+        List.of(legacyJournalposttype, "inngaaende_dokument"), journalpostES.getJournalposttype());
+    compareJournalpost(journalpostDTO, journalpostES);
+
+    response = delete("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    captureDeletedDocuments(1);
+  }
+
+  /** A legacy value of another type would keep the Journalpost searchable as its old type. */
+  @Test
+  void testUpdateJournalposttypeReplacesLegacyJournalposttype() throws Exception {
+    var legacyJournalposttype =
+        "http://www.arkivverket.no/standarder/noark5/arkivstruktur/inngåendeDokument";
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("journalposttype", "ukjent");
+    journalpostJSON.put("legacyJournalposttype", legacyJournalposttype);
+    var response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    captureIndexedDocuments(2);
+    resetEs();
+
+    // The legacy value is kept when the new type matches it
+    var updateJSON = new JSONObject().put("journalposttype", "inngaaende_dokument");
+    response = patch("/journalpost/" + journalpostDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(legacyJournalposttype, journalpostDTO.getLegacyJournalposttype());
+    var documentMap = captureIndexedDocuments(2);
+    resetEs();
+    var journalpostES = (JournalpostES) documentMap.get(journalpostDTO.getId());
+    assertEquals(
+        List.of(legacyJournalposttype, "inngaaende_dokument"), journalpostES.getJournalposttype());
+
+    // The legacy value is replaced when the new type does not match it
+    updateJSON.put("journalposttype", "utgaaende_dokument");
+    response = patch("/journalpost/" + journalpostDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals("utgaaende_dokument", journalpostDTO.getLegacyJournalposttype());
+    documentMap = captureIndexedDocuments(2);
+    resetEs();
+    journalpostES = (JournalpostES) documentMap.get(journalpostDTO.getId());
+    assertEquals(List.of("utgaaende_dokument"), journalpostES.getJournalposttype());
+
+    response = delete("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     captureDeletedDocuments(1);
   }
 

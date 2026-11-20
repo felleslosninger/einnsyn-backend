@@ -247,11 +247,12 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    *
    * <p>HTML references are returned as redirects instead of proxied streams.
    *
+   * <p>Not transactional, so no pooled connection is held while waiting for the source.
+   *
    * @param id dokumentobjekt id
    * @return download metadata and streaming body
    * @throws EInnsynException if source URL is invalid or unreachable
    */
-  @Transactional(propagation = Propagation.NEVER)
   public DownloadResponseBase download(String id) throws EInnsynException {
     var sourceUrl = getProxy().getSourceUrl(id);
     var sourceUri = toSourceUri(id, sourceUrl);

@@ -1,6 +1,7 @@
 package no.einnsyn.backend.common.search;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortMode;
 
 public class SortByMapper {
 
@@ -23,6 +24,18 @@ public class SortByMapper {
       case "standardDato" -> "standardDato";
       case "tittel" -> "search_tittel_sort";
       case "type" -> "sorteringstype";
+      default -> null;
+    };
+  }
+
+  /**
+   * The value to sort on when a field has several. Null leaves it to Elasticsearch, which picks the
+   * lowest when ascending and the highest when descending.
+   */
+  public static SortMode resolveMode(String sortBy) {
+    return switch (sortBy) {
+      // Sort on the enum value, a legacy IRI sorts before all of them
+      case "journalposttype" -> SortMode.Max;
       default -> null;
     };
   }
