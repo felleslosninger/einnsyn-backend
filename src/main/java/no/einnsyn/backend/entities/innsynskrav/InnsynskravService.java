@@ -306,8 +306,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
 
     // Allow when authenticated as the Enhet
     if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
-      var loggedInAs = authenticationService.getEnhetId();
-      if (enhetService.isAncestorOf(loggedInAs, p.getEnhetId())) {
+      if (authenticationService.hasEnhetAccess(enhetService.resolveId(p.getEnhetId()))) {
         return;
       }
     }
@@ -338,11 +337,9 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     }
 
     // Owning Enhet can get the InnsynskravBestilling
-    var loggedInAs = authenticationService.getEnhetId();
     var innsynskravEnhet = innsynskrav.getEnhet();
-    if (loggedInAs != null
-        && innsynskravEnhet != null
-        && enhetService.isAncestorOf(loggedInAs, innsynskravEnhet.getId())) {
+    if (innsynskravEnhet != null
+        && authenticationService.hasEnhetAccess(innsynskravEnhet.getId())) {
       return;
     }
 

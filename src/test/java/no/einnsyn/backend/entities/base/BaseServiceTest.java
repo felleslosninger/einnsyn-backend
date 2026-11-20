@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.doReturn;
 
 import java.util.List;
 import no.einnsyn.backend.EinnsynServiceTestBase;
@@ -23,36 +22,26 @@ import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
-@ExtendWith(MockitoExtension.class)
 public class BaseServiceTest extends EinnsynServiceTestBase {
 
   @Autowired private AuthenticationService authenticationService;
   @Autowired private SaksmappeService saksmappeService;
 
-  @Mock private EInnsynAuthentication authentication;
-
   @BeforeEach
-  void setupMock() {
+  void setupAuthentication() {
     var apiKey = apiKeyService.findBySecretKey(adminKey);
     var enhetId = apiKey.getEnhet().getId();
     var enhetOrgno = apiKey.getEnhet().getOrgnummer();
     var principal = new EInnsynPrincipalEnhet("ApiKey", apiKey.getId(), enhetId, enhetOrgno, false);
-    doReturn(principal).when(authentication).getPrincipal();
-
     var authorities =
         authenticationService.getAuthoritiesFromEnhet(List.of(apiKey.getEnhet()), "Write");
-    doReturn(authorities).when(authentication).getAuthorities();
 
     var securityContext = SecurityContextHolder.createEmptyContext();
-    securityContext.setAuthentication(authentication);
+    securityContext.setAuthentication(new EInnsynAuthentication(principal, null, authorities));
     SecurityContextHolder.setContext(securityContext);
   }
 
@@ -237,8 +226,11 @@ public class BaseServiceTest extends EinnsynServiceTestBase {
             journalenhet2ApiKey.getEnhet().getId(),
             journalenhet2ApiKey.getEnhet().getOrgnummer(),
             false);
-    var journalenhet2Authentication = Mockito.mock(EInnsynAuthentication.class);
-    doReturn(journalenhet2Principal).when(journalenhet2Authentication).getPrincipal();
+    var journalenhet2Authorities =
+        authenticationService.getAuthoritiesFromEnhet(
+            List.of(journalenhet2ApiKey.getEnhet()), "Write");
+    var journalenhet2Authentication =
+        new EInnsynAuthentication(journalenhet2Principal, null, journalenhet2Authorities);
     var journalenhet2Context = SecurityContextHolder.createEmptyContext();
     journalenhet2Context.setAuthentication(journalenhet2Authentication);
     SecurityContextHolder.setContext(journalenhet2Context);

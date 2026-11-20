@@ -15,6 +15,8 @@ import lombok.Setter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.enhet.EnhetService;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
+import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
+import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.registrering.models.RegistreringDTO;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -101,6 +103,15 @@ public class JournalpostDTO extends RegistreringDTO {
   @Valid
   @Null(groups = {Insert.class})
   protected ExpandableField<SaksmappeDTO> saksmappe;
+
+  /**
+   * The authenticated user's own requests for access to this record. Only set for logged-in users.
+   */
+  @ExpandableObject(
+      service = InnsynskravService.class,
+      groups = {Insert.class, Update.class})
+  @Null(groups = {Insert.class, Update.class})
+  protected List<@Valid ExpandableField<InnsynskravDTO>> innsynskrav;
 
   public enum JournalposttypeEnum {
     @SerializedName("inngaaende_dokument")

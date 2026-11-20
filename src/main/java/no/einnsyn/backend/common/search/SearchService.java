@@ -12,9 +12,11 @@ import co.elastic.clients.elasticsearch._types.query_dsl.FunctionScore;
 import co.elastic.clients.elasticsearch._types.query_dsl.FunctionScoreQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
 import co.elastic.clients.json.JsonpUtils;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.StringReader;
@@ -31,11 +33,16 @@ import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.common.search.models.SearchParameters;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
+import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
+import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetesak.MoetesakService;
+import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
+import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.utils.HashUtils;
 import no.einnsyn.backend.utils.id.IdUtils;
+import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,6 +61,7 @@ public class SearchService {
   private final MoetesakService moetesakService;
   private final SearchQueryService searchQueryService;
   private final HttpServletRequest request;
+  private final EntityManager entityManager;
 
   @Value("${application.elasticsearch.index}")
   private String elasticsearchIndex;
@@ -95,7 +103,8 @@ public class SearchService {
       MoetemappeService moetemappeService,
       MoetesakService moetesakService,
       SearchQueryService searchQueryService,
-      HttpServletRequest request) {
+      HttpServletRequest request,
+      EntityManager entityManager) {
     this.esClient = esClient;
     this.journalpostService = journalpostService;
     this.saksmappeService = saksmappeService;
@@ -103,6 +112,7 @@ public class SearchService {
     this.moetesakService = moetesakService;
     this.searchQueryService = searchQueryService;
     this.request = request;
+    this.entityManager = entityManager;
   }
 
   /**
@@ -189,6 +199,29 @@ public class SearchService {
               ? new HashSet<String>(searchParams.getExpand())
               : new HashSet<String>();
 
+      // Load the hits with one query per entity type, so the gets below are served from the
+      // persistence context. The visibility filters apply as they do to a lookup by ID, so
+      // deleted or hidden hits come back as null, and are skipped instead of queried again.
+      var session = entityManager.unwrap(Session.class);
+      var missingIds = new HashSet<String>();
+      for (var entityClass :
+          List.of(Journalpost.class, Saksmappe.class, Moetemappe.class, Moetesak.class)) {
+        var ids =
+            responseList.stream()
+                .map(Hit::id)
+                .filter(id -> entityClass.getSimpleName().equals(IdUtils.resolveEntity(id)))
+                .toList();
+        if (ids.isEmpty()) {
+          continue;
+        }
+        var loaded = session.findMultiple(entityClass, ids);
+        for (var i = 0; i < ids.size(); i++) {
+          if (loaded.get(i) == null) {
+            missingIds.add(ids.get(i));
+          }
+        }
+      }
+
       // Loop through the hits and convert them to SearchResultItems
       var searchResultItemList =
           responseList.stream()
@@ -196,6 +229,10 @@ public class SearchService {
                   node -> {
                     var id = node.id();
                     var entity = IdUtils.resolveEntity(id);
+                    if (missingIds.contains(id)) {
+                      log.warn("Found non-existing object in elasticsearch: " + id);
+                      return (BaseDTO) null;
+                    }
 
                     // Create a query object for the expand paths
                     var query = new GetParameters();
@@ -208,7 +245,7 @@ public class SearchService {
                         case "Saksmappe" -> saksmappeService.get(id, query);
                         case "Moetemappe" -> moetemappeService.get(id, query);
                         case "Moetesak" -> moetesakService.get(id, query);
-                        default -> {
+                        case null, default -> {
                           log.warn("Found document in elasticsearch with unknown type: " + id);
                           yield (BaseDTO) null;
                         }
