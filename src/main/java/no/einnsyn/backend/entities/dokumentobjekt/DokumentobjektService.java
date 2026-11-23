@@ -47,8 +47,12 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   private static final String DEFAULT_DOWNLOAD_FILE_NAME = "einnsyn-download";
   private static final int DOWNLOAD_CONNECT_TIMEOUT_MS = 10_000;
 
-  // Link checks only ask for the first byte, see openLinkCheckConnection()
-  private static final Map<String, String> FIRST_BYTE_ONLY = Map.of(HttpHeaders.RANGE, "bytes=0-0");
+  // Link checks close the connection, and only ask for the first byte, see
+  // openLinkCheckConnection()
+  private static final Map<String, String> LINK_CHECK_HEADERS =
+      Map.of(HttpHeaders.CONNECTION, "close", HttpHeaders.RANGE, "bytes=0-0");
+  private static final Map<String, String> LINK_CHECK_HEADERS_WITHOUT_RANGE =
+      Map.of(HttpHeaders.CONNECTION, "close");
 
   // Responses that are final whether or not the range is supported: the file is gone (404, 410),
   // or the source is rate limited (429). After other errors, the link is checked without a range.
@@ -366,16 +370,21 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    * requests either ignore the header, or respond with an error. Since that error can't be told
    * from other errors, the source is asked again without the header, unless the status is one of
    * {@link #FINAL_STATUSES}.
+   *
+   * <p>The request also asks the source to close the connection. Otherwise, the JDK reads the rest
+   * of a response smaller than 512 kB when the connection is disconnected, to keep it alive for
+   * reuse, so sources that ignore the range would still send the whole file if it is small.
    */
   private HttpURLConnection openLinkCheckConnection(URI sourceUri) throws IOException {
     try {
-      return openDownloadConnection(sourceUri, linkCheckReadTimeout, FIRST_BYTE_ONLY);
+      return openDownloadConnection(sourceUri, linkCheckReadTimeout, LINK_CHECK_HEADERS);
     } catch (SourceStatusException e) {
       if (FINAL_STATUSES.contains(e.statusCode)) {
         throw e;
       }
       log.debug("Range request failed, retrying without range: {}", e.getMessage());
-      return openDownloadConnection(sourceUri, linkCheckReadTimeout, Map.of());
+      return openDownloadConnection(
+          sourceUri, linkCheckReadTimeout, LINK_CHECK_HEADERS_WITHOUT_RANGE);
     }
   }
 

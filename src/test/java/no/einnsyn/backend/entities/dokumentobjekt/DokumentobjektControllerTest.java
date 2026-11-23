@@ -2,6 +2,7 @@ package no.einnsyn.backend.entities.dokumentobjekt;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -1096,6 +1097,19 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     assertNull(dokumentobjekt.getLinkFailedSince());
   }
 
+  @Test
+  void checkLinkShouldAskSourceToCloseConnection() throws Exception {
+    // Otherwise the JDK reads the rest of a small file to keep the connection alive
+    useHttpsSource();
+    try (var proxy =
+        startHttpsSourceProxy(
+            range -> range != null ? "HTTP/1.1 416 Range Not Satisfiable" : "HTTP/1.1 200 OK")) {
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+      // Also when retrying without range
+      assertEquals(List.of("close", "close"), proxy.sourceConnections());
+    }
+  }
+
   @ParameterizedTest
   @ValueSource(ints = {400, 403, 405, 416, 500, 501, 503})
   void checkLinkShouldRetryWithoutRangeWhenSourceRejectsIt(int status) throws Exception {
@@ -1140,6 +1154,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     try (var proxy = startHttpsSourceProxy("HTTP/1.1 200 OK")) {
       get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
       assertEquals(Arrays.asList((String) null), proxy.sourceRanges());
+      assertNotEquals("close", proxy.sourceConnections().getFirst());
     }
   }
 
@@ -1282,7 +1297,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
   /**
    * Like startHttpsSourceProxy(String), but the source's status line depends on the Range header of
-   * the request (null without one). The Range headers are recorded in sourceRanges().
+   * the request (null without one). The Range and Connection headers are recorded in sourceRanges()
+   * and sourceConnections().
    */
   private StartedTunnelProxy startHttpsSourceProxy(Function<String, String> sourceStatusForRange)
       throws Exception {
@@ -1330,6 +1346,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
         proxy.serverSocket(),
         proxy.requests(),
         proxy.sourceRanges(),
+        proxy.sourceConnections(),
         () -> HttpsURLConnection.setDefaultSSLSocketFactory(defaultSocketFactory));
   }
 
@@ -1347,6 +1364,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var serverSocket = new ServerSocket(0);
     List<String> requests = Collections.synchronizedList(new ArrayList<>());
     List<String> sourceRanges = Collections.synchronizedList(new ArrayList<>());
+    List<String> sourceConnections = Collections.synchronizedList(new ArrayList<>());
     Thread.ofVirtual()
         .start(
             () -> {
@@ -1363,8 +1381,10 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
                                 .getSocketFactory()
                                 .createSocket(socket, null, socket.getPort(), false)) {
                       tlsSocket.setUseClientMode(false);
-                      var range = readRangeHeader(tlsSocket);
+                      var lines = readRequestLines(tlsSocket);
+                      var range = header(lines, "Range");
                       sourceRanges.add(range);
+                      sourceConnections.add(header(lines, "Connection"));
                       respond(tlsSocket, sourceStatusForRange.apply(range));
                     }
                   } else {
@@ -1377,7 +1397,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
             });
 
     setDownloadProxy("localhost", serverSocket.getLocalPort());
-    return new StartedTunnelProxy(serverSocket, requests, sourceRanges, () -> {});
+    return new StartedTunnelProxy(
+        serverSocket, requests, sourceRanges, sourceConnections, () -> {});
   }
 
   /** Read a request, and return its request line. The headers are skipped. */
@@ -1385,11 +1406,12 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     return readRequestLines(socket).stream().findFirst().orElse(null);
   }
 
-  /** Read a request, and return its Range header, or null without one. */
-  private static String readRangeHeader(Socket socket) throws IOException {
-    return readRequestLines(socket).stream()
-        .filter(line -> line.regionMatches(true, 0, "Range:", 0, 6))
-        .map(line -> line.substring(6).strip())
+  /** The value of a header in the given request lines, or null without one. */
+  private static String header(List<String> requestLines, String name) {
+    var prefix = name + ":";
+    return requestLines.stream()
+        .filter(line -> line.regionMatches(true, 0, prefix, 0, prefix.length()))
+        .map(line -> line.substring(prefix.length()).strip())
         .findFirst()
         .orElse(null);
   }
@@ -1579,7 +1601,11 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   private record StartedTunnelProxy(
-      ServerSocket serverSocket, List<String> requests, List<String> sourceRanges, Runnable onClose)
+      ServerSocket serverSocket,
+      List<String> requests,
+      List<String> sourceRanges,
+      List<String> sourceConnections,
+      Runnable onClose)
       implements AutoCloseable {
 
     @Override
