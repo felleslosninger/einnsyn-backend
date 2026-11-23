@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -26,6 +28,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -34,6 +37,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -62,6 +66,9 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.AdditionalAnswers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -1075,6 +1082,95 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void checkLinkShouldOnlyRequestTheFirstByte() throws Exception {
+    useHttpsSource();
+    try (var proxy =
+        startHttpsSourceProxy(
+            range -> range != null ? "HTTP/1.1 206 Partial Content" : "HTTP/1.1 200 OK")) {
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+      assertEquals(List.of("bytes=0-0"), proxy.sourceRanges());
+    }
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNotNull(dokumentobjekt.getLinkCheckedAt());
+    assertNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {400, 405, 416, 501})
+  void checkLinkShouldRetryWithoutRangeWhenSourceRejectsIt(int status) throws Exception {
+    useHttpsSource();
+    try (var proxy =
+        startHttpsSourceProxy(
+            range -> range != null ? "HTTP/1.1 " + status + " Error" : "HTTP/1.1 200 OK")) {
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+      assertEquals(Arrays.asList("bytes=0-0", null), proxy.sourceRanges());
+    }
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNotNull(dokumentobjekt.getLinkCheckedAt());
+    assertNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
+  void checkLinkShouldMarkLinkAsFailedWhenRetryWithoutRangeFails() throws Exception {
+    useHttpsSource();
+    try (var proxy = startHttpsSourceProxy("HTTP/1.1 400 Bad Request")) {
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+      assertEquals(Arrays.asList("bytes=0-0", null), proxy.sourceRanges());
+    }
+
+    assertNotNull(getDokumentobjekt().getLinkFailedSince());
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {403, 404, 410, 429, 500})
+  void checkLinkShouldNotRetryWithoutRangeOnOtherErrors(int status) throws Exception {
+    // These don't depend on the range, so asking again would only double the requests
+    useHttpsSource();
+    try (var proxy = startHttpsSourceProxy("HTTP/1.1 " + status + " Error")) {
+      dokumentobjektService.checkLink(dokumentobjektDTO.getId());
+      assertEquals(List.of("bytes=0-0"), proxy.sourceRanges());
+    }
+  }
+
+  @Test
+  void downloadShouldNotSendRangeHeader() throws Exception {
+    useHttpsSource();
+    try (var proxy = startHttpsSourceProxy("HTTP/1.1 200 OK")) {
+      get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(Arrays.asList((String) null), proxy.sourceRanges());
+    }
+  }
+
+  @Test
+  void checkLinkShouldNotMarkLinkAsFailedWhenRecordingItAsOkFails() throws Exception {
+    // A database failure after the source responded must not be taken for a failed link
+    useHttpsSource();
+    var target = AopTestUtils.getTargetObject(dokumentobjektService);
+    var repository = ReflectionTestUtils.getField(target, "repository");
+    var failingRepository =
+        mock(DokumentobjektRepository.class, AdditionalAnswers.delegatesTo(repository));
+    doThrow(new IllegalStateException("Database unavailable"))
+        .when(failingRepository)
+        .setLinkOk(anyString(), anyString(), any());
+    ReflectionTestUtils.setField(target, "repository", failingRepository);
+    try (var proxy = startHttpsSourceProxy("HTTP/1.1 200 OK")) {
+      assertThrows(
+          IllegalStateException.class,
+          () -> dokumentobjektService.checkLink(dokumentobjektDTO.getId()));
+      // The reference URLs are not checked
+      assertEquals(List.of("CONNECT example.com:443 HTTP/1.1"), proxy.requests());
+    } finally {
+      ReflectionTestUtils.setField(target, "repository", repository);
+    }
+
+    var dokumentobjekt = getDokumentobjekt();
+    assertNull(dokumentobjekt.getLinkCheckedAt());
+    assertNull(dokumentobjekt.getLinkFailedSince());
+  }
+
+  @Test
   void checkLinkShouldSkipLinkWhenSourceIsRateLimited() throws Exception {
     // The link is moved to the back of the queue without being marked as failed
     useHttpsSource();
@@ -1171,7 +1267,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
    */
   private StartedTunnelProxy startTunnelProxy(String connectStatusLine, String httpStatusLine)
       throws Exception {
-    return startTunnelProxy(connectStatusLine, httpStatusLine, null);
+    return startTunnelProxy(connectStatusLine, httpStatusLine, null, null);
   }
 
   /**
@@ -1181,6 +1277,15 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
    * answered with 200 OK.
    */
   private StartedTunnelProxy startHttpsSourceProxy(String sourceStatusLine) throws Exception {
+    return startHttpsSourceProxy(_ -> sourceStatusLine);
+  }
+
+  /**
+   * Like startHttpsSourceProxy(String), but the source's status line depends on the Range header of
+   * the request (null without one). The Range headers are recorded in sourceRanges().
+   */
+  private StartedTunnelProxy startHttpsSourceProxy(Function<String, String> sourceStatusForRange)
+      throws Exception {
     var keyStoreFile = Files.createTempDirectory("source").resolve("source.p12");
     var keytool = Path.of(System.getProperty("java.home"), "bin", "keytool").toString();
     var keytoolProcess =
@@ -1220,22 +1325,28 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
     var defaultSocketFactory = HttpsURLConnection.getDefaultSSLSocketFactory();
     HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
-    var proxy = startTunnelProxy(sourceStatusLine, "HTTP/1.1 200 OK", sslContext);
+    var proxy = startTunnelProxy(null, "HTTP/1.1 200 OK", sslContext, sourceStatusForRange);
     return new StartedTunnelProxy(
         proxy.serverSocket(),
         proxy.requests(),
+        proxy.sourceRanges(),
         () -> HttpsURLConnection.setDefaultSSLSocketFactory(defaultSocketFactory));
   }
 
   /**
    * Without a tunnelSslContext, CONNECT requests are answered with connectStatusLine. With it, the
-   * tunnel is opened, and the request inside it is answered with connectStatusLine over TLS.
+   * tunnel is opened, and the request inside it is answered over TLS with the status line that
+   * sourceStatusForRange gives for its Range header.
    */
   private StartedTunnelProxy startTunnelProxy(
-      String connectStatusLine, String httpStatusLine, SSLContext tunnelSslContext)
+      String connectStatusLine,
+      String httpStatusLine,
+      SSLContext tunnelSslContext,
+      Function<String, String> sourceStatusForRange)
       throws Exception {
     var serverSocket = new ServerSocket(0);
     List<String> requests = Collections.synchronizedList(new ArrayList<>());
+    List<String> sourceRanges = Collections.synchronizedList(new ArrayList<>());
     Thread.ofVirtual()
         .start(
             () -> {
@@ -1252,8 +1363,9 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
                                 .getSocketFactory()
                                 .createSocket(socket, null, socket.getPort(), false)) {
                       tlsSocket.setUseClientMode(false);
-                      readRequest(tlsSocket);
-                      respond(tlsSocket, connectStatusLine);
+                      var range = readRangeHeader(tlsSocket);
+                      sourceRanges.add(range);
+                      respond(tlsSocket, sourceStatusForRange.apply(range));
                     }
                   } else {
                     respond(socket, isConnect ? connectStatusLine : httpStatusLine);
@@ -1265,14 +1377,28 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
             });
 
     setDownloadProxy("localhost", serverSocket.getLocalPort());
-    return new StartedTunnelProxy(serverSocket, requests);
+    return new StartedTunnelProxy(serverSocket, requests, sourceRanges, () -> {});
   }
 
   /** Read a request, and return its request line. The headers are skipped. */
   private static String readRequest(Socket socket) throws IOException {
+    return readRequestLines(socket).stream().findFirst().orElse(null);
+  }
+
+  /** Read a request, and return its Range header, or null without one. */
+  private static String readRangeHeader(Socket socket) throws IOException {
+    return readRequestLines(socket).stream()
+        .filter(line -> line.regionMatches(true, 0, "Range:", 0, 6))
+        .map(line -> line.substring(6).strip())
+        .findFirst()
+        .orElse(null);
+  }
+
+  /** Read a request, and return its request line and headers. */
+  private static List<String> readRequestLines(Socket socket) throws IOException {
     // Read byte by byte, so nothing after the headers (e.g. a TLS handshake) is consumed
     var input = socket.getInputStream();
-    var requestLine = (String) null;
+    var lines = new ArrayList<String>();
     var line = new StringBuilder();
     int b;
     while ((b = input.read()) != -1) {
@@ -1281,15 +1407,13 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
         if (text.isEmpty()) {
           break;
         }
-        if (requestLine == null) {
-          requestLine = text;
-        }
+        lines.add(text);
         line.setLength(0);
       } else {
         line.append((char) b);
       }
     }
-    return requestLine;
+    return lines;
   }
 
   private static void respond(Socket socket, String statusLine) throws IOException {
@@ -1455,10 +1579,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   private record StartedTunnelProxy(
-      ServerSocket serverSocket, List<String> requests, Runnable onClose) implements AutoCloseable {
-    StartedTunnelProxy(ServerSocket serverSocket, List<String> requests) {
-      this(serverSocket, requests, () -> {});
-    }
+      ServerSocket serverSocket, List<String> requests, List<String> sourceRanges, Runnable onClose)
+      implements AutoCloseable {
 
     @Override
     public void close() throws IOException {

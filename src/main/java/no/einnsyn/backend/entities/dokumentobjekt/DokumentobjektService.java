@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,13 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, DokumentobjektDTO> {
   private static final String DEFAULT_DOWNLOAD_FILE_NAME = "einnsyn-download";
   private static final int DOWNLOAD_CONNECT_TIMEOUT_MS = 10_000;
+
+  // Link checks only ask for the first byte, see openLinkCheckConnection()
+  private static final Map<String, String> FIRST_BYTE_ONLY = Map.of(HttpHeaders.RANGE, "bytes=0-0");
+
+  // Responses that may mean that the source doesn't support range requests, although the file
+  // exists. 416 is also returned for empty files, which have no first byte.
+  private static final Set<Integer> RANGE_NOT_SUPPORTED = Set.of(400, 405, 416, 501);
   private static final Duration DOWNLOAD_READ_TIMEOUT = Duration.ofSeconds(30);
 
   // Some sources allowlist this value, it is inherited from the legacy eInnsyn API.
@@ -70,8 +78,9 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   @Value("${application.linkCheck.readTimeout:PT30S}")
   private Duration linkCheckReadTimeout;
 
-  // Assumed to work until a link fails without a response, see isLinkFailure()
-  private volatile boolean proxyWorking = true;
+  // Whether the proxy works, according to the latest checkReferenceUrls(). Assumed to work until
+  // a link fails without a response, see isLinkFailure().
+  @Getter private volatile boolean proxyWorking = true;
 
   @URL
   @Value("${application.baseUrl}")
@@ -261,7 +270,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     DownloadResponseBase downloadResponse;
 
     try {
-      connection = openDownloadConnection(sourceUri, DOWNLOAD_READ_TIMEOUT);
+      connection = openDownloadConnection(sourceUri, DOWNLOAD_READ_TIMEOUT, Map.of());
       var contentType = resolveContentType(connection.getContentType(), sourceUri);
 
       // Redirect HTML content
@@ -335,21 +344,37 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
       return;
     }
 
-    HttpURLConnection connection = null;
     try {
-      connection = openDownloadConnection(sourceUri, linkCheckReadTimeout);
-      repository.setLinkOk(id, sourceUrl, checkedAt);
+      openLinkCheckConnection(sourceUri).disconnect();
     } catch (Exception e) {
       log.debug("Link check failed for Dokumentobjekt {}: {}", id, e.getMessage());
       if (isRateLimited(e)) {
+        // Only moves the link to the back of the queue, without changing its status
         repository.setLinkChecked(id, sourceUrl, checkedAt);
       } else if (isLinkFailure(e)) {
         repository.setLinkFailed(id, sourceUrl, checkedAt);
       }
-    } finally {
-      if (connection != null) {
-        connection.disconnect();
+      return;
+    }
+    // Recorded outside the try block, so a database failure isn't taken for a failed link
+    repository.setLinkOk(id, sourceUrl, checkedAt);
+  }
+
+  /**
+   * Open a connection for a link check. Only the first byte is requested, since the source may
+   * start sending the file before the connection is closed. Sources that don't support range
+   * requests either ignore the header, or respond with one of {@link #RANGE_NOT_SUPPORTED}, and are
+   * then asked again without it.
+   */
+  private HttpURLConnection openLinkCheckConnection(URI sourceUri) throws IOException {
+    try {
+      return openDownloadConnection(sourceUri, linkCheckReadTimeout, FIRST_BYTE_ONLY);
+    } catch (SourceStatusException e) {
+      if (!RANGE_NOT_SUPPORTED.contains(e.statusCode)) {
+        throw e;
       }
+      log.debug("Range request failed, retrying without range: {}", e.getMessage());
+      return openDownloadConnection(sourceUri, linkCheckReadTimeout, Map.of());
     }
   }
 
@@ -365,11 +390,6 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    */
   public void checkReferenceUrls() {
     proxyWorking = referenceUrls.stream().anyMatch(this::isReachable);
-  }
-
-  /** Whether the proxy works, according to the latest {@link #checkReferenceUrls}. */
-  public boolean isProxyWorking() {
-    return proxyWorking;
   }
 
   /**
@@ -400,7 +420,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
 
   private boolean isReachable(String url) {
     try {
-      openDownloadConnection(URI.create(url), linkCheckReadTimeout).disconnect();
+      openDownloadConnection(URI.create(url), linkCheckReadTimeout, Map.of()).disconnect();
       return true;
     } catch (Exception e) {
       log.debug("Reference URL {} could not be reached: {}", url, e.getMessage());
@@ -543,12 +563,13 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    * Open a connection to the source URI through the configured download proxy. SSRF protection and
    * scheme enforcement are delegated to the proxy.
    */
-  private HttpURLConnection openDownloadConnection(URI sourceUri, Duration readTimeout)
-      throws IOException {
+  private HttpURLConnection openDownloadConnection(
+      URI sourceUri, Duration readTimeout, Map<String, String> headers) throws IOException {
     var proxyAddress = new InetSocketAddress(downloadProxyHost, downloadProxyPort);
     var httpProxy = new Proxy(Proxy.Type.HTTP, proxyAddress);
     var connection = (HttpURLConnection) sourceUri.toURL().openConnection(httpProxy);
     connection.setRequestProperty(HttpHeaders.USER_AGENT, DOWNLOAD_USER_AGENT);
+    headers.forEach(connection::setRequestProperty);
     connection.setConnectTimeout(DOWNLOAD_CONNECT_TIMEOUT_MS);
     connection.setReadTimeout((int) readTimeout.toMillis());
     connection.setInstanceFollowRedirects(true);

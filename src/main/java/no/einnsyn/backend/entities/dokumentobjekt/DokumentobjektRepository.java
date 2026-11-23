@@ -48,6 +48,8 @@ public interface DokumentobjektRepository extends ArkivBaseRepository<Dokumentob
       """)
   void setLinkFailed(String id, String url, Instant checkedAt);
 
+  // Only moves the link to the back of the queue, e.g. on 429 Too Many Requests, which doesn't
+  // tell whether the link works. Its status is left as it was.
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Modifying
   @Query(

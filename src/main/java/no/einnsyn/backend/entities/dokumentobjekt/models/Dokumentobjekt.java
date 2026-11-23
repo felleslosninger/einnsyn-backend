@@ -40,7 +40,9 @@ public class Dokumentobjekt extends ArkivBase {
   // Legacy
   private String dokumentbeskrivelseIri;
 
-  // When the link to the source file was last checked. Should not be updated through JPA.
+  // When the link to the source file was last checked, whether or not the check gave a status.
+  // On 429 Too Many Requests only this is set, so the link is moved to the back of the queue
+  // without being marked as working or failed. Should not be updated through JPA.
   @Column(insertable = false, updatable = false)
   private Instant linkCheckedAt;
 
