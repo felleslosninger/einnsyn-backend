@@ -1097,7 +1097,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @ParameterizedTest
-  @ValueSource(ints = {400, 405, 416, 501})
+  @ValueSource(ints = {400, 403, 405, 416, 500, 501, 503})
   void checkLinkShouldRetryWithoutRangeWhenSourceRejectsIt(int status) throws Exception {
     useHttpsSource();
     try (var proxy =
@@ -1124,8 +1124,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @ParameterizedTest
-  @ValueSource(ints = {403, 404, 410, 429, 500})
-  void checkLinkShouldNotRetryWithoutRangeOnOtherErrors(int status) throws Exception {
+  @ValueSource(ints = {404, 410, 429})
+  void checkLinkShouldNotRetryWithoutRangeOnFinalStatuses(int status) throws Exception {
     // These don't depend on the range, so asking again would only double the requests
     useHttpsSource();
     try (var proxy = startHttpsSourceProxy("HTTP/1.1 " + status + " Error")) {

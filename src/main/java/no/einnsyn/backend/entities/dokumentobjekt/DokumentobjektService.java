@@ -50,9 +50,9 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   // Link checks only ask for the first byte, see openLinkCheckConnection()
   private static final Map<String, String> FIRST_BYTE_ONLY = Map.of(HttpHeaders.RANGE, "bytes=0-0");
 
-  // Responses that may mean that the source doesn't support range requests, although the file
-  // exists. 416 is also returned for empty files, which have no first byte.
-  private static final Set<Integer> RANGE_NOT_SUPPORTED = Set.of(400, 405, 416, 501);
+  // Responses that are final whether or not the range is supported: the file is gone (404, 410),
+  // or the source is rate limited (429). After other errors, the link is checked without a range.
+  private static final Set<Integer> FINAL_STATUSES = Set.of(404, 410, 429);
   private static final Duration DOWNLOAD_READ_TIMEOUT = Duration.ofSeconds(30);
 
   // Some sources allowlist this value, it is inherited from the legacy eInnsyn API.
@@ -363,14 +363,15 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   /**
    * Open a connection for a link check. Only the first byte is requested, since the source may
    * start sending the file before the connection is closed. Sources that don't support range
-   * requests either ignore the header, or respond with one of {@link #RANGE_NOT_SUPPORTED}, and are
-   * then asked again without it.
+   * requests either ignore the header, or respond with an error. Since that error can't be told
+   * from other errors, the source is asked again without the header, unless the status is one of
+   * {@link #FINAL_STATUSES}.
    */
   private HttpURLConnection openLinkCheckConnection(URI sourceUri) throws IOException {
     try {
       return openDownloadConnection(sourceUri, linkCheckReadTimeout, FIRST_BYTE_ONLY);
     } catch (SourceStatusException e) {
-      if (!RANGE_NOT_SUPPORTED.contains(e.statusCode)) {
+      if (FINAL_STATUSES.contains(e.statusCode)) {
         throw e;
       }
       log.debug("Range request failed, retrying without range: {}", e.getMessage());
