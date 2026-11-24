@@ -143,8 +143,8 @@ public class Moetedokument extends Registrering {
   protected void preUpdate() {
     super.preUpdate();
 
-    // Keep moetedokumentregistreringIri in sync with externalId
-    if (externalId != null && !externalId.equals(legacyIri)) {
+    // Keep moetedokumentregistreringIri in sync with externalId as long as the latter is an IRI
+    if (externalId != null && !externalId.equals(legacyIri) && IRIMatcher.matches(externalId)) {
       legacyIri = externalId;
     }
 

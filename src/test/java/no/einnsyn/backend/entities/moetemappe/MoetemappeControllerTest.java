@@ -900,4 +900,23 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     moetemappe.setMoetenummer("3");
     assertEquals("2024-3-tittel", moetemappeService.getSlugBase(moetemappe));
   }
+
+  @Test
+  void useFallbackIriIfExternalIdIsNotAnIri() throws Exception {
+
+    var moetemappeJSON = getMoetemappeJSON();
+    var externalId = "this-is-not-an-iri";
+    moetemappeJSON.put("externalId", externalId);
+    var moetemappeResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
+    assertEquals(HttpStatus.CREATED, moetemappeResponse.getStatusCode());
+    var moetemappeDTO = gson.fromJson(moetemappeResponse.getBody(), MoetemappeDTO.class);
+    assertNotNull(moetemappeDTO);
+
+    assertEquals(externalId, moetemappeDTO.getExternalId());
+    var moetemappe = moetemappeRepository.findById(moetemappeDTO.getId()).orElseThrow();
+    assertEquals("http://" + moetemappe.getId(), moetemappe.getLegacyIri());
+
+    delete("/moetemappe/" + moetemappeDTO.getId());
+  }
 }

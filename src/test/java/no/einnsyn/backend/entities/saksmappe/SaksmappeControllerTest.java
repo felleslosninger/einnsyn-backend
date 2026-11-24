@@ -1201,4 +1201,24 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
       assertEquals(HttpStatus.OK, delete("/saksmappe/" + squatterDTO.getId()).getStatusCode());
     }
   }
+
+  @Test
+  void useFallbackIriIfExternalIdIsNotAnIri() throws Exception {
+
+    var saksmappeJSON = getSaksmappeJSON();
+    var externalId = "this-is-not-an-iri";
+    saksmappeJSON.put("externalId", externalId);
+    var saksmappeResponse = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappeDTO);
+
+    assertEquals(externalId, saksmappeDTO.getExternalId());
+
+    var saksmappe = saksmappeRepository.findById(saksmappeDTO.getId()).orElseThrow();
+
+    assertEquals("http://" + saksmappe.getId(), saksmappe.getLegacyIri());
+
+    delete("/saksmappe/" + saksmappe.getId());
+  }
 }
