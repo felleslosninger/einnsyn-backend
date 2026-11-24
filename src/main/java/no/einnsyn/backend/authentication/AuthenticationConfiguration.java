@@ -106,6 +106,8 @@ public class AuthenticationConfiguration {
                 authorize
                     .requestMatchers(HttpMethod.GET, "/dokumentobjekt/*/download")
                     .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/health", "/prometheus")
+                    .permitAll()
                     .requestMatchers(HttpMethod.GET)
                     .authenticated();
               }
