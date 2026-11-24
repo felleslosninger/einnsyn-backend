@@ -801,8 +801,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     // When the reference URLs can't be reached either, our network is down, not the source. The
     // link is left as it is, so it is checked first when the proxy works again.
     useHttpsSource();
-    try (var _ =
-        startTunnelProxy("HTTP/1.1 503 Service Unavailable", "HTTP/1.1 503 Service Unavailable")) {
+    try (var _ = startTunnelProxy("HTTP/1.1 503 Service Unavailable", null)) {
       dokumentobjektService.checkLink(dokumentobjektDTO.getId());
     }
 
@@ -1012,8 +1011,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   @Test
   void linkCheckSchedulerShouldPauseWhenReferenceUrlsFail() throws Exception {
     useHttpsSource();
-    try (var proxy =
-        startTunnelProxy("HTTP/1.1 503 Service Unavailable", "HTTP/1.1 503 Service Unavailable")) {
+    try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable", null)) {
       // The link fails without a response, and the reference URLs fail too, so the job pauses
       fulltextLinkCheckScheduler.checkLinks();
       assertFalse(dokumentobjektService.isProxyWorking());
@@ -1024,9 +1022,12 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       dokumentobjektService.checkLink(dokumentobjektDTO.getId());
       assertEquals(List.of(), proxy.requests());
 
-      // The reference URLs are checked every minute while the proxy is down
+      // The reference URLs are checked every minute while the proxy is down. The JDK retries a GET
+      // once when the connection is closed without a response, so only distinct requests count.
       fulltextLinkCheckScheduler.checkProxyWhileDown();
-      assertEquals(List.of("GET " + REFERENCE_URL + " HTTP/1.1"), proxy.requests());
+      assertEquals(
+          List.of("GET " + REFERENCE_URL + " HTTP/1.1"),
+          proxy.requests().stream().distinct().toList());
     }
 
     assertNull(getDokumentobjekt().getLinkCheckedAt());
@@ -1035,8 +1036,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   @Test
   void linkCheckSchedulerShouldResumeWhenReferenceUrlWorksAgain() throws Exception {
     useHttpsSource();
-    try (var _ =
-        startTunnelProxy("HTTP/1.1 503 Service Unavailable", "HTTP/1.1 503 Service Unavailable")) {
+    try (var _ = startTunnelProxy("HTTP/1.1 503 Service Unavailable", null)) {
       fulltextLinkCheckScheduler.checkLinks();
     }
     assertNull(getDokumentobjekt().getLinkCheckedAt());
@@ -1047,6 +1047,22 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       fulltextLinkCheckScheduler.checkLinks();
     }
     assertNotNull(getDokumentobjekt().getLinkFailedSince());
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {429, 500})
+  void checkProxyWhileDownShouldAcceptAnyResponseFromHttpsReferenceUrl(int status)
+      throws Exception {
+    // Over HTTPS, the response came through the tunnel from the reference URL itself, so the proxy
+    // works, even when the reference URL is rate limited after many checks
+    setReferenceUrls("https://example.com/generate_204");
+    setProxyWorking(false);
+    try (var proxy = startHttpsSourceProxy("HTTP/1.1 " + status + " Error")) {
+      fulltextLinkCheckScheduler.checkProxyWhileDown();
+      assertEquals(List.of("CONNECT example.com:443 HTTP/1.1"), proxy.requests());
+    }
+
+    assertTrue(dokumentobjektService.isProxyWorking());
   }
 
   @Test
@@ -1278,7 +1294,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
   /**
    * Like startTunnelProxy(String), but answers plain HTTP requests (e.g. to the reference URLs)
-   * with the given status line instead of 200 OK.
+   * with the given status line instead of 200 OK, or closes the connection without a response when
+   * it is null.
    */
   private StartedTunnelProxy startTunnelProxy(String connectStatusLine, String httpStatusLine)
       throws Exception {
@@ -1388,7 +1405,10 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
                       respond(tlsSocket, sourceStatusForRange.apply(range));
                     }
                   } else {
-                    respond(socket, isConnect ? connectStatusLine : httpStatusLine);
+                    var statusLine = isConnect ? connectStatusLine : httpStatusLine;
+                    if (statusLine != null) {
+                      respond(socket, statusLine);
+                    }
                   }
                 } catch (IOException _) {
                   // The server socket was closed
@@ -1556,6 +1576,11 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var target = AopTestUtils.getTargetObject(dokumentobjektService);
     ReflectionTestUtils.setField(target, "referenceUrls", List.of(urls));
     ReflectionTestUtils.setField(target, "proxyWorking", true);
+  }
+
+  private void setProxyWorking(boolean proxyWorking) {
+    var target = AopTestUtils.getTargetObject(dokumentobjektService);
+    ReflectionTestUtils.setField(target, "proxyWorking", proxyWorking);
   }
 
   private void setDownloadProxy(String host, int port) {

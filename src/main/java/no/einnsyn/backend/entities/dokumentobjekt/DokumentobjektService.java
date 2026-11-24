@@ -432,6 +432,9 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     try {
       openDownloadConnection(URI.create(url), linkCheckReadTimeout, Map.of()).disconnect();
       return true;
+    } catch (SourceStatusException _) {
+      // Reference URLs are HTTPS, so any response came through the proxy from the URL itself
+      return true;
     } catch (Exception e) {
       log.debug("Reference URL {} could not be reached: {}", url, e.getMessage());
       return false;
