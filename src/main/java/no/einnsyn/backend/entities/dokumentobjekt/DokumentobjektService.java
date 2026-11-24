@@ -6,7 +6,11 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URI;
 import java.net.URLConnection;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +34,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -40,7 +46,18 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, DokumentobjektDTO> {
   private static final String DEFAULT_DOWNLOAD_FILE_NAME = "einnsyn-download";
   private static final int DOWNLOAD_CONNECT_TIMEOUT_MS = 10_000;
-  private static final int DOWNLOAD_READ_TIMEOUT_MS = 30_000;
+
+  // Link checks close the connection, and only ask for the first byte, see
+  // openLinkCheckConnection()
+  private static final Map<String, String> LINK_CHECK_HEADERS =
+      Map.of(HttpHeaders.CONNECTION, "close", HttpHeaders.RANGE, "bytes=0-0");
+  private static final Map<String, String> LINK_CHECK_HEADERS_WITHOUT_RANGE =
+      Map.of(HttpHeaders.CONNECTION, "close");
+
+  // Responses that are final whether or not the range is supported: the file is gone (404, 410),
+  // or the source is rate limited (429). After other errors, the link is checked without a range.
+  private static final Set<Integer> FINAL_STATUSES = Set.of(404, 410, 429);
+  private static final Duration DOWNLOAD_READ_TIMEOUT = Duration.ofSeconds(30);
 
   // Some sources allowlist this value, it is inherited from the legacy eInnsyn API.
   private static final String DOWNLOAD_USER_AGENT = "eInnsyn";
@@ -56,6 +73,18 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
 
   @Value("${application.dokumentobjekt.download.proxy.port:3128}")
   private int downloadProxyPort;
+
+  // URLs that should always work through the proxy. When they don't, the failure is on our side.
+  @Value("${application.linkCheck.referenceUrls:}")
+  private List<String> referenceUrls;
+
+  // Can be set shorter than for downloads, so sources that don't respond don't hold up the job
+  @Value("${application.linkCheck.readTimeout:PT30S}")
+  private Duration linkCheckReadTimeout;
+
+  // Whether the proxy works, according to the latest checkReferenceUrls(). Assumed to work until
+  // a link fails without a response, see isLinkFailure().
+  @Getter private volatile boolean proxyWorking = true;
 
   @URL
   @Value("${application.baseUrl}")
@@ -125,6 +154,11 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     }
 
     if (dto.getReferanseDokumentfil() != null) {
+      // The link status belongs to the old URL, so a new URL is checked from scratch
+      if (dokumentobjekt.getReferanseDokumentfil() != null
+          && !dto.getReferanseDokumentfil().equals(dokumentobjekt.getReferanseDokumentfil())) {
+        repository.resetLinkStatus(dokumentobjekt.getId());
+      }
       dokumentobjekt.setReferanseDokumentfil(dto.getReferanseDokumentfil());
     }
 
@@ -172,7 +206,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     dto.setSjekksumAlgoritme(dokumentobjekt.getSjekksumalgoritme());
 
     // Only expose the download URL when the proxy is configured.
-    if (StringUtils.hasText(downloadProxyHost)) {
+    if (isDownloadProxyConfigured()) {
       var downloadUri =
           UriComponentsBuilder.fromUriString(baseUrl)
               .pathSegment("dokumentobjekt", dokumentobjekt.getId(), "download")
@@ -233,13 +267,14 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    * @throws EInnsynException if source URL is invalid or unreachable
    */
   public DownloadResponseBase download(String id) throws EInnsynException {
-    var sourceUri = getProxy().getSourceUri(id);
+    var sourceUrl = getProxy().getSourceUrl(id);
+    var sourceUri = toSourceUri(id, sourceUrl);
     var fileName = getProxy().generateDownloadFileName(id, sourceUri);
     HttpURLConnection connection = null;
     DownloadResponseBase downloadResponse;
 
     try {
-      connection = openDownloadConnection(sourceUri);
+      connection = openDownloadConnection(sourceUri, DOWNLOAD_READ_TIMEOUT, Map.of());
       var contentType = resolveContentType(connection.getContentType(), sourceUri);
 
       // Redirect HTML content
@@ -259,6 +294,11 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
       if (connection != null) {
         connection.disconnect();
       }
+      // Only failures that are certain are recorded. A failure without a response is left for
+      // the link check, so the client doesn't wait for a check of the reference URLs.
+      if (!isHttpsOnDefaultPort(sourceUri) || isSourceFailure(e)) {
+        recordLinkStatus(id, sourceUrl, false);
+      }
       // Don't expose source URL in the message, as it will be sent to the client.
       throw new NetworkException("Could not prepare download from source", e, null);
     }
@@ -266,8 +306,159 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     // Recorded outside the try block: the download has already succeeded at this point, and a
     // failure to record statistics must not be reported to the client as a download failure.
     recordDownload(id);
+    recordLinkStatus(id, sourceUrl, isHttpsOnDefaultPort(sourceUri));
 
     return downloadResponse;
+  }
+
+  /**
+   * Check whether the source of a Dokumentobjekt responds successfully, without downloading the
+   * file, and record the result.
+   *
+   * <p>Links that aren't HTTPS on port 443 are marked as failed without a request. Other failures
+   * are only marked when they are on the source's side (see {@link #isLinkFailure}). On 429 Too
+   * Many Requests, only the check timestamp is updated, so a rate limited source isn't asked again
+   * until the next round. Failures on our side, and links checked while the proxy is down, are left
+   * as they are, so they are checked first when the proxy works again.
+   *
+   * @param id dokumentobjekt id
+   */
+  @Transactional(propagation = Propagation.NEVER)
+  public void checkLink(String id) {
+    if (!isProxyWorking()) {
+      return;
+    }
+    var checkedAt = Instant.now();
+    // Deleted, or the link was removed since the batch was fetched
+    var sourceUrl =
+        repository.findById(id).map(Dokumentobjekt::getReferanseDokumentfil).orElse(null);
+    if (sourceUrl == null) {
+      return;
+    }
+    URI sourceUri;
+    try {
+      sourceUri = toSourceUri(id, sourceUrl);
+    } catch (NotFoundException _) {
+      // An invalid URL doesn't work
+      repository.setLinkFailed(id, sourceUrl, checkedAt);
+      return;
+    }
+    if (!isHttpsOnDefaultPort(sourceUri)) {
+      repository.setLinkFailed(id, sourceUrl, checkedAt);
+      return;
+    }
+
+    try {
+      openLinkCheckConnection(sourceUri).disconnect();
+    } catch (Exception e) {
+      log.debug("Link check failed for Dokumentobjekt {}: {}", id, e.getMessage());
+      if (isRateLimited(e)) {
+        // Only moves the link to the back of the queue, without changing its status
+        repository.setLinkChecked(id, sourceUrl, checkedAt);
+      } else if (isLinkFailure(e)) {
+        repository.setLinkFailed(id, sourceUrl, checkedAt);
+      }
+      return;
+    }
+    // Recorded outside the try block, so a database failure isn't taken for a failed link
+    repository.setLinkOk(id, sourceUrl, checkedAt);
+  }
+
+  /**
+   * Open a connection for a link check. Only the first byte is requested, since the source may
+   * start sending the file before the connection is closed. Sources that don't support range
+   * requests either ignore the header, or respond with an error. Since that error can't be told
+   * from other errors, the source is asked again without the header, unless the status is one of
+   * {@link #FINAL_STATUSES}.
+   *
+   * <p>The request also asks the source to close the connection. Otherwise, the JDK reads the rest
+   * of a response smaller than 512 kB when the connection is disconnected, to keep it alive for
+   * reuse, so sources that ignore the range would still send the whole file if it is small.
+   */
+  private HttpURLConnection openLinkCheckConnection(URI sourceUri) throws IOException {
+    try {
+      return openDownloadConnection(sourceUri, linkCheckReadTimeout, LINK_CHECK_HEADERS);
+    } catch (SourceStatusException e) {
+      if (FINAL_STATUSES.contains(e.statusCode)) {
+        throw e;
+      }
+      log.debug("Range request failed, retrying without range: {}", e.getMessage());
+      return openDownloadConnection(
+          sourceUri, linkCheckReadTimeout, LINK_CHECK_HEADERS_WITHOUT_RANGE);
+    }
+  }
+
+  /** Whether a download proxy is configured. Without it, files can't be downloaded or checked. */
+  public boolean isDownloadProxyConfigured() {
+    return StringUtils.hasText(downloadProxyHost);
+  }
+
+  /**
+   * Check whether any of the reference URLs can be reached through the proxy. When they can't, the
+   * proxy is considered down, and the link check is paused until they can be reached again. Without
+   * reference URLs, a failure without a response is always assumed to be on our side.
+   */
+  public void checkReferenceUrls() {
+    proxyWorking = referenceUrls.stream().anyMatch(this::isReachable);
+  }
+
+  /**
+   * Whether a failed request means that the link doesn't work. A response from the source proves
+   * that the proxy works, except 429, which only means that the source is rate limited. Without a
+   * response, the reference URLs are checked, to tell whether the failure is on our side.
+   */
+  private boolean isLinkFailure(Exception e) {
+    if (e instanceof SourceStatusException) {
+      return isSourceFailure(e);
+    }
+    if (!isProxyWorking()) {
+      return false;
+    }
+    checkReferenceUrls();
+    return isProxyWorking();
+  }
+
+  /** Whether the source responded with an error, other than 429 Too Many Requests. */
+  private static boolean isSourceFailure(Exception e) {
+    return e instanceof SourceStatusException && !isRateLimited(e);
+  }
+
+  private static boolean isRateLimited(Exception e) {
+    return e instanceof SourceStatusException sourceStatus
+        && sourceStatus.statusCode == HttpStatus.TOO_MANY_REQUESTS.value();
+  }
+
+  private boolean isReachable(String url) {
+    try {
+      openDownloadConnection(URI.create(url), linkCheckReadTimeout, Map.of()).disconnect();
+      return true;
+    } catch (SourceStatusException _) {
+      // Reference URLs are HTTPS, so any response came through the proxy from the URL itself
+      return true;
+    } catch (Exception e) {
+      log.debug("Reference URL {} could not be reached: {}", url, e.getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Record whether the link of a Dokumentobjekt works, suppressing any failure. Like download
+   * statistics, this is a best-effort side effect that must not change the response to the client.
+   *
+   * @param id dokumentobjekt id
+   * @param sourceUrl the URL that was downloaded, as stored
+   * @param ok whether the link works
+   */
+  private void recordLinkStatus(String id, String sourceUrl, boolean ok) {
+    try {
+      if (ok) {
+        repository.setLinkOk(id, sourceUrl, Instant.now());
+      } else {
+        repository.setLinkFailed(id, sourceUrl, Instant.now());
+      }
+    } catch (Exception e) {
+      log.error("Could not record link status for Dokumentobjekt {}", id, e);
+    }
   }
 
   /**
@@ -288,21 +479,32 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   }
 
   /**
-   * Look up the source URI for a Dokumentobjekt.
+   * Look up the source URL for a Dokumentobjekt, as stored.
    *
    * @param id the dokumentobjekt id
-   * @return the source URI
-   * @throws EInnsynException if the object is not found or has no valid source URL
+   * @return the source URL
+   * @throws EInnsynException if the object is not found or has no source URL
    */
   @Transactional(readOnly = true)
-  public URI getSourceUri(String id) throws EInnsynException {
+  public String getSourceUrl(String id) throws EInnsynException {
     authorizeGet(id);
     var dokumentobjekt = getProxy().findOrThrow(id, NotFoundException.class);
     var sourceUrl = dokumentobjekt.getReferanseDokumentfil();
     if (sourceUrl == null || sourceUrl.isBlank()) {
       throw new NotFoundException("No source found for " + id);
     }
+    return sourceUrl;
+  }
 
+  /**
+   * Convert a stored source URL to a URI.
+   *
+   * @param id the dokumentobjekt id, for the error message
+   * @param sourceUrl the source URL, as stored
+   * @return the source URI
+   * @throws NotFoundException if the source URL is invalid
+   */
+  private static URI toSourceUri(String id, String sourceUrl) throws NotFoundException {
     try {
       // Preserve already-encoded source URLs exactly as stored.
       return URI.create(sourceUrl);
@@ -374,13 +576,15 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    * Open a connection to the source URI through the configured download proxy. SSRF protection and
    * scheme enforcement are delegated to the proxy.
    */
-  private HttpURLConnection openDownloadConnection(URI sourceUri) throws IOException {
+  private HttpURLConnection openDownloadConnection(
+      URI sourceUri, Duration readTimeout, Map<String, String> headers) throws IOException {
     var proxyAddress = new InetSocketAddress(downloadProxyHost, downloadProxyPort);
     var httpProxy = new Proxy(Proxy.Type.HTTP, proxyAddress);
     var connection = (HttpURLConnection) sourceUri.toURL().openConnection(httpProxy);
     connection.setRequestProperty(HttpHeaders.USER_AGENT, DOWNLOAD_USER_AGENT);
+    headers.forEach(connection::setRequestProperty);
     connection.setConnectTimeout(DOWNLOAD_CONNECT_TIMEOUT_MS);
-    connection.setReadTimeout(DOWNLOAD_READ_TIMEOUT_MS);
+    connection.setReadTimeout((int) readTimeout.toMillis());
     connection.setInstanceFollowRedirects(true);
     connection.connect();
 
@@ -388,7 +592,8 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     if (statusCode < 200 || statusCode >= 300) {
       var message = connection.getResponseMessage();
       connection.disconnect();
-      throw new IOException(
+      throw new SourceStatusException(
+          statusCode,
           "Source returned HTTP "
               + statusCode
               + (StringUtils.hasText(message) ? " (" + message + ")" : "")
@@ -397,6 +602,15 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     }
 
     return connection;
+  }
+
+  /**
+   * Fulltext files must be served over HTTPS on the default port, since the proxy only allows port
+   * 443. A link with any other scheme or port doesn't work.
+   */
+  private boolean isHttpsOnDefaultPort(URI sourceUri) {
+    var port = sourceUri.getPort();
+    return "https".equalsIgnoreCase(sourceUri.getScheme()) && (port == -1 || port == 443);
   }
 
   /** Check whether the content type indicates HTML or XHTML content. */
@@ -422,5 +636,15 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
       return guessed;
     }
     return "application/octet-stream";
+  }
+
+  /** Thrown when the source responds with a status code other than 2xx. */
+  private static class SourceStatusException extends IOException {
+    private final int statusCode;
+
+    SourceStatusException(int statusCode, String message) {
+      super(message);
+      this.statusCode = statusCode;
+    }
   }
 }

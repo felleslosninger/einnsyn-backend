@@ -1,0 +1,100 @@
+package no.einnsyn.backend.tasks.handlers.linkcheck;
+
+import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import no.einnsyn.backend.entities.dokumentobjekt.DokumentobjektRepository;
+import no.einnsyn.backend.entities.dokumentobjekt.DokumentobjektService;
+import no.einnsyn.backend.utils.ApplicationShutdownListenerService;
+import no.einnsyn.backend.utils.ParallelRunner;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+/**
+ * Continuously checks the links to fulltext files (Dokumentobjekt). Each run checks the batch of
+ * links that were checked longest ago, whether they failed or not, so a large number of failed
+ * links can't keep the others from being checked. Since the oldest checks are always picked next,
+ * the checker starts over from the beginning once every link has been checked, without keeping
+ * track of its position.
+ */
+@Service
+@Slf4j
+public class FulltextLinkCheckScheduler {
+
+  private final DokumentobjektRepository dokumentobjektRepository;
+  private final DokumentobjektService dokumentobjektService;
+  private final ApplicationShutdownListenerService applicationShutdownListenerService;
+  private final ParallelRunner parallelRunner;
+
+  @Value("${application.linkCheck.batchSize:1000}")
+  private int batchSize;
+
+  public FulltextLinkCheckScheduler(
+      DokumentobjektRepository dokumentobjektRepository,
+      DokumentobjektService dokumentobjektService,
+      ApplicationShutdownListenerService applicationShutdownListenerService,
+      @Value("${application.linkCheck.concurrency:10}") int concurrency) {
+    this.parallelRunner = new ParallelRunner(concurrency);
+    this.dokumentobjektRepository = dokumentobjektRepository;
+    this.dokumentobjektService = dokumentobjektService;
+    this.applicationShutdownListenerService = applicationShutdownListenerService;
+  }
+
+  /**
+   * While the proxy is down, check every minute whether it works again. Not locked, since every
+   * instance keeps its own proxy status.
+   */
+  @Scheduled(fixedRate = 1, timeUnit = TimeUnit.MINUTES)
+  public void checkProxyWhileDown() {
+    if (!dokumentobjektService.isProxyWorking()) {
+      dokumentobjektService.checkReferenceUrls();
+    }
+  }
+
+  @Scheduled(
+      fixedDelayString = "${application.linkCheck.interval:PT30S}",
+      initialDelayString = "${application.linkCheck.initialDelay:PT5M}")
+  @SchedulerLock(name = "FulltextLinkCheck", lockAtLeastFor = "PT10S")
+  public void checkLinks() {
+    // Without a proxy every check would fail on our side, so there is nothing to check
+    if (!dokumentobjektService.isDownloadProxyConfigured()) {
+      log.debug("Download proxy is not configured, skipping fulltext link check.");
+      return;
+    }
+
+    // When a link failed on our side, the job is paused until the proxy works again
+    if (!dokumentobjektService.isProxyWorking()) {
+      log.warn("Reference URLs can't be reached, skipping fulltext link check.");
+      return;
+    }
+
+    var ids = dokumentobjektRepository.findIdsByOldestLinkCheck(PageRequest.of(0, batchSize));
+
+    // On shutdown no new checks are started. The remaining links are picked first by the next run.
+    var futures = new ArrayList<CompletableFuture<Void>>();
+    for (var id : ids) {
+      if (applicationShutdownListenerService.isShuttingDown()) {
+        log.warn("Application is shutting down. Aborting fulltext link check.");
+        break;
+      }
+      futures.add(
+          parallelRunner.run(
+              () -> {
+                // ParallelRunner may wait for a free slot after the check above, so check again
+                if (!applicationShutdownListenerService.isShuttingDown()) {
+                  dokumentobjektService.checkLink(id);
+                }
+              }));
+    }
+
+    // ParallelRunner logs any failure, so failed futures are ignored here
+    CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+        .exceptionally(_ -> null)
+        .join();
+    log.info("Finished checking {} fulltext links.", futures.size());
+  }
+}
