@@ -27,6 +27,7 @@
     <spotless-maven-plugin.version>3.11.0</spotless-maven-plugin.version>
     <google-java-format.version>1.36.1</google-java-format.version>
     <jacoco.version>0.8.16</jacoco.version>
+    <tomcat.version>11.0.29</tomcat.version>
   </properties>
 
   <dependencyManagement>
