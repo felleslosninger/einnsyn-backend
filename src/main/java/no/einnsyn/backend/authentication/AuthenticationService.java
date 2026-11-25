@@ -88,18 +88,24 @@ public class AuthenticationService {
   public List<String> getEnhetSubtreeIdList() {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication instanceof EInnsynAuthentication eInnsynAuthentication) {
-      // Fetch all Enhets from authentication.authorities
-      var authorities = eInnsynAuthentication.getAuthorities();
-      return authorities.stream()
-          .filter(a -> a instanceof EInnsynAuthority)
-          .map(a -> (EInnsynAuthority) a)
-          .filter(a -> "Enhet".equals(a.getEntity()))
-          .map(EInnsynAuthority::getId)
-          .filter(id -> id != null && !id.isBlank())
-          .toList();
+      return eInnsynAuthentication.getEnhetIdList();
     }
 
     return List.of();
+  }
+
+  /**
+   * Check if an Enhet is in the subtree of any Enhet the caller is authenticated for. A login can
+   * cover several organizations; the principal Enhet is only the default one to act as.
+   *
+   * @param enhetId the Enhet ID to check
+   * @return true if the caller has access to the Enhet
+   */
+  public boolean hasEnhetAccess(String enhetId) {
+    return enhetId != null
+        && SecurityContextHolder.getContext().getAuthentication()
+            instanceof EInnsynAuthentication eInnsynAuthentication
+        && eInnsynAuthentication.getEnhetIdSet().contains(enhetId);
   }
 
   /** Check if the authenticated user is an admin */

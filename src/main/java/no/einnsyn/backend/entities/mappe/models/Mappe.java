@@ -14,6 +14,7 @@ import no.einnsyn.backend.entities.arkiv.models.Arkiv;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.arkivdel.models.Arkivdel;
 import no.einnsyn.backend.entities.klasse.models.Klasse;
+import no.einnsyn.backend.entities.lagretsak.models.LagretSak;
 import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 
 @Getter
@@ -51,6 +52,8 @@ public abstract class Mappe extends ArkivBase implements HasSlug {
   public abstract List<Matrikkelnummer> getMatrikkelnummer();
 
   public abstract void addMatrikkelnummer(Matrikkelnummer matrikkelnummer);
+
+  public abstract List<LagretSak> getLagretSak();
 
   @PrePersist
   @Override

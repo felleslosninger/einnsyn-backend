@@ -3,10 +3,12 @@ package no.einnsyn.backend.entities.innsynskrav;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
+import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
@@ -614,5 +616,64 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
     deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
     assertEquals(
         HttpStatus.OK, delete("/arkiv/" + arkiv2DTO.getId(), journalenhet2Key).getStatusCode());
+  }
+
+  @Test
+  void testJournalpostShowsOwnInnsynskrav() throws Exception {
+    var journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
+    var orderedId = journalpostList.getFirst().getId();
+    var bestilling1DTO = addInnsynskravBestilling(bruker1Token, orderedId);
+    var bestilling2DTO = addInnsynskravBestilling(bruker2Token, orderedId);
+    var innsynskrav1Id = bestilling1DTO.getInnsynskrav().getFirst().getId();
+    var innsynskrav2Id = bestilling2DTO.getInnsynskrav().getFirst().getId();
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+    var listType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+
+    // Search: only the ordered journalpost has an innsynskrav, and only the user's own
+    var response =
+        get("/search?entity=Journalpost&saksmappe=" + saksmappeDTO.getId(), bruker1Token);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<JournalpostDTO> searchResult = gson.fromJson(response.getBody(), listType);
+    assertEquals(journalpostList.size(), searchResult.getItems().size());
+    for (var journalpostDTO : searchResult.getItems()) {
+      var expected = journalpostDTO.getId().equals(orderedId) ? List.of(innsynskrav1Id) : List.of();
+      assertEquals(expected, getInnsynskravIds(journalpostDTO));
+    }
+
+    // List
+    response = get("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", bruker2Token);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<JournalpostDTO> listResult = gson.fromJson(response.getBody(), listType);
+    for (var journalpostDTO : listResult.getItems()) {
+      var expected = journalpostDTO.getId().equals(orderedId) ? List.of(innsynskrav2Id) : List.of();
+      assertEquals(expected, getInnsynskravIds(journalpostDTO));
+    }
+
+    // Get, with expand
+    response = get("/journalpost/" + orderedId + "?expand=innsynskrav", bruker1Token);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var innsynskravDTO = journalpostDTO.getInnsynskrav().getFirst().getExpandedObject();
+    assertEquals(innsynskrav1Id, innsynskravDTO.getId());
+    assertEquals(orderedId, innsynskravDTO.getJournalpost().getId());
+
+    // Not set for anonymous users or Enhets
+    response = getAnon("/journalpost/" + orderedId);
+    assertNull(gson.fromJson(response.getBody(), JournalpostDTO.class).getInnsynskrav());
+    response = get("/journalpost/" + orderedId);
+    assertNull(gson.fromJson(response.getBody(), JournalpostDTO.class).getInnsynskrav());
+
+    deleteInnsynskravFromBestilling(bestilling1DTO);
+    deleteInnsynskravFromBestilling(bestilling2DTO);
+    assertEquals(
+        HttpStatus.OK,
+        delete("/innsynskravBestilling/" + bestilling1DTO.getId(), bruker1Token).getStatusCode());
+    assertEquals(
+        HttpStatus.OK,
+        delete("/innsynskravBestilling/" + bestilling2DTO.getId(), bruker2Token).getStatusCode());
+  }
+
+  private List<String> getInnsynskravIds(JournalpostDTO journalpostDTO) {
+    return journalpostDTO.getInnsynskrav().stream().map(ExpandableField::getId).toList();
   }
 }

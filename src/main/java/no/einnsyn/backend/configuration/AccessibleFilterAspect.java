@@ -61,6 +61,13 @@ public class AccessibleFilterAspect {
 
     var session = entityManager.unwrap(Session.class);
 
+    // Personal collections hold the logged-in Bruker's own objects, and nothing for anyone else
+    var brukerId = Objects.requireNonNullElse(authenticationService.getBrukerId(), "");
+    var brukerFilter = session.getEnabledFilter("brukerFilter");
+    if (brukerFilter == null || !brukerId.equals(brukerFilter.getParameterValue("brukerId"))) {
+      session.enableFilter("brukerFilter").setParameter("brukerId", brukerId);
+    }
+
     // Disable filter for non-web requests (scheduled tasks, etc.)
     if (RequestContextHolder.getRequestAttributes() == null) {
       log.trace("Non-web request detected, disabling accessibleFilter");

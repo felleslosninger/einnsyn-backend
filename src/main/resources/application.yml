@@ -137,6 +137,8 @@ spring:
         session:
           events:
             log: LOG_QUERIES_SLOWER_THAN_MS=1000
+        # Lazy associations are loaded for up to this many owners at once, the largest page size
+        default_batch_fetch_size: 100
         jdbc:
           fetch_size: 100
           batch_size: 100

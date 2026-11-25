@@ -188,6 +188,15 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
           klasseService.maybeExpand(mappe.getParentKlasse(), "klasse", expandPaths, currentPath));
     }
 
+    // brukerFilter limits the collection to the Bruker's own. Uniqueness is only enforced on add,
+    // so the first of any duplicates is shown. Null on new objects.
+    var lagretSak = mappe.getLagretSak();
+    if (authenticationService.getBrukerId() != null && lagretSak != null && !lagretSak.isEmpty()) {
+      dto.setLagretSak(
+          lagretSakService.maybeExpand(
+              lagretSak.getFirst(), "lagretSak", expandPaths, currentPath));
+    }
+
     return dto;
   }
 

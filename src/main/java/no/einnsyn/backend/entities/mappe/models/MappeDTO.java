@@ -17,6 +17,8 @@ import no.einnsyn.backend.entities.arkivdel.ArkivdelService;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.klasse.KlasseService;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
+import no.einnsyn.backend.entities.lagretsak.LagretSakService;
+import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerService;
 import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
@@ -113,4 +115,15 @@ public class MappeDTO extends ArkivBaseDTO {
       service = MatrikkelnummerService.class,
       groups = {Insert.class, Update.class})
   protected List<@Valid ExpandableField<MatrikkelnummerDTO>> matrikkelnummer;
+
+  /**
+   * The authenticated user's LagretSak for this Mappe, if they have saved it. Only set for
+   * logged-in users.
+   */
+  @ExpandableObject(
+      service = LagretSakService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  @Null(groups = {Insert.class, Update.class})
+  protected ExpandableField<LagretSakDTO> lagretSak;
 }

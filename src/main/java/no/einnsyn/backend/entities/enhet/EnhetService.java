@@ -752,15 +752,14 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
       throw new AuthorizationException("Parent is required");
     }
 
-    var authenticatedEnhetId = authenticationService.getEnhetId();
-    if (enhetService.isAncestorOf(authenticatedEnhetId, parent.getId())) {
+    if (hasAccessThroughAncestors(enhetService.find(parent.getId()))) {
       return;
     }
 
     // If enabled, users authenticated only with orgnummer can self-add matching
     // orgnummer under
     // explicitly allowed parent nodes.
-    if (ansattportenAllowSelfRegistration && authenticatedEnhetId == null) {
+    if (ansattportenAllowSelfRegistration && authenticationService.getEnhetId() == null) {
       var authenticatedOrgnummer = authenticationService.getEnhetOrgnummer();
       if (authenticatedOrgnummer != null
           && authenticatedOrgnummer.equals(dto.getOrgnummer())
@@ -774,6 +773,21 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
 
     throw new AuthorizationException(
         "Not authorized to add Enhet with orgnummer " + dto.getOrgnummer());
+  }
+
+  /**
+   * The authorities are fixed at login, so an Enhet added earlier in this request (the parent of a
+   * nested underenhet) is only covered through its ancestors.
+   */
+  private boolean hasAccessThroughAncestors(Enhet enhet) {
+    var visited = new HashSet<Enhet>();
+    while (enhet != null && visited.add(enhet)) {
+      if (authenticationService.hasEnhetAccess(enhet.getId())) {
+        return true;
+      }
+      enhet = enhet.getParent();
+    }
+    return false;
   }
 
   /**
@@ -815,8 +829,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
   protected void authorizeUpdate(String idToUpdate, EnhetDTO dto) throws EInnsynException {
     requireVisible(idToUpdate);
 
-    var loggedInAs = authenticationService.getEnhetId();
-    if (enhetService.isAncestorOf(loggedInAs, idToUpdate)) {
+    if (hasAccessThroughAncestors(enhetService.find(idToUpdate))) {
       return;
     }
 
@@ -839,8 +852,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
   protected void authorizeDelete(String idToDelete) throws EInnsynException {
     requireVisible(idToDelete);
 
-    var loggedInAs = authenticationService.getEnhetId();
-    if (enhetService.isAncestorOf(loggedInAs, idToDelete)) {
+    if (hasAccessThroughAncestors(enhetService.find(idToDelete))) {
       var enhet = proxy.find(idToDelete);
       if (enhetHasData(enhet)) {
         throw new AuthorizationException(
