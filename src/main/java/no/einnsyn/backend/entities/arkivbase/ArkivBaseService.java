@@ -29,6 +29,8 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
 
   protected abstract ArkivBaseRepository<O> getRepository();
 
+  protected abstract ArkivBaseService<O, D> getProxy();
+
   /**
    * @param id The ID of the object to find
    * @return The object with the given ID, or null if not found
@@ -234,7 +236,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
       throw new AuthorizationException("Not authenticated to update " + objectClassName + ".");
     }
     var wantsToUpdate = getProxy().findOrThrow(id);
-    if (!isOwnerOf(wantsToUpdate)) {
+    if (!getProxy().isOwnerOf(wantsToUpdate)) {
       throw new AuthorizationException("Not authorized to update " + id);
     }
   }
@@ -261,7 +263,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
               + " without a journalenhet. (Not logged in?)");
     }
     var wantsToDelete = getProxy().findOrThrow(id);
-    if (!isOwnerOf(wantsToDelete)) {
+    if (!getProxy().isOwnerOf(wantsToDelete)) {
       throw new AuthorizationException("Not authorized to delete " + objectClassName + " : " + id);
     }
   }
