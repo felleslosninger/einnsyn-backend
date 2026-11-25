@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
+import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
@@ -38,6 +39,16 @@ public class Dokumentobjekt extends ArkivBase {
 
   // Legacy
   private String dokumentbeskrivelseIri;
+
+  // When the link to the source file was last checked, whether or not the check gave a status.
+  // On 429 Too Many Requests only this is set, so the link is moved to the back of the queue
+  // without being marked as working or failed. Should not be updated through JPA.
+  @Column(insertable = false, updatable = false)
+  private Instant linkCheckedAt;
+
+  // Set when the link doesn't work, cleared when it works again. Should not be updated through JPA.
+  @Column(insertable = false, updatable = false)
+  private Instant linkFailedSince;
 
   @PrePersist
   @Override

@@ -4,7 +4,9 @@ import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
@@ -132,14 +134,17 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       journalpost.setJournalpostnummer(dto.getJournalpostnummer());
     }
 
-    if (dto.getJournalposttype() != null) {
-      journalpost.setJournalposttype(dto.getJournalposttype());
-    }
-
     if (dto.getLegacyJournalposttype() != null) {
       journalpost.setLegacyJournalposttype(dto.getLegacyJournalposttype());
       journalpost.setJournalposttype(
           JournalposttypeResolver.resolve(dto.getLegacyJournalposttype()).toString());
+    } else if (dto.getJournalposttype() != null) {
+      journalpost.setJournalposttype(dto.getJournalposttype());
+      // Both values are indexed, so a legacy value of another type must not be left behind
+      var legacyType = JournalposttypeResolver.resolve(journalpost.getLegacyJournalposttype());
+      if (!legacyType.toString().equals(dto.getJournalposttype())) {
+        journalpost.setLegacyJournalposttype(dto.getJournalposttype());
+      }
     }
 
     // TODO: Remove this when the old API isn't used anymore
@@ -356,7 +361,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       journalpostES.setJournalaar("" + journalpost.getJournalaar());
       journalpostES.setJournalsekvensnummer("" + journalpost.getJournalsekvensnummer());
       journalpostES.setJournalpostnummer("" + journalpost.getJournalpostnummer());
-      journalpostES.setJournalposttype(journalpost.getLegacyJournalposttype());
+      // The legacy API reads the legacy value, the new API filters on the enum value
+      journalpostES.setJournalposttype(
+          Stream.of(journalpost.getLegacyJournalposttype(), journalpost.getJournalposttype())
+              .filter(Objects::nonNull)
+              .distinct()
+              .toList());
       if (journalpost.getJournaldato() != null) {
         journalpostES.setJournaldato(journalpost.getJournaldato().toString());
       }

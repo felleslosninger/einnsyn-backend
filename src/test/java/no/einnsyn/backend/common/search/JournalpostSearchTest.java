@@ -578,6 +578,29 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertEquals(journalpostFooDTO.getId(), items.get(0).getId());
   }
 
+  /** Journalposts from the legacy API come with a Noark IRI, which is resolved to an enum value. */
+  @Test
+  void testFilterByJournalposttypeWithLegacyJournalposttype() throws Exception {
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("journalposttype", "ukjent");
+    journalpostJSON.put(
+        "legacyJournalposttype",
+        "http://www.arkivverket.no/standarder/noark5/arkivstruktur/saksframlegg");
+    var response = post("/saksmappe/" + saksmappeBarDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var legacyJournalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals("saksframlegg", legacyJournalpostDTO.getJournalposttype());
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+
+    response = get("/search?journalposttype=saksframlegg");
+    PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), jptype);
+    var items = result.getItems();
+    assertEquals(1, items.size());
+    assertEquals(legacyJournalpostDTO.getId(), items.get(0).getId());
+
+    delete("/journalpost/" + legacyJournalpostDTO.getId());
+  }
+
   @Test
   void testOldPublicContentIsSearchable() throws Exception {
     var journalpostJSON = getJournalpostJSON();

@@ -4,6 +4,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SearchType;
+import co.elastic.clients.elasticsearch._types.SortMode;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.FunctionBoostMode;
@@ -337,8 +338,10 @@ public class SearchService {
     // Documents without the sort field go last in the requested order. The reversed query used for
     // endingBefore must be the exact inverse, so there they go first.
     var missing = reversed ? "_first" : "_last";
-    searchRequestBuilder.sort(getSortOptions(sortBy, sortOrder, missing));
-    searchRequestBuilder.sort(getSortOptions("id", sortOrder, missing));
+    // It must also sort on the same value of a field that holds several.
+    var mode = SortByMapper.resolveMode(sortBy);
+    searchRequestBuilder.sort(getSortOptions(sortBy, sortOrder, missing, mode));
+    searchRequestBuilder.sort(getSortOptions("id", sortOrder, missing, null));
 
     // We only need the ID of each match, so don't fetch sources
     searchRequestBuilder.source(b -> b.fetch(false));
@@ -377,7 +380,7 @@ public class SearchService {
             || !CollectionUtils.isEmpty(searchParams.getSkjermingshjemmel()));
   }
 
-  SortOptions getSortOptions(String sortBy, String sortOrder, String missing) {
+  SortOptions getSortOptions(String sortBy, String sortOrder, String missing, SortMode mode) {
     var sort = SortByMapper.resolve(sortBy);
     var order = "desc".equalsIgnoreCase(sortOrder) ? SortOrder.Desc : SortOrder.Asc;
     return SortOptions.of(
@@ -386,9 +389,10 @@ public class SearchService {
                 f -> {
                   f.field(sort);
                   f.order(order);
-                  // .missing can't be added to built-in fields like _score
+                  // .missing and .mode can't be added to built-in fields like _score
                   if (sort != null && !sort.startsWith("_")) {
                     f.missing(missing);
+                    f.mode(mode);
                   }
                   return f;
                 }));

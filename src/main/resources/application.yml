@@ -43,6 +43,16 @@ application:
       proxy:
         port: ${DOKUMENTOBJEKT_DOWNLOAD_PROXY_PORT:3128}
         host: ${DOKUMENTOBJEKT_DOWNLOAD_PROXY_HOST:}
+  linkCheck:
+    interval: ${LINK_CHECK_INTERVAL:PT30S}
+    initialDelay: ${LINK_CHECK_INITIAL_DELAY:PT5M}
+    batchSize: ${LINK_CHECK_BATCH_SIZE:1000}
+    concurrency: ${LINK_CHECK_CONCURRENCY:10}
+    # How long a link check waits for a response. Downloads always wait 30 seconds.
+    readTimeout: ${LINK_CHECK_READ_TIMEOUT:PT30S}
+    # Checked when a link fails without a response. When none of these work, the failure is on our
+    # side, and the link check is paused until one of them works again (checked every minute)
+    referenceUrls: ${LINK_CHECK_REFERENCE_URLS:https://cp.cloudflare.com/generate_204,https://detectportal.firefox.com/success.txt}
   legacyLagretSoekConversion:
     dryRun: ${LEGACY_LAGRET_SOEK_CONVERSION_DRY_RUN:true}
     interval: ${LEGACY_LAGRET_SOEK_CONVERSION_INTERVAL:PT1H}
@@ -214,6 +224,9 @@ application:
     reindexer:
       getBatchSize: 20
       indexBatchSize: 20
+  linkCheck:
+    # Tests set their own reference URLs
+    referenceUrls: ""
   innsynskrav:
     anonymousMaxAge: 1
     verificationQuarantineLimit: 10
