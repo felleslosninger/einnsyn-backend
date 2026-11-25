@@ -38,7 +38,7 @@ public class FulltextLinkCheckScheduler {
   private int batchSize;
 
   // Links checked per second. Zero or less means no limit.
-  @Value("${application.linkCheck.rate:5}")
+  @Value("${application.linkCheck.rate:1}")
   private double rate;
 
   public FulltextLinkCheckScheduler(
