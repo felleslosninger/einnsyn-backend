@@ -44,9 +44,13 @@ application:
         port: ${DOKUMENTOBJEKT_DOWNLOAD_PROXY_PORT:3128}
         host: ${DOKUMENTOBJEKT_DOWNLOAD_PROXY_HOST:}
   linkCheck:
-    interval: ${LINK_CHECK_INTERVAL:PT30S}
+    # Links checked per second, spread evenly. 5 a second checks about 430 000 links a day.
+    rate: ${LINK_CHECK_RATE:5}
+    # Pause between batches. A batch only decides how often the next links are fetched.
+    interval: ${LINK_CHECK_INTERVAL:PT1S}
     initialDelay: ${LINK_CHECK_INITIAL_DELAY:PT5M}
     batchSize: ${LINK_CHECK_BATCH_SIZE:1000}
+    # Most checks running at once. Only reached when many sources are slow to respond.
     concurrency: ${LINK_CHECK_CONCURRENCY:10}
     # How long a link check waits for a response. Downloads always wait 30 seconds.
     readTimeout: ${LINK_CHECK_READ_TIMEOUT:PT30S}

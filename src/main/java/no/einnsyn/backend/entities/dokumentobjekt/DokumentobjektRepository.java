@@ -12,10 +12,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 public interface DokumentobjektRepository extends ArkivBaseRepository<Dokumentobjekt> {
 
+  // Some legacy rows have no _id. They can't be downloaded through the API, so they are skipped.
   @Query(
       """
       SELECT o.id FROM Dokumentobjekt o
       WHERE o.referanseDokumentfil IS NOT NULL
+        AND o.id IS NOT NULL
       ORDER BY o.linkCheckedAt ASC NULLS FIRST
       """)
   List<String> findIdsByOldestLinkCheck(Pageable pageable);

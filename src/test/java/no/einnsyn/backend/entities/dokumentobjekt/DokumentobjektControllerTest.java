@@ -79,6 +79,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -970,12 +971,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     dokumentobjektRepository.setLinkOk(okDTO.getId(), HTTPS_SOURCE_URL, okCheckedAt);
     dokumentobjektRepository.setLinkFailed(dokumentobjektDTO.getId(), SOURCE_URL, failedCheckedAt);
 
-    var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
-    ReflectionTestUtils.setField(target, "batchSize", 1);
     try (var _ = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
-      fulltextLinkCheckScheduler.checkLinks();
-    } finally {
-      ReflectionTestUtils.setField(target, "batchSize", 1000);
+      checkLinksWithBatchSize(1);
     }
 
     var ok = dokumentobjektRepository.findById(okDTO.getId()).orElseThrow();
@@ -995,12 +992,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var checkedAt = Instant.now().minus(2, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
     dokumentobjektRepository.setLinkOk(dokumentobjektDTO.getId(), SOURCE_URL, checkedAt);
 
-    var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
-    ReflectionTestUtils.setField(target, "batchSize", 1);
     try (var _ = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
-      fulltextLinkCheckScheduler.checkLinks();
-    } finally {
-      ReflectionTestUtils.setField(target, "batchSize", 1000);
+      checkLinksWithBatchSize(1);
     }
 
     var unchecked = dokumentobjektRepository.findById(uncheckedDTO.getId()).orElseThrow();
@@ -1250,6 +1243,76 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     // The reference URL timed out too, so the failure is on our side
     assertNull(getDokumentobjekt().getLinkFailedSince());
     assertFalse(dokumentobjektService.isProxyWorking());
+  }
+
+  @Test
+  void linkCheckSchedulerShouldSkipLinksWithoutId() throws Exception {
+    // Some legacy rows have no _id. findById(null) would throw, and the row would block the queue,
+    // since it is never marked as checked.
+    var response =
+        post(
+            "/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId() + "/dokumentobjekt",
+            getDokumentobjektJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var withoutIdDTO = gson.fromJson(response.getBody(), DokumentobjektDTO.class);
+    var withoutIdNumber =
+        dokumentobjektRepository.findById(withoutIdDTO.getId()).orElseThrow().getDokumentobjektId();
+
+    // The row without _id is unchecked, so it is first in the queue
+    var checkedAt = Instant.now().minus(2, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+    dokumentobjektRepository.setLinkOk(dokumentobjektDTO.getId(), SOURCE_URL, checkedAt);
+    var jdbcTemplate = new JdbcTemplate(dataSource);
+    jdbcTemplate.update(
+        "UPDATE dokumentobjekt SET _id = NULL WHERE dokumentobjekt_id = ?", withoutIdNumber);
+    try (var _ = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      checkLinksWithBatchSize(1);
+    } finally {
+      jdbcTemplate.update(
+          "UPDATE dokumentobjekt SET _id = ? WHERE dokumentobjekt_id = ?",
+          withoutIdDTO.getId(),
+          withoutIdNumber);
+    }
+
+    assertTrue(getDokumentobjekt().getLinkCheckedAt().isAfter(checkedAt));
+    var withoutId = dokumentobjektRepository.findById(withoutIdDTO.getId()).orElseThrow();
+    assertNull(withoutId.getLinkCheckedAt());
+  }
+
+  @Test
+  void linkCheckSchedulerShouldStartChecksAtTheConfiguredRate() throws Exception {
+    // Four links at five a second: the last check starts at least 600 ms after the first
+    for (var i = 0; i < 3; i++) {
+      var response =
+          post(
+              "/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId() + "/dokumentobjekt",
+              getDokumentobjektJSON());
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    }
+
+    useHttpsSource();
+    var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
+    var originalRate = ReflectionTestUtils.getField(target, "rate");
+    ReflectionTestUtils.setField(target, "rate", 5.0);
+    var start = System.nanoTime();
+    try (var proxy = startHttpsSourceProxy("HTTP/1.1 404 Not Found")) {
+      fulltextLinkCheckScheduler.checkLinks();
+      assertEquals(4, proxy.requests().size());
+    } finally {
+      ReflectionTestUtils.setField(target, "rate", originalRate);
+    }
+
+    assertTrue(Duration.ofNanos(System.nanoTime() - start).toMillis() >= 600);
+  }
+
+  private void checkLinksWithBatchSize(int batchSize) {
+    var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
+    var originalBatchSize = ReflectionTestUtils.getField(target, "batchSize");
+    ReflectionTestUtils.setField(target, "batchSize", batchSize);
+    try {
+      fulltextLinkCheckScheduler.checkLinks();
+    } finally {
+      ReflectionTestUtils.setField(target, "batchSize", originalBatchSize);
+    }
   }
 
   @Test
