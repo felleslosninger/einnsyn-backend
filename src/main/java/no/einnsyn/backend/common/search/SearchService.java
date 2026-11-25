@@ -224,13 +224,13 @@ public class SearchService {
       // Loop through the hits and convert them to SearchResultItems
       var searchResultItemList =
           responseList.stream()
-              .map(
+              .<BaseDTO>map(
                   node -> {
                     var id = node.id();
                     var entity = IdUtils.resolveEntity(id);
                     if (missingIds.contains(id)) {
-                      log.warn("Found non-existing object in elasticsearch: " + id);
-                      return (BaseDTO) null;
+                      log.warn("Found non-existing object in elasticsearch: {}", id);
+                      return null;
                     }
 
                     // Create a query object for the expand paths
@@ -245,13 +245,13 @@ public class SearchService {
                         case "Moetemappe" -> moetemappeService.get(id, query);
                         case "Moetesak" -> moetesakService.get(id, query);
                         case null, default -> {
-                          log.warn("Found document in elasticsearch with unknown type: " + id);
-                          yield (BaseDTO) null;
+                          log.warn("Found document in elasticsearch with unknown type: {}", id);
+                          yield null;
                         }
                       };
                     } catch (EInnsynException e) {
-                      log.warn("Found non-existing object in elasticsearch: " + id);
-                      return (BaseDTO) null;
+                      log.warn("Found non-existing object in elasticsearch: {}", id);
+                      return null;
                     }
                   })
               .filter(Objects::nonNull)
