@@ -29,6 +29,11 @@ import org.hibernate.annotations.UpdateTimestamp;
         $FILTER_PLACEHOLDER$._accessible_after <= NOW()
         """)
 @Filter(name = "accessibleFilter")
+@FilterDef(
+    name = "brukerFilter",
+    // The logged-in Bruker, or "" (matches nothing) when there is none
+    parameters = @ParamDef(name = "brukerId", type = String.class),
+    defaultCondition = "$FILTER_PLACEHOLDER$.bruker__id = :brukerId")
 @MappedSuperclass
 @Getter
 @Setter
