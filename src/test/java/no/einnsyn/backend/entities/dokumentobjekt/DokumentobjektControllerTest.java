@@ -1280,20 +1280,23 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void linkCheckSchedulerShouldStartChecksAtTheConfiguredRate() throws Exception {
-    // Four links at five a second: the last check starts at least 600 ms after the first
+    // checkLink stores when it started in linkCheckedAt, so the gaps between the starts are
+    // measured
+    // without the time it takes to set up and close the proxy
+    var ids = new ArrayList<>(List.of(dokumentobjektDTO.getId()));
     for (var i = 0; i < 3; i++) {
       var response =
           post(
               "/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId() + "/dokumentobjekt",
               getDokumentobjektJSON());
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      ids.add(gson.fromJson(response.getBody(), DokumentobjektDTO.class).getId());
     }
 
     useHttpsSource();
     var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
     var originalRate = ReflectionTestUtils.getField(target, "rate");
-    ReflectionTestUtils.setField(target, "rate", 5.0);
-    var start = System.nanoTime();
+    ReflectionTestUtils.setField(target, "rate", 10.0);
     try (var proxy = startHttpsSourceProxy("HTTP/1.1 404 Not Found")) {
       fulltextLinkCheckScheduler.checkLinks();
       assertEquals(4, proxy.requests().size());
@@ -1301,7 +1304,16 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       ReflectionTestUtils.setField(target, "rate", originalRate);
     }
 
-    assertTrue(Duration.ofNanos(System.nanoTime() - start).toMillis() >= 600);
+    // Ten a second is one every 100 ms. Without the rate, the checks start within a few ms.
+    var startTimes =
+        ids.stream()
+            .map(id -> dokumentobjektRepository.findById(id).orElseThrow().getLinkCheckedAt())
+            .sorted()
+            .toList();
+    for (var i = 1; i < startTimes.size(); i++) {
+      var gap = Duration.between(startTimes.get(i - 1), startTimes.get(i));
+      assertTrue(gap.toMillis() >= 75, "Gap between checks was " + gap);
+    }
   }
 
   @Test
