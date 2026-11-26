@@ -24,6 +24,7 @@ import lombok.Setter;
 import no.einnsyn.backend.common.indexable.Indexable;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
+import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.backend.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import no.einnsyn.backend.entities.registrering.models.Registrering;
@@ -144,6 +145,21 @@ public class Journalpost extends Registrering implements Indexable {
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "parentJournalpost")
   @OrderBy("id ASC")
   private List<Korrespondansepart> korrespondansepart;
+
+  // The logged-in Bruker's own innsynskrav. The Bruker is on the bestilling.
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "journalpost")
+  @Filter(
+      name = "brukerFilter",
+      condition =
+          """
+          $FILTER_PLACEHOLDER$.innsynskrav_id IN (
+            SELECT bestilling.id
+            FROM innsynskrav bestilling
+            WHERE bestilling.bruker__id = :brukerId
+          )
+          """)
+  @OrderBy("id ASC")
+  private List<Innsynskrav> innsynskrav;
 
   @JoinTable(
       name = "journalpost_dokumentbeskrivelse",

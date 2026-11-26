@@ -30,8 +30,11 @@ import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.enhet.EnhetService;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
+import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.utils.id.IdGenerator;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -135,6 +138,143 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     response = delete("/arkiv/" + arkivDTO.getId(), journalenhet2Jwt);
     assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test
+  void multiOrgTokenOwnsEveryAuthorizedOrg() throws Exception {
+    // Arkiv tree and Journalpost owned by Journalenhet2
+    var response = post("/arkiv", getArkivJSON(), journalenhet2Key);
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    response =
+        post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON(), journalenhet2Key);
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    response =
+        post(
+            "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe",
+            getSaksmappeJSON(),
+            journalenhet2Key);
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    response =
+        post(
+            "/saksmappe/" + saksmappeDTO.getId() + "/journalpost",
+            getJournalpostJSON(),
+            journalenhet2Key);
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // The principal is the first org, but the token is authorized for both
+    var multiOrgJwt =
+        generateMockAltinn3Jwt(List.of(journalenhetOrgnummer, journalenhet2Orgnummer));
+    var authInfo = gson.fromJson(get("/me", multiOrgJwt).getBody(), AuthInfo.class);
+    assertEquals(journalenhetId, authInfo.getId());
+
+    // A single-org token for the first org owns nothing here
+    var journalenhet1Jwt = generateMockAltinn3Jwt(journalenhetOrgnummer);
+    response = get("/journalpost/" + journalpostDTO.getId(), journalenhet1Jwt);
+    assertNull(gson.fromJson(response.getBody(), JournalpostDTO.class).getJournalsekvensnummer());
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), getSaksmappeJSON(), journalenhet1Jwt);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // Reads and writes agree on ownership for the multi-org token
+    response = get("/journalpost/" + journalpostDTO.getId(), multiOrgJwt);
+    assertEquals(
+        1, gson.fromJson(response.getBody(), JournalpostDTO.class).getJournalsekvensnummer());
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), getSaksmappeJSON(), multiOrgJwt);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Inserts default to the principal, but may target any authorized org
+    response = post("/arkiv", getArkivJSON(), multiOrgJwt);
+    var ownArkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    assertEquals(journalenhetId, ownArkivDTO.getJournalenhet().getId());
+    var arkivJSON = getArkivJSON();
+    arkivJSON.put("journalenhet", journalenhet2Id);
+    response = post("/arkiv", arkivJSON, multiOrgJwt);
+    var otherArkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    assertEquals(journalenhet2Id, otherArkivDTO.getJournalenhet().getId());
+    response = post("/arkiv", arkivJSON, journalenhet1Jwt);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    for (var path :
+        List.of(
+            "/journalpost/" + journalpostDTO.getId(),
+            "/saksmappe/" + saksmappeDTO.getId(),
+            "/arkivdel/" + arkivdelDTO.getId(),
+            "/arkiv/" + arkivDTO.getId(),
+            "/arkiv/" + ownArkivDTO.getId(),
+            "/arkiv/" + otherArkivDTO.getId())) {
+      assertEquals(HttpStatus.OK, delete(path, multiOrgJwt).getStatusCode(), path);
+    }
+  }
+
+  @Test
+  void multiOrgTokenManagesEveryAuthorizedOrg() throws Exception {
+    var multiOrgJwt =
+        generateMockAltinn3Jwt(List.of(journalenhetOrgnummer, journalenhet2Orgnummer));
+    var journalenhet1Jwt = generateMockAltinn3Jwt(journalenhetOrgnummer);
+
+    // Lists for the second org, addressed by orgnummer
+    for (var path :
+        List.of(
+            "/enhet/" + journalenhet2Orgnummer + "/apiKey",
+            "/enhet/" + journalenhet2Orgnummer + "/innsynskrav")) {
+      assertEquals(HttpStatus.OK, get(path, multiOrgJwt).getStatusCode(), path);
+      assertEquals(HttpStatus.FORBIDDEN, get(path, journalenhet1Jwt).getStatusCode(), path);
+    }
+
+    // ApiKeys for the second org
+    var apiKeyPath = "/enhet/" + journalenhet2Id + "/apiKey";
+    var response = post(apiKeyPath, getApiKeyJSON(), journalenhet1Jwt);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    response = post(apiKeyPath, getApiKeyJSON(), multiOrgJwt);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var apiKeyId = gson.fromJson(response.getBody(), ApiKeyDTO.class).getId();
+    assertEquals(
+        HttpStatus.FORBIDDEN, delete("/apiKey/" + apiKeyId, journalenhet1Jwt).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/apiKey/" + apiKeyId, multiOrgJwt).getStatusCode());
+
+    // Underenhets of the second org
+    var underenhetPath = "/enhet/" + journalenhet2Id + "/underenhet";
+    response = post(underenhetPath, getEnhetJSON(), journalenhet1Jwt);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    response = post(underenhetPath, getEnhetJSON(), multiOrgJwt);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var underenhetPathById = "/enhet/" + gson.fromJson(response.getBody(), EnhetDTO.class).getId();
+    var enhetUpdateJSON = new JSONObject();
+    enhetUpdateJSON.put("kontaktpunktTelefon", "12345678");
+    response = patch(underenhetPathById, enhetUpdateJSON, journalenhet1Jwt);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    response = patch(underenhetPathById, enhetUpdateJSON, multiOrgJwt);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(
+        HttpStatus.FORBIDDEN, delete(underenhetPathById, journalenhet1Jwt).getStatusCode());
+    assertEquals(HttpStatus.OK, delete(underenhetPathById, multiOrgJwt).getStatusCode());
+
+    // Search shows the second org's documents before they are public
+    response = post("/arkiv", getArkivJSON(), journalenhet2Key);
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    response =
+        post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON(), journalenhet2Key);
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("accessibleAfter", Instant.now().plusSeconds(60));
+    response =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON, journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeId = gson.fromJson(response.getBody(), SaksmappeDTO.class).getId();
+    response =
+        post("/saksmappe/" + saksmappeId + "/journalpost", getJournalpostJSON(), journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+
+    var searchPath = "/search?entity=Journalpost&saksmappe=" + saksmappeId;
+    var searchResultType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    PaginatedList<JournalpostDTO> searchResult =
+        gson.fromJson(get(searchPath, multiOrgJwt).getBody(), searchResultType);
+    assertEquals(1, searchResult.getItems().size());
+    searchResult = gson.fromJson(get(searchPath, journalenhet1Jwt).getBody(), searchResultType);
+    assertEquals(0, searchResult.getItems().size());
+
+    assertEquals(
+        HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId(), journalenhet2Key).getStatusCode());
   }
 
   @Test
@@ -402,10 +542,13 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
   void shouldRejectTokensForOtherClientsOrResources() throws Exception {
     assertRejected(
         generateMockAltinn3Jwt(
-            journalenhetOrgnummer, ansattportenIssuerUri, "another-client", TEST_RESOURCE));
+            List.of(journalenhetOrgnummer),
+            ansattportenIssuerUri,
+            "another-client",
+            TEST_RESOURCE));
     assertRejected(
         generateMockAltinn3Jwt(
-            journalenhetOrgnummer,
+            List.of(journalenhetOrgnummer),
             ansattportenIssuerUri,
             TEST_CLIENT_ID,
             "urn:altinn:resource:unrelated"));
@@ -477,12 +620,17 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
     return generateMockAltinn3Jwt(orgnummer, ansattportenIssuerUri);
   }
 
+  private String generateMockAltinn3Jwt(List<String> orgnummers) throws Exception {
+    return generateMockAltinn3Jwt(orgnummers, ansattportenIssuerUri, TEST_CLIENT_ID, TEST_RESOURCE);
+  }
+
   static String generateMockAltinn3Jwt(String orgnummer, String issuerUri) throws Exception {
-    return generateMockAltinn3Jwt(orgnummer, issuerUri, TEST_CLIENT_ID, TEST_RESOURCE);
+    return generateMockAltinn3Jwt(List.of(orgnummer), issuerUri, TEST_CLIENT_ID, TEST_RESOURCE);
   }
 
   private static String generateMockAltinn3Jwt(
-      String orgnummer, String issuerUri, String clientId, String resource) throws Exception {
+      List<String> orgnummers, String issuerUri, String clientId, String resource)
+      throws Exception {
     var now = Instant.now();
     var expiryTimeSeconds = 3600L;
 
@@ -508,16 +656,20 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
                 "resource",
                 resource,
                 "authorized_parties",
-                List.of(
-                    Map.of(
-                        "orgno",
-                        Map.of("authority", "iso6523-actorid-upis", "ID", "0192:" + orgnummer),
-                        "resource",
-                        "einnsyn-api",
-                        "name",
-                        "ANSTENDIG UNØYAKTIG TIGER AS",
-                        "unit_type",
-                        "AS")))));
+                orgnummers.stream()
+                    .map(
+                        orgnummer ->
+                            Map.of(
+                                "orgno",
+                                Map.of(
+                                    "authority", "iso6523-actorid-upis", "ID", "0192:" + orgnummer),
+                                "resource",
+                                "einnsyn-api",
+                                "name",
+                                "ANSTENDIG UNØYAKTIG TIGER AS",
+                                "unit_type",
+                                "AS"))
+                    .toList())));
 
     var signedJWT =
         new SignedJWT(

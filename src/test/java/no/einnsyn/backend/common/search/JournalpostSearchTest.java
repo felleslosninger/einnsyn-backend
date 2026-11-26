@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.time.Instant;
+import java.util.Map;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -348,6 +349,35 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
             });
 
     delete("/journalpost/" + futureJournalpostDTO.getId());
+  }
+
+  @Test
+  void testAccessibleFilterWithStaleIndex() throws Exception {
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("offentligTittel", "stale");
+    journalpostJSON.put("offentligTittelSensitiv", "stale sensitivstale");
+    journalpostJSON.put("accessibleAfter", Instant.now().plusSeconds(60));
+    var response = post("/saksmappe/" + saksmappeFooDTO.getId() + "/journalpost", journalpostJSON);
+    var staleJournalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Make the index claim the journalpost is already accessible
+    esClient.update(
+        u ->
+            u.index(elasticsearchIndex)
+                .id(staleJournalpostDTO.getId())
+                .doc(Map.of("accessibleAfter", Instant.now().minusSeconds(60).toString())),
+        Map.class);
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+
+    // Elasticsearch returns both hits, the database hides the stale one
+    response = getAnon("/search?query=foo|stale");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(2, searchResult.getTotal().value());
+    assertEquals(1, searchResult.getItems().size());
+    assertEquals(journalpostFooDTO.getId(), searchResult.getItems().getFirst().getId());
+
+    delete("/journalpost/" + staleJournalpostDTO.getId());
   }
 
   @Test

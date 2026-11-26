@@ -38,7 +38,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -59,23 +58,19 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
   @Autowired private EntityManager entityManager;
   @Autowired private PlatformTransactionManager transactionManager;
 
-  @Mock private EInnsynAuthentication authentication;
   @Autowired protected Gson gson;
 
   @BeforeEach
-  void setupMock() {
+  void setupAuthentication() {
     var apiKey = apiKeyService.findBySecretKey(adminKey);
     var enhetId = apiKey.getEnhet().getId();
     var enhetOrgno = apiKey.getEnhet().getOrgnummer();
     var principal = new EInnsynPrincipalEnhet("ApiKey", apiKey.getId(), enhetId, enhetOrgno, false);
-    doReturn(principal).when(authentication).getPrincipal();
-
     var authorities =
         authenticationService.getAuthoritiesFromEnhet(List.of(apiKey.getEnhet()), "Write");
-    doReturn(authorities).when(authentication).getAuthorities();
 
     var securityContext = SecurityContextHolder.createEmptyContext();
-    securityContext.setAuthentication(authentication);
+    securityContext.setAuthentication(new EInnsynAuthentication(principal, null, authorities));
     SecurityContextHolder.setContext(securityContext);
   }
 

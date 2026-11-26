@@ -339,6 +339,13 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // Legacy følgsakenReferanse
     dto.setLegacyFoelgsakenReferanse(journalpost.getFoelgsakenReferanse());
 
+    // brukerFilter limits the collection to the Bruker's own. Omitted for non-Bruker callers.
+    if (authenticationService.getBrukerId() != null) {
+      dto.setInnsynskrav(
+          innsynskravService.maybeExpand(
+              journalpost.getInnsynskrav(), "innsynskrav", expandPaths, currentPath));
+    }
+
     return dto;
   }
 
