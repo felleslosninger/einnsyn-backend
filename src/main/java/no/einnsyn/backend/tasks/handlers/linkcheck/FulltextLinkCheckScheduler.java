@@ -63,8 +63,11 @@ public class FulltextLinkCheckScheduler {
     }
   }
 
+  // The rate decides the speed, so the delay only matters when there is nothing to check, e.g.
+  // while the proxy is down
   @Scheduled(
-      fixedDelayString = "${application.linkCheck.interval:PT1S}",
+      fixedDelay = 1,
+      timeUnit = TimeUnit.SECONDS,
       initialDelayString = "${application.linkCheck.initialDelay:PT5M}")
   @SchedulerLock(name = "FulltextLinkCheck", lockAtLeastFor = "PT10S")
   public void checkLinks() {
