@@ -1304,6 +1304,48 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     assertTrue(Duration.ofNanos(System.nanoTime() - start).toMillis() >= 600);
   }
 
+  @Test
+  void linkCheckSchedulerShouldStopBatchWhenProxyGoesDown() throws Exception {
+    // The first link fails without a response, and so do the reference URLs. The rest of the batch
+    // is left for the next run, instead of being ticked through at the rate without any checks.
+    useHttpsSource();
+    var otherIds = new ArrayList<String>();
+    for (var i = 0; i < 4; i++) {
+      var response =
+          post(
+              "/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId() + "/dokumentobjekt",
+              getDokumentobjektJSON());
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      otherIds.add(gson.fromJson(response.getBody(), DokumentobjektDTO.class).getId());
+    }
+    // The https link is first in the queue
+    var checkedAt = Instant.now().minus(2, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+    for (var id : otherIds) {
+      dokumentobjektRepository.setLinkOk(id, HTTPS_SOURCE_URL, checkedAt);
+    }
+
+    var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
+    var originalRate = ReflectionTestUtils.getField(target, "rate");
+    ReflectionTestUtils.setField(target, "rate", 1.0);
+    var start = System.nanoTime();
+    try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable", null)) {
+      fulltextLinkCheckScheduler.checkLinks();
+      assertEquals(
+          List.of("CONNECT example.com:443 HTTP/1.1", "GET " + REFERENCE_URL + " HTTP/1.1"),
+          proxy.requests().stream().distinct().toList());
+    } finally {
+      ReflectionTestUtils.setField(target, "rate", originalRate);
+    }
+
+    // Five links at one a second would take at least four seconds
+    assertTrue(Duration.ofNanos(System.nanoTime() - start).toMillis() < 3000);
+    assertFalse(dokumentobjektService.isProxyWorking());
+    for (var id : otherIds) {
+      assertEquals(
+          checkedAt, dokumentobjektRepository.findById(id).orElseThrow().getLinkCheckedAt());
+    }
+  }
+
   private void checkLinksWithBatchSize(int batchSize) {
     var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
     var originalBatchSize = ReflectionTestUtils.getField(target, "batchSize");

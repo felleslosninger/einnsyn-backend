@@ -85,17 +85,22 @@ public class FulltextLinkCheckScheduler {
 
     var ids = dokumentobjektRepository.findIdsByOldestLinkCheck(PageRequest.of(0, batchSize));
 
-    // On shutdown no new checks are started. The remaining links are picked first by the next run.
+    // On shutdown, or when the proxy goes down, no new checks are started. The remaining links are
+    // picked first by the next run.
     var futures = new ArrayList<CompletableFuture<Void>>();
     var nanosPerCheck = rate > 0 ? (long) (1_000_000_000L / rate) : 0;
     var nextStart = System.nanoTime();
     for (var id : ids) {
+      if (!waitUntil(nextStart)) {
+        log.warn("Interrupted. Aborting fulltext link check.");
+        break;
+      }
       if (applicationShutdownListenerService.isShuttingDown()) {
         log.warn("Application is shutting down. Aborting fulltext link check.");
         break;
       }
-      if (!waitUntil(nextStart)) {
-        log.warn("Interrupted. Aborting fulltext link check.");
+      if (!dokumentobjektService.isProxyWorking()) {
+        log.warn("Reference URLs can't be reached. Aborting fulltext link check.");
         break;
       }
       futures.add(
@@ -114,7 +119,7 @@ public class FulltextLinkCheckScheduler {
     CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
         .exceptionally(_ -> null)
         .join();
-    log.info("Finished checking {} fulltext links.", futures.size());
+    log.info("Finished checking {} of {} fulltext links.", futures.size(), ids.size());
   }
 
   /** Sleep until the given System.nanoTime(). Returns false if interrupted. */
