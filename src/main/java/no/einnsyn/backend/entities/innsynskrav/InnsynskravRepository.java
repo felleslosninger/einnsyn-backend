@@ -103,21 +103,27 @@ public interface InnsynskravRepository
       """)
   Slice<Innsynskrav> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
 
+  // Hide Innsynskrav that have not been sent or verified when filtering by Enhet
   @Query(
       """
       SELECT o FROM Innsynskrav o
       JOIN o.journalpost j
+      LEFT JOIN o.innsynskravBestilling ib
       WHERE j.journalenhet = :enhet
+      AND (o.sent IS NOT NULL OR ib.verifiedAt IS NOT NULL)
       AND o.id >= COALESCE(:pivot, o.id)
       ORDER BY o.id ASC
       """)
   Slice<Innsynskrav> paginateAsc(Enhet enhet, String pivot, Pageable pageable);
 
+  // Hide Innsynskrav that have not been sent or verified when filtering by Enhet
   @Query(
       """
       SELECT o FROM Innsynskrav o
       JOIN o.journalpost j
+      LEFT JOIN o.innsynskravBestilling ib
       WHERE j.journalenhet = :enhet
+      AND (o.sent IS NOT NULL OR ib.verifiedAt IS NOT NULL)
       AND o.id <= COALESCE(:pivot, o.id)
       ORDER BY o.id DESC
       """)

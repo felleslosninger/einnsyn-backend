@@ -339,11 +339,22 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     // Owning Enhet can get the InnsynskravBestilling
     var innsynskravEnhet = innsynskrav.getEnhet();
     if (innsynskravEnhet != null
+        && isSubmitted(innsynskrav)
         && authenticationService.hasEnhetAccess(innsynskravEnhet.getId())) {
       return;
     }
 
     throw new AuthorizationException("Not authorized to get " + id);
+  }
+
+  /**
+   * An unconfirmed order was never made, so the Enhet must not see it. Delivered ones stay visible
+   * after their order is deleted.
+   */
+  private boolean isSubmitted(Innsynskrav innsynskrav) {
+    var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
+    return innsynskrav.getSent() != null
+        || (innsynskravBestilling != null && innsynskravBestilling.isVerified());
   }
 
   /**
