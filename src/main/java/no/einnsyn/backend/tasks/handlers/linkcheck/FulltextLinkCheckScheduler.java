@@ -1,5 +1,6 @@
 package no.einnsyn.backend.tasks.handlers.linkcheck;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -20,6 +21,9 @@ import org.springframework.stereotype.Service;
  * links can't keep the others from being checked. Since the oldest checks are always picked next,
  * the checker starts over from the beginning once every link has been checked, without keeping
  * track of its position.
+ *
+ * <p>The checks are started at a steady rate, so the sources get an even load instead of bursts.
+ * The concurrency only limits how many checks can run at once when sources are slow to respond.
  */
 @Service
 @Slf4j
@@ -32,6 +36,10 @@ public class FulltextLinkCheckScheduler {
 
   @Value("${application.linkCheck.batchSize:1000}")
   private int batchSize;
+
+  // Links checked per second. Zero or less turns the link check off.
+  @Value("${application.linkCheck.rate:1}")
+  private double rate;
 
   public FulltextLinkCheckScheduler(
       DokumentobjektRepository dokumentobjektRepository,
@@ -55,11 +63,19 @@ public class FulltextLinkCheckScheduler {
     }
   }
 
+  // The rate decides the speed, so the delay only matters when there is nothing to check, e.g.
+  // while the proxy is down
   @Scheduled(
-      fixedDelayString = "${application.linkCheck.interval:PT30S}",
+      fixedDelay = 1,
+      timeUnit = TimeUnit.SECONDS,
       initialDelayString = "${application.linkCheck.initialDelay:PT5M}")
   @SchedulerLock(name = "FulltextLinkCheck", lockAtLeastFor = "PT10S")
   public void checkLinks() {
+    if (rate <= 0) {
+      log.debug("Fulltext link check is turned off.");
+      return;
+    }
+
     // Without a proxy every check would fail on our side, so there is nothing to check
     if (!dokumentobjektService.isDownloadProxyConfigured()) {
       log.debug("Download proxy is not configured, skipping fulltext link check.");
@@ -74,11 +90,22 @@ public class FulltextLinkCheckScheduler {
 
     var ids = dokumentobjektRepository.findIdsByOldestLinkCheck(PageRequest.of(0, batchSize));
 
-    // On shutdown no new checks are started. The remaining links are picked first by the next run.
+    // On shutdown, or when the proxy goes down, no new checks are started. The remaining links are
+    // picked first by the next run.
     var futures = new ArrayList<CompletableFuture<Void>>();
+    var nanosPerCheck = (long) (1_000_000_000L / rate);
+    var nextStart = System.nanoTime();
     for (var id : ids) {
+      if (!waitUntil(nextStart)) {
+        log.warn("Interrupted. Aborting fulltext link check.");
+        break;
+      }
       if (applicationShutdownListenerService.isShuttingDown()) {
         log.warn("Application is shutting down. Aborting fulltext link check.");
+        break;
+      }
+      if (!dokumentobjektService.isProxyWorking()) {
+        log.warn("Reference URLs can't be reached. Aborting fulltext link check.");
         break;
       }
       futures.add(
@@ -89,12 +116,29 @@ public class FulltextLinkCheckScheduler {
                   dokumentobjektService.checkLink(id);
                 }
               }));
+      // After waiting for a free slot, the lost time isn't made up, so the rate is never exceeded
+      nextStart = Math.max(nextStart, System.nanoTime()) + nanosPerCheck;
     }
 
     // ParallelRunner logs any failure, so failed futures are ignored here
     CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
         .exceptionally(_ -> null)
         .join();
-    log.info("Finished checking {} fulltext links.", futures.size());
+    log.info("Finished checking {} of {} fulltext links.", futures.size(), ids.size());
+  }
+
+  /** Sleep until the given System.nanoTime(). Returns false if interrupted. */
+  private static boolean waitUntil(long nanoTime) {
+    var wait = nanoTime - System.nanoTime();
+    if (wait <= 0) {
+      return true;
+    }
+    try {
+      Thread.sleep(Duration.ofNanos(wait));
+      return true;
+    } catch (InterruptedException _) {
+      Thread.currentThread().interrupt();
+      return false;
+    }
   }
 }
