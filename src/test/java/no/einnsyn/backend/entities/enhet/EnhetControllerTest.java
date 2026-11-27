@@ -18,6 +18,7 @@ import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravBestillingTestService;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
@@ -27,14 +28,18 @@ import no.einnsyn.backend.utils.SlugGenerator;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class EnhetControllerTest extends EinnsynControllerTestBase {
+
+  @Lazy @Autowired private InnsynskravBestillingTestService innsynskravTestService;
 
   @Test
   void hiddenEnhetStaysVisibleButItsContentIsHidden() throws Exception {
@@ -528,10 +533,31 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
 
     var type = new TypeToken<PaginatedList<InnsynskravDTO>>() {}.getType();
 
+    // Unconfirmed orders are hidden from the Enhet
+    response = get("/enhet/" + journalenhetId + "/innsynskrav");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<InnsynskravDTO> innsynskravList = gson.fromJson(response.getBody(), type);
+    assertEquals(0, innsynskravList.getItems().size());
+    response = get("/innsynskrav/" + innsynskrav1.getId());
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    for (var bestilling :
+        List.of(
+            innsynskravBestilling1DTO,
+            innsynskravBestilling2DTO,
+            innsynskravBestilling3DTO,
+            innsynskravBestilling4DTO)) {
+      var secret = innsynskravTestService.getVerificationSecret(bestilling.getId());
+      response = patch("/innsynskravBestilling/" + bestilling.getId() + "/verify/" + secret, null);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+    response = get("/innsynskrav/" + innsynskrav1.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
     // Check that journalenhet2 has one InnsynskravBestilling
     response = get("/enhet/" + journalenhet2Id + "/innsynskrav", journalenhet2Key);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    PaginatedList<InnsynskravDTO> innsynskravList = gson.fromJson(response.getBody(), type);
+    innsynskravList = gson.fromJson(response.getBody(), type);
     assertEquals(1, innsynskravList.getItems().size());
     assertEquals(innsynskrav4.getId(), innsynskravList.getItems().get(0).getId());
 
