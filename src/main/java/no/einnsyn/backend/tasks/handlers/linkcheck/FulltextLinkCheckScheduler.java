@@ -37,7 +37,7 @@ public class FulltextLinkCheckScheduler {
   @Value("${application.linkCheck.batchSize:1000}")
   private int batchSize;
 
-  // Links checked per second. Zero or less means no limit.
+  // Links checked per second. Zero or less turns the link check off.
   @Value("${application.linkCheck.rate:1}")
   private double rate;
 
@@ -71,6 +71,11 @@ public class FulltextLinkCheckScheduler {
       initialDelayString = "${application.linkCheck.initialDelay:PT5M}")
   @SchedulerLock(name = "FulltextLinkCheck", lockAtLeastFor = "PT10S")
   public void checkLinks() {
+    if (rate <= 0) {
+      log.debug("Fulltext link check is turned off.");
+      return;
+    }
+
     // Without a proxy every check would fail on our side, so there is nothing to check
     if (!dokumentobjektService.isDownloadProxyConfigured()) {
       log.debug("Download proxy is not configured, skipping fulltext link check.");
@@ -88,7 +93,7 @@ public class FulltextLinkCheckScheduler {
     // On shutdown, or when the proxy goes down, no new checks are started. The remaining links are
     // picked first by the next run.
     var futures = new ArrayList<CompletableFuture<Void>>();
-    var nanosPerCheck = rate > 0 ? (long) (1_000_000_000L / rate) : 0;
+    var nanosPerCheck = (long) (1_000_000_000L / rate);
     var nextStart = System.nanoTime();
     for (var id : ids) {
       if (!waitUntil(nextStart)) {

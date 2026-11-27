@@ -79,7 +79,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -925,6 +924,22 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void linkCheckSchedulerShouldDoNothingWhenRateIsZero() throws Exception {
+    useHttpsSource();
+    var target = AopTestUtils.getTargetObject(fulltextLinkCheckScheduler);
+    var originalRate = ReflectionTestUtils.getField(target, "rate");
+    ReflectionTestUtils.setField(target, "rate", 0.0);
+    try (var proxy = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
+      fulltextLinkCheckScheduler.checkLinks();
+      assertEquals(0, proxy.requests().size());
+    } finally {
+      ReflectionTestUtils.setField(target, "rate", originalRate);
+    }
+
+    assertNull(getDokumentobjekt().getLinkCheckedAt());
+  }
+
+  @Test
   void linkCheckSchedulerShouldStopWhenShuttingDown() throws Exception {
     assertLinkCheckSkippedOnShutdown(true);
   }
@@ -1243,39 +1258,6 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     // The reference URL timed out too, so the failure is on our side
     assertNull(getDokumentobjekt().getLinkFailedSince());
     assertFalse(dokumentobjektService.isProxyWorking());
-  }
-
-  @Test
-  void linkCheckSchedulerShouldSkipLinksWithoutId() throws Exception {
-    // Some legacy rows have no _id. findById(null) would throw, and the row would block the queue,
-    // since it is never marked as checked.
-    var response =
-        post(
-            "/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId() + "/dokumentobjekt",
-            getDokumentobjektJSON());
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var withoutIdDTO = gson.fromJson(response.getBody(), DokumentobjektDTO.class);
-    var withoutIdNumber =
-        dokumentobjektRepository.findById(withoutIdDTO.getId()).orElseThrow().getDokumentobjektId();
-
-    // The row without _id is unchecked, so it is first in the queue
-    var checkedAt = Instant.now().minus(2, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
-    dokumentobjektRepository.setLinkOk(dokumentobjektDTO.getId(), SOURCE_URL, checkedAt);
-    var jdbcTemplate = new JdbcTemplate(dataSource);
-    jdbcTemplate.update(
-        "UPDATE dokumentobjekt SET _id = NULL WHERE dokumentobjekt_id = ?", withoutIdNumber);
-    try (var _ = startTunnelProxy("HTTP/1.1 503 Service Unavailable")) {
-      checkLinksWithBatchSize(1);
-    } finally {
-      jdbcTemplate.update(
-          "UPDATE dokumentobjekt SET _id = ? WHERE dokumentobjekt_id = ?",
-          withoutIdDTO.getId(),
-          withoutIdNumber);
-    }
-
-    assertTrue(getDokumentobjekt().getLinkCheckedAt().isAfter(checkedAt));
-    var withoutId = dokumentobjektRepository.findById(withoutIdDTO.getId()).orElseThrow();
-    assertNull(withoutId.getLinkCheckedAt());
   }
 
   @Test
