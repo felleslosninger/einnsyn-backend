@@ -3,7 +3,10 @@ package no.einnsyn.backend.entities.votering;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.paginators.Paginators;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.backend.entities.vedtak.models.ListByVedtakParameters;
 import no.einnsyn.backend.entities.votering.models.Votering;
 import no.einnsyn.backend.entities.votering.models.VoteringDTO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -117,5 +120,16 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
     }
 
     super.deleteEntity(votering);
+  }
+
+  @Override
+  protected Paginators<Votering> getPaginators(ListParameters params) throws EInnsynException {
+    if (params instanceof ListByVedtakParameters p && p.getVedtakId() != null) {
+      var vedtak = vedtakService.findOrThrow(p.getVedtakId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(vedtak, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(vedtak, pivot, pageRequest));
+    }
+    return super.getPaginators(params);
   }
 }
