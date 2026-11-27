@@ -4,6 +4,7 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.paginators.Paginators;
@@ -23,6 +24,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
+
+  public static final String SECRET_PREFIX = "secret";
+
+  // High volume keys can be handled differently by reverse proxies
+  public static final String HIGH_VOLUME_SECRET_PREFIX = SECRET_PREFIX + "_hv";
 
   @Getter(onMethod_ = @Override)
   private final ApiKeyRepository repository;
@@ -66,10 +72,14 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
     // for the create response, and is deliberately never put on the DTO, since the request DTO is
     // logged.
     if (apiKey.getId() == null) {
-      var secretKey = IdGenerator.generateSecret("secret");
+      var prefix =
+          Boolean.TRUE.equals(dto.getHighVolume()) ? HIGH_VOLUME_SECRET_PREFIX : SECRET_PREFIX;
+      var secretKey = IdGenerator.generateSecret(prefix);
       apiKey.setSecretKey(secretKey);
       apiKey.setSecret(HashUtils.sha256Hex(secretKey));
       log.trace("apiKey secret hash generated");
+    } else if (dto.getHighVolume() != null) {
+      throw new BadRequestException("highVolume can only be set on creation");
     }
 
     if (dto.getName() != null) {
@@ -231,6 +241,12 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
 
     if (!authenticationService.hasEnhetAccess(enhetService.resolveId(apiKeyEnhetId))) {
       throw new AuthorizationException("Not authorized to add ApiKey");
+    }
+
+    if (dto != null
+        && Boolean.TRUE.equals(dto.getHighVolume())
+        && !authenticationService.isAdmin()) {
+      throw new AuthorizationException("Only admins can add high-volume ApiKeys");
     }
 
     authorizeBrukerBinding(dto);
